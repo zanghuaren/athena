@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>雅典娜 · 低保真原型</title>
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #222; background: #e9e9e9; }
+  button { font: inherit; cursor: pointer; }
+  #app { display: grid; grid-template-columns: 230px 1fr 270px; height: 100vh; }
+  #index, #notes { background: #fff; overflow-y: auto; padding: 12px; border-right: 1px solid #ccc; }
+  #notes { border-right: 0; border-left: 1px solid #ccc; }
+  #index h1 { font-size: 16px; margin: 0 0 8px; }
+  .ends { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 8px; }
+  .ends button, .states button { border: 1px solid #999; background: #fff; padding: 4px; border-radius: 4px; font-size: 12px; }
+  .ends button.on, .states button.on { background: #333; color: #fff; border-color: #333; }
+  .exp { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 8px; }
+  .group { font-size: 12px; color: #888; margin: 10px 0 2px; }
+  .pl { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 3px 4px; border-radius: 3px; font-size: 13px; }
+  .pl:hover { background: #eee; }
+  .pl.on { background: #333; color: #fff; }
+  .pl .id { display: inline-block; width: 38px; color: #999; font-size: 11px; }
+  .pl.on .id { color: #ccc; }
+  #stage { overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px; }
+  #notes h2 { font-size: 15px; margin: 0 0 4px; }
+  #notes .meta { font-size: 12px; color: #666; margin-bottom: 10px; }
+  #notes p { margin: 6px 0; font-size: 13px; }
+  .states { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 12px; }
+  .q { background: #fff6d6; border: 1px dashed #c9a300; padding: 6px 8px; font-size: 12px; margin: 8px 0; border-radius: 4px; }
+
+  /* 设备外壳 */
+  .phone { width: 375px; height: 760px; background: #fff; border: 10px solid #333; border-radius: 32px; display: flex; flex-direction: column; overflow: hidden; flex: none; }
+  .web { width: 100%; min-width: 960px; max-width: 1280px; height: 760px; background: #fff; border: 1px solid #999; display: grid; grid-template-columns: 190px 1fr; overflow: hidden; }
+  .full { flex: 1; overflow-y: auto; padding: 16px; }
+  .topbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #ddd; min-height: 46px; }
+  .topbar .t { flex: 1; font-weight: 600; text-align: center; }
+  .web .topbar .t { text-align: left; }
+  .content { flex: 1; overflow-y: auto; padding: 12px; }
+  .main { display: flex; flex-direction: column; overflow: hidden; }
+  .tabs { display: flex; border-top: 1px solid #ccc; }
+  .tabs button { flex: 1; border: 0; background: #fff; padding: 8px 0 10px; font-size: 12px; color: #777; }
+  .tabs button.on { color: #000; font-weight: 700; background: #eee; }
+  .side { background: #f3f3f3; border-right: 1px solid #ccc; padding: 12px 8px; overflow-y: auto; }
+  .side .logo { font-weight: 700; font-size: 16px; padding: 4px 8px 10px; }
+  .side button.nav { display: flex; justify-content: space-between; width: 100%; border: 0; background: none; text-align: left; padding: 7px 8px; border-radius: 4px; }
+  .side button.nav.on { background: #333; color: #fff; }
+  .side .sub { font-size: 12px; color: #888; padding: 10px 8px 4px; }
+  .side .recent { font-size: 12px; padding: 4px 8px; color: #555; cursor: pointer; }
+  .expbar { background: #ffe9a8; font-size: 12px; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; }
+  .expbar button { border: 1px solid #a07c00; background: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }
+
+  /* 通用线框组件 */
+  .btn { border: 1px solid #555; background: #fff; padding: 6px 12px; border-radius: 4px; }
+  .btn.pri { background: #333; color: #fff; border-color: #333; }
+  .btn.block { display: block; width: 100%; margin: 8px 0; padding: 10px; }
+  .btn.sm { padding: 2px 8px; font-size: 12px; }
+  .btn.ghost { border-style: dashed; }
+  .ico { border: 0; background: none; padding: 2px 6px; font-size: 13px; color: #333; text-decoration: underline; }
+  .box { border: 1px solid #bbb; border-radius: 6px; padding: 10px; margin: 8px 0; background: #fff; }
+  .box.gray { background: #f4f4f4; }
+  .box.err { border: 1px dashed #d9822b; background: #fff3e6; }
+  .ph { background: repeating-linear-gradient(45deg, #eee, #eee 8px, #e2e2e2 8px, #e2e2e2 16px); border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; border-radius: 4px; margin: 6px 0; }
+  .in { border: 1px solid #aaa; border-radius: 4px; padding: 7px 8px; color: #999; margin: 4px 0; background: #fff; }
+  .in.area { min-height: 70px; }
+  .lab { font-size: 12px; color: #666; margin-top: 8px; }
+  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .row.between { justify-content: space-between; }
+  .grow { flex: 1; }
+  .muted { color: #888; font-size: 12px; }
+  .h { font-weight: 700; margin: 12px 0 4px; }
+  .big { font-size: 22px; font-weight: 700; }
+  .chip { display: inline-block; border: 1px solid #999; border-radius: 12px; padding: 1px 9px; font-size: 12px; margin: 2px 2px 2px 0; background: #fff; }
+  .chip.on { background: #333; color: #fff; border-color: #333; }
+  .li { border-bottom: 1px solid #e5e5e5; padding: 9px 2px; cursor: pointer; }
+  .li:hover { background: #fafafa; }
+  .li .s { font-size: 12px; color: #888; }
+  .seg { display: flex; border: 1px solid #555; border-radius: 4px; overflow: hidden; margin: 6px 0; }
+  .seg button { flex: 1; border: 0; background: #fff; padding: 5px; font-size: 13px; }
+  .seg button.on { background: #333; color: #fff; }
+  .bubble { max-width: 82%; padding: 8px 10px; border-radius: 8px; margin: 6px 0; }
+  .bubble.me { margin-left: auto; background: #e6e6e6; }
+  .bubble.ai { border: 1px solid #ccc; }
+  .step { border-left: 3px solid #555; padding: 4px 8px; margin: 6px 0; background: #f7f7f7; }
+  .step.dim { border-left-color: #ccc; color: #aaa; }
+  .composer { border-top: 1px solid #ddd; padding: 8px 10px; }
+  .bar { height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: #555; }
+  .kp { display: grid; grid-template-columns: 1fr 90px 60px; gap: 6px; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee; cursor: pointer; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .stat { border: 1px solid #ccc; border-radius: 6px; padding: 8px; text-align: center; }
+  .stat b { display: block; font-size: 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { border-bottom: 1px solid #e3e3e3; padding: 6px; text-align: left; }
+  th { color: #666; font-weight: 600; background: #f6f6f6; }
+  tr.click { cursor: pointer; }
+  tr.click:hover td { background: #fafafa; }
+  .heat { display: grid; grid-template-columns: 120px repeat(6, 1fr); gap: 3px; font-size: 12px; align-items: center; }
+  .heat i { display: block; height: 22px; border-radius: 2px; }
+  .cols { display: grid; gap: 10px; height: 100%; }
+  .mask { position: relative; }
+  .modal { border: 2px solid #333; border-radius: 8px; padding: 12px; background: #fff; margin: 10px 0; box-shadow: 0 4px 18px rgba(0,0,0,.2); }
+  .center { text-align: center; }
+  .tag { font-size: 11px; border: 1px solid #888; border-radius: 3px; padding: 0 4px; color: #555; margin-left: 4px; }
+  .ok { color: #2a7d2a; } .bad { color: #b33; } .warn { color: #b77900; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="index"></aside>
+  <main id="stage"></main>
+  <aside id="notes"></aside>
+</div>
+<script>
+// ───────────── 组件 ─────────────
+const go = (id, label, cls = '') => `<button class="btn ${cls}" data-go="${id}">${label}</button>`;
+const pri = (id, label, extra = '') => go(id, label, 'pri ' + extra);
+const ico = (id, label) => `<button class="ico" data-go="${id}">${label}</button>`;
+const ph = (label, h = 120) => `<div class="ph" style="height:${h}px">${label}</div>`;
+const inp = (t, area) => `<div class="in ${area ? 'area' : ''}">${t}</div>`;
+const lab = t => `<div class="lab">${t}</div>`;
+const chips = (arr, on = 0) => arr.map((a, i) => `<span class="chip ${i === on ? 'on' : ''}">${a}</span>`).join('');
+const seg = (arr, on = 0, gos = []) => `<div class="seg">${arr.map((a, i) => `<button class="${i === on ? 'on' : ''}" ${gos[i] ? `data-go="${gos[i]}"` : ''}>${a}</button>`).join('')}</div>`;
+const li = (t, s, id) => `<div class="li" ${id ? `data-go="${id}"` : ''}><div>${t}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+const box = (inner, cls = '') => `<div class="box ${cls}">${inner}</div>`;
+const err = inner => box('⚠ ' + inner, 'err');
+const h = t => `<div class="h">${t}</div>`;
+const bar = v => `<div class="bar"><i style="width:${v}%"></i></div>`;
+const stat = (v, t) => `<div class="stat"><b>${v}</b><span class="muted">${t}</span></div>`;
+const kp = (name, v, id = 'S-24') => `<div class="kp" data-go="${id}"><span>${name}</span>${v == null ? '<span class="muted">·····</span>' : bar(v)}<span class="muted">${v == null ? '数据不足' : v + (v < 60 ? ' 薄弱' : v < 85 ? ' 一般' : ' 掌握')}</span></div>`;
+const heatRow = (name, vals) => `<span>${name}</span>` + vals.map(v => `<i title="${v}" style="background:hsl(0,0%,${95 - v * 0.7}%)"></i>`).join('');
+const steps = (arr, shown) => arr.map((s, i) => `<div class="step ${i >= shown ? 'dim' : ''}"><b>${i + 1} ${s[0]}</b><br>${i >= shown ? '（等待学生回应后展开）' : s[1]}</div>`).join('');
+const composer = (tools = true) => `<div class="composer">${tools ? `<div class="row" style="margin-bottom:6px">${go('S-03:拍照答疑', '拍照答疑', 'sm')}${go('S-03:作业批改', '作业批改', 'sm')}<span class="muted">加分项：作文批改 · 口语对练</span></div>` : ''}<div class="row">${go('S-03:拍照答疑', '相机', 'sm')}<div class="in grow">输入你的学习问题……</div>${go('S-01:引导式对话中', '发送', 'sm pri')}</div></div>`;
+const tbl = (head, rows, gos = []) => `<table><tr>${head.map(x => `<th>${x}</th>`).join('')}</tr>${rows.map((r, i) => `<tr class="${gos[i] ? 'click' : ''}" ${gos[i] ? `data-go="${gos[i]}"` : ''}>${r.map(x => `<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
+
+// ───────────── 页面 ─────────────
+// role: c 公共 / s 学生 / t 教师；tab: 所属一级导航；req: 对应需求；webOnly: 教师手机端只读提示
+const P = {};
+const def = (id, o) => { P[id] = Object.assign({ id, states: { 默认: () => '' } }, o); };
+
+// ── 公共 ──
+def('C-01', { role: 'c', title: '登录', bare: true, req: 'ACC-02, ACC-04', states: {
+  默认: () => login(''),
+  密码错误: () => login(err('用户名或密码错误')),
+  锁定: () => login(err('密码错误次数过多，请 10 分钟后再试')),
+}});
+function login(e) {
+  return `<div class="center" style="margin-top:40px"><div class="big">雅典娜</div><div class="muted">连接学生和老师的 AI 学习助手</div></div>
+  ${lab('用户名')}${inp('请输入用户名')}${lab('密码')}${inp('请输入密码')}${e}
+  <button class="btn pri block" data-login="s">登 录（原型：以学生登录）</button>
+  <button class="btn block" data-login="t">登 录（原型：以教师登录）</button>
+  <div class="center muted">还没有账号？${ico('C-02', '去注册')}</div>
+  <div class="center muted" style="margin:24px 0 8px">──── 免注册体验 ────</div>
+  <div class="grid2"><button class="btn" data-exp="s">体验学生端</button><button class="btn" data-exp="t">体验教师端</button></div>`;
+}
+def('C-02', { role: 'c', title: '注册', bare: true, req: 'ACC-01', states: {
+  选身份: () => `${ico('C-01', '← 返回登录')}<div class="big" style="margin:16px 0">选择你的身份</div>
+    ${box('<b>我是学生</b><div class="muted">答疑、批改、错题复习、完成老师布置的作业</div>')}
+    ${box('<b>我是老师</b><div class="muted">备课、组卷、布置和批改作业、查看学情</div>')}
+    <div class="muted">身份注册后不能修改</div>${pri('C-02:填写账号', '下一步', 'block')}`,
+  填写账号: () => `${ico('C-02:选身份', '← 上一步')}<div class="big" style="margin:16px 0">设置账号</div>
+    ${lab('用户名（4～20 位字母、数字、下划线）')}${inp('')}${lab('密码（8～32 位，含字母和数字）')}${inp('')}${lab('确认密码')}${inp('')}
+    ${pri('C-02:学生资料', '下一步（学生）', 'block')}${go('C-02:教师资料', '下一步（教师）', 'block')}`,
+  用户名已存在: () => `${ico('C-02:选身份', '← 上一步')}<div class="big" style="margin:16px 0">设置账号</div>
+    ${lab('用户名')}${inp('xiaoya2026')}${err('用户名已被使用')}${lab('密码')}${inp('••••••••')}${lab('确认密码')}${inp('••••••••')}${pri('C-02:学生资料', '下一步', 'block')}`,
+  学生资料: () => `${ico('C-02:填写账号', '← 上一步')}<div class="big" style="margin:16px 0">完善资料</div>
+    ${lab('昵称')}${inp('')}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}
+    <div class="muted" style="margin-top:8px">不需要手机号，也不收集真实姓名</div><button class="btn pri block" data-login="s">完成注册</button>`,
+  教师资料: () => `${ico('C-02:填写账号', '← 上一步')}<div class="big" style="margin:16px 0">完善资料</div>
+    ${lab('姓名')}${inp('')}${lab('任教学科（可多选）')}${chips(['数学', '物理', '英语'], 0)}${lab('任教年级（可多选）')}${chips(['七年级', '八年级', '九年级'], 1)}
+    <button class="btn pri block" data-login="t">完成注册</button>`,
+}});
+def('C-03', { role: 'c', title: '体验准备', bare: true, req: 'ACC-04', states: {
+  生成中: () => `<div class="center" style="margin-top:80px"><div class="big">正在准备体验环境</div><div class="muted">为你生成一个班级和演示数据，约 5 秒</div></div>
+    ${box(`<div class="ok">✓ 创建老师和学生账号</div><div class="ok">✓ 创建班级 八年级 3 班（30 名虚拟学生）</div><div>… 生成 3 次作业的提交与批改数据</div><div class="muted">○ 生成错题和学情数据</div>`)}
+    <div class="muted">体验账号保留 7 天；体验中可以随时切换老师 / 学生视角</div><button class="btn pri block" data-expdone="1">完成（原型）</button>`,
+  失败: () => `<div class="center" style="margin-top:80px"><div class="big">准备失败</div></div>${err('体验环境准备失败，请重试')}${go('C-03:生成中', '重试', 'pri block')}${go('C-01', '返回登录', 'block')}`,
+}});
+def('C-04', { role: 'c', title: '我的', tab: 'me', req: 'ME', states: { 默认: () => S.role === 's' ? `
+  <div class="row"><div class="ph" style="width:56px;height:56px;border-radius:28px">头像</div><div class="grow"><b>小雅</b><div class="muted">八年级 · 已加入 2 个班级</div></div>${ico('C-05', '编辑')}</div>
+  ${h('学习')}${li('我的班级', '八年级 3 班 数学 · 八年级 3 班 物理', 'S-25')}${li('学情画像', '平均掌握度 71', 'S-23')}${li('批改记录', '拍照批改过的作业', 'S-07')}${li('练习记录', '', 'S-22')}
+  ${h('其他')}${li('设置', '主题、讲解方式、修改密码', 'C-06')}${li('帮助与反馈', '', 'C-07')}
+  <div class="q">Q3 / Q5：按建议去掉了“历史记录”“我的收藏”，以及会员、教辅书架、隐私导出等旧入口</div>` : `
+  <div class="row"><div class="ph" style="width:56px;height:56px;border-radius:28px">头像</div><div class="grow"><b>李老师</b><div class="muted">数学 · 八年级 · 3 个班级</div></div>${ico('C-05', '编辑')}</div>
+  ${h('教学')}${li('我的班级', '', 'T-02')}${li('个人题库 <span class="tag">加分</span>', '', 'T-22')}
+  ${h('其他')}${li('设置', '主题、修改密码', 'C-06')}${li('帮助与反馈', '', 'C-07')}` }});
+def('C-05', { role: 'c', title: '编辑资料', back: true, req: 'ME-01', states: { 默认: () => `
+  ${lab('头像（从预置头像中选）')}<div class="row">${ph('A', 44)}${ph('B', 44)}${ph('C', 44)}${ph('D', 44)}</div>
+  ${S.role === 's' ? `${lab('昵称')}${inp('小雅')}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}<div class="q">Q6：学习阶段改为七 / 八 / 九年级</div>` : `${lab('姓名')}${inp('李明')}${lab('任教学科')}${chips(['数学', '物理', '英语'], 0)}${lab('任教年级')}${chips(['七年级', '八年级', '九年级'], 1)}`}
+  ${go('C-04', '保存', 'pri block')}` }});
+def('C-06', { role: 'c', title: '设置', back: true, req: 'ME-02～04', states: { 默认: () => `
+  ${h('外观')}${seg(['纸感书房', '夜间自习', '跟随系统'], 2)}<div class="row between"><span>减少动态效果</span><span class="chip">关</span></div>
+  ${S.role === 's' ? `${h('学习偏好')}${lab('讲解方式')}${seg(['引导式（默认）', '直接讲解'], 0)}<div class="q">Q2：旧设计有三种（循序引导 / 先看结论 / 举例理解），按建议只保留两种</div>${lab('常用学科')}${chips(['数学', '物理', '英语'], 0)}` : ''}
+  ${h('账号')}${S.exp ? '<div class="muted">体验账号不能修改密码</div>' : li('修改密码', '需要输入原密码', '')}
+  ${go('C-01', '退出登录', 'block')}` }});
+def('C-07', { role: 'c', title: '帮助与反馈', back: true, req: 'ME-05', states: { 默认: () => `
+  ${h('常见问题')}${li('▸ 引导式讲解和直接讲解有什么区别？')}${li('▸ 拍照批改识别不准怎么办？')}${li('▸ 错题什么时候会出现在复习里？')}
+  ${h('隐私说明')}${box('老师能看到：你的班级内姓名、作业作答和成绩。<br>老师看不到：你的答疑记录、自主练习、拍照批改和复习记录。', 'gray')}
+  ${h('意见反馈')}${inp('写下你的建议……', 1)}${go('C-07', '提交', 'sm')}
+  <div class="muted" style="margin-top:12px">雅典娜 v0.1 · 挑战杯参赛作品</div>` }});
+def('C-08', { role: 'c', title: '消息中心', back: true, bonus: true, req: 'MSG（加分）', states: { 默认: () => S.role === 's'
+  ? li('● 新作业：二次根式练习', '八年级 3 班 · 今晚 20:00 截止', 'S-10') + li('● 批改结果已发布：浮力小测', '得分 86', 'S-12') + li('作业即将截止：Unit 3 阅读', '还剩 12 小时', 'S-10')
+  : li('● 二次根式练习：AI 批改完成，35 份待复核', '', 'T-07') + li('浮力小测已截止：40/40 已交', '', 'T-07') }});
+
+// ── 学生 ──
+const dialogHead = (t) => `<div class="row between" style="margin-bottom:6px"><b>${t}</b><span>${chips(['数学▾'])}${chips(['引导式▾'], 0)}</span></div>`;
+const tri = ['找直角', '这道题考查勾股定理。图里哪个角是直角？这决定了哪条边是斜边。'];
+const st2 = ['列式子', '斜边是 AB。试着列出勾股定理的式子。'];
+const st3 = ['求结果', 'AB² = 3² + 4² = 25，所以 AB = 5。'];
+def('S-01', { role: 's', title: '对话', tab: 'chat', req: 'ASK-01～05', topL: ['S-02', '历史'], topR: ['S-01', '+ 新对话'], composer: true, states: {
+  空状态: () => `<div class="center" style="margin:50px 0 20px"><div class="big">知其然，也知其所以然。</div><div class="muted">让每一个问题，都有值得追寻的答案。</div></div>
+    <div class="muted">从一个问题开始</div>${go('S-01:引导式对话中', '这道一元二次方程怎么解？', 'block')}${go('S-01:直接讲解', '浮力和排开水的体积有什么关系？', 'block')}${go('S-01:直接讲解', '现在完成时什么时候用？', 'block')}`,
+  引导式对话中: () => `${dialogHead('勾股定理求边长')}<div class="bubble me">[图片] 求 AB 的长度</div>
+    <div class="bubble ai">${steps([tri, st2, st3], 1)}</div><div class="bubble me">角 C 是直角</div>
+    <div class="bubble ai">对！${steps([tri, st2, st3], 2).split('</div>').slice(1).join('</div>')}</div>
+    <div class="row">${go('S-01:引导式对话中', '再给点提示', 'sm')}${go('S-01:直接讲解', '看完整解答', 'sm')}</div>
+    <div class="q">引导式：分步讲解卡片一次只展开一步（沿用旧项目的步骤卡片样式）</div>`,
+  直接讲解: () => `${dialogHead('勾股定理求边长')}<div class="bubble me">[图片] 求 AB 的长度</div>
+    <div class="bubble ai">${steps([tri, st2, st3], 3)}<div class="box gray"><b>总结</b>：考查勾股定理；关键是先找直角确定斜边；易错点：开方后忘记取正值。</div></div>
+    <div class="row">${go('S-01:加入错题本弹窗', '加入错题本', 'sm')}${go('S-20:选择题', '练一道类似的', 'sm')}${go('S-01:直接讲解', '举个例子', 'sm')}${go('S-01', '复制', 'sm')}${go('S-01', '重新生成', 'sm')}</div>
+    <div class="q">Q2：“举个例子”作为追问按钮</div>`,
+  加入错题本弹窗: () => `${dialogHead('勾股定理求边长')}<div class="muted">（对话内容……）</div>
+    <div class="modal"><b>加入错题本</b>${lab('题目（AI 已提取，可修改）')}${inp('在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB。', 1)}${lab('正确答案')}${inp('5')}${lab('知识点')}${chips(['勾股定理'], 0)}<span class="chip">+ 添加</span>
+    <div class="row" style="margin-top:10px">${go('S-01:直接讲解', '取消')}${pri('S-13', '确认加入')}</div><div class="muted">加入后 1 天后进入复习</div></div>`,
+  生成中断: () => `${dialogHead('勾股定理求边长')}<div class="bubble me">求 AB 的长度</div><div class="bubble ai">${steps([tri, st2], 1)}<div class="muted">……</div></div>${err('生成中断（网络不稳定）')}<div class="row">${go('S-01:直接讲解', '继续生成', 'sm')}${go('S-01:直接讲解', '重新生成', 'sm')}</div>`,
+  与学习无关: () => `${dialogHead('新对话')}<div class="bubble me">推荐几个好玩的游戏</div><div class="bubble ai">我是你的学习助手，更擅长帮你解决学习上的问题哦。最近有没有哪道题让你卡住了？</div>`,
+}});
+def('S-02', { role: 's', title: '会话历史', back: true, req: 'ASK-04', states: {
+  默认: () => `${inp('搜索对话')}${li('勾股定理求边长', '数学 · 今天 10:32', 'S-01:引导式对话中')}${li('浮力的方向', '物理 · 昨天', 'S-01:直接讲解')}${li('现在完成时 vs 一般过去时', '英语 · 12 月 1 日', 'S-01:直接讲解')}<div class="muted">长按可重命名、删除</div><div class="q">Q3：只保留对话历史，错题本和复习不再单独做历史页</div>`,
+  搜索无结果: () => `${inp('牛顿')}<div class="center muted" style="margin-top:40px">没有找到相关对话</div>`,
+}});
+def('S-03', { role: 's', title: '拍照', back: true, dark: true, req: 'SCAN-01', states: {
+  拍照答疑: () => cam(0), 作业批改: () => cam(1),
+  格式不支持: () => cam(0) + err('不支持这种图片格式，请换一张 jpg / png 图片'),
+}});
+function cam(m) {
+  return `${seg(['拍照答疑', '作业批改'], m, ['S-03:拍照答疑', 'S-03:作业批改'])}${ph(m ? '取景框：把整页作业放平，对齐四角' : '取景框：对准一道题', 440)}
+  <div class="row between">${go(m ? 'S-05:进行中' : 'S-04:框选', '相册')}${pri(m ? 'S-05:进行中' : 'S-04:框选', '● 拍照')}<span class="muted">闪光灯</span></div>`;
+}
+def('S-04', { role: 's', title: '框选与确认', back: true, req: 'SCAN-02', states: {
+  框选: () => `${ph('照片（可缩放）<br>┏━━━━ 拖动框选一道题 ━━━━┓', 400)}<div class="row between">${go('S-03:拍照答疑', '重拍')}${pri('S-04:确认', '识别')}</div>`,
+  确认: () => `${lab('识别结果（可编辑）')}${inp('如图，在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。', 1)}${ph('框选区域缩略图', 80)}${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${pri('S-01:引导式对话中', '开始讲解', 'block')}`,
+  识别失败: () => `${ph('照片', 300)}${err('没有识别到题目')}${go('S-03:拍照答疑', '重新拍照', 'block')}${go('S-01:空状态', '手动输入', 'block')}`,
+  多道题: () => `${ph('照片：框内有 2 道题', 300)}${err('请只框选一道题')}${go('S-04:框选', '重新框选', 'block')}`,
+}});
+def('S-05', { role: 's', title: '批改中', back: true, req: 'SCAN-03', states: {
+  进行中: () => `${ph('作业原图', 260)}${box(`<div class="ok">✓ 识别题目：共 10 题</div><div>… 识别手写作答（6/10）</div><div class="muted">○ 逐题批改</div>`)}<div class="muted">可以离开这个页面，批改会在后台继续，完成后在“我的 → 批改记录”查看</div>${pri('S-06', '完成（原型）', 'block')}`,
+  照片不清楚: () => `${ph('作业原图', 260)}${err('照片不清楚，没法识别')}<div class="muted">拍摄建议：光线充足、手机与纸面平行、把作业放平</div>${go('S-03:作业批改', '重新拍', 'pri block')}`,
+  不是作业: () => `${ph('一张风景照', 260)}${err('没有识别到题目')}${go('S-03:作业批改', '重新拍', 'pri block')}`,
+  超过20题: () => `${box('⚠ 这页超过 20 道题，只批改了前 20 道，剩下的请分开拍', 'err')}${pri('S-06', '查看结果', 'block')}`,
+}});
+def('S-06', { role: 's', title: '批改结果', back: true, req: 'SCAN-03', states: {
+  默认: () => `<div class="grid3">${stat(7, '对')}${stat(2, '错')}${stat(1, '待确认')}</div>${ph('原图，每题旁标注 ✓ ✗ ?', 170)}
+    ${box(`<b class="bad">✗ 第 3 题</b> <span class="chip">勾股定理</span><div>你的答案：5√2　正确答案：5</div><div class="muted">错因：计算失误</div>${go('S-01:引导式对话中', '讲解这道题', 'sm')}`)}
+    ${box(`<b class="warn">? 第 6 题</b> 没有看清你的作答<div class="row">${go('S-06', '修改识别结果', 'sm')}${go('S-06', '我做对了', 'sm')}${go('S-06', '我做错了', 'sm')}</div>`)}
+    ${box(`<b class="ok">✓ 第 1 题</b> ……`)}${pri('S-13', '把 2 道错题加入错题本', 'block')}`,
+}});
+def('S-07', { role: 's', title: '批改记录', back: true, req: 'SCAN-04', states: {
+  默认: () => li('12 月 3 日 · 数学', '10 题 · 对 7 · 错 2', 'S-06') + li('12 月 1 日 · 物理', '8 题 · 对 8', 'S-06'),
+  空: () => `<div class="center muted" style="margin-top:60px">还没有批改记录<br>${go('S-03:作业批改', '拍一份作业试试', 'sm')}</div>`,
+}});
+def('S-08', { role: 's', title: '今日', tab: 'today', req: 'HOME', states: {
+  有任务: () => `<div class="muted">12 月 3 日 星期三</div>${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}
+    ${h('今日任务 2/4')}${li('● 作业 · 二次根式练习', '<span class="bad">今晚 20:00 截止</span> · 八年级 3 班', 'S-10:未提交')}${li('● 复习 · 6 道题到期', '去复习', 'S-17:正面')}${li('○ 推荐 · 勾股定理（掌握度 48）', '去练习', 'S-19')}${li('✓ 作业 · Unit 3 阅读', '已提交', 'S-10:已提交')}
+    ${box(`<div class="row between"><b>本周学情</b>${ico('S-23', '查看')}</div><div>作答 86 题 · 正确率 74% · 连续 5 天</div><div class="muted">最弱：勾股定理 48 · 浮力 52 · 定语从句 55</div>`)}
+    <div class="center muted">“学习不是填满容器，而是让思考发生。”</div><div class="q">由旧“学习计划”页改造；Q7：作业并入本 Tab</div>`,
+  全部完成: () => `<div class="muted">12 月 3 日 星期三</div>${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}<div class="center" style="margin:40px 0"><div class="big">今日任务已完成</div><div class="muted">明天有 4 道题要复习</div></div>${go('S-19', '再练一组', 'block')}`,
+}});
+def('S-09', { role: 's', title: '全部作业', tab: 'today', webTab: 'hw', req: 'HW-02', states: {
+  有作业: () => `${S.end === 'sw' ? '' : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}${seg(['待完成 1', '已提交 1', '已批改 5'], 0)}${chips(['全部班级▾'])}
+    ${li('二次根式练习', '八年级 3 班 · 数学 · 今晚 20:00 截止', 'S-10:未提交')}${li('Unit 3 阅读', '八年级 3 班 · 英语 · 已提交 待批改', 'S-10:已提交')}${li('浮力小测', '八年级 3 班 · 物理 · 已批改 86 分', 'S-10:已发布')}`,
+  未加入班级: () => `${S.end === 'sw' ? '' : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}<div class="center muted" style="margin-top:60px">你还没有加入班级<br>加入老师的班级后，作业会出现在这里</div>${pri('S-26:输入', '输入邀请码加入班级', 'block')}`,
+}});
+const hwHead = `<b>二次根式练习</b><div class="muted">八年级 3 班 · 数学 · 李老师</div><div>截止：今晚 20:00（还剩 3 小时）</div><div class="muted">共 12 题 · 提交方式：在线或拍照 · 允许迟交</div>`;
+def('S-10', { role: 's', title: '作业详情', back: true, req: 'HW-03', states: {
+  未提交: () => box(hwHead) + `<div class="grid2">${pri('S-20:选择题', '在线作答')}${go('S-11:预检有问题', '拍照提交')}</div><div class="muted">有草稿时显示“继续作答”</div>`,
+  已提交: () => box(hwHead) + box('已提交 18:02 · 批改中<div class="muted">截止前可以重新提交，以最后一次为准</div>', 'gray') + go('S-11:预检有问题', '重新提交', 'block'),
+  复核中: () => box(hwHead) + box('老师正在复核，暂时不能重新提交', 'gray'),
+  已发布: () => box(hwHead) + box('<div class="big">86 / 100</div><div class="muted">老师已发布批改结果</div>') + pri('S-12', '查看批改结果', 'block'),
+  已截止: () => box(hwHead.replace('今晚 20:00（还剩 3 小时）', '已截止').replace('允许迟交', '不允许迟交')) + err('作业已截止，不能再提交'),
+}});
+def('S-11', { role: 's', title: '拍照提交', back: true, req: 'HW-03', states: {
+  预检有问题: () => `<div class="row">${ph('第 1 页', 90)}${ph('第 2 页', 90)}${go('S-03:作业批改', '+ 拍一页', 'ghost')}</div><div class="muted">可拖动排序，最多 10 页</div>
+    ${h('提交前检查')}<div class="ok">✓ 识别到第 1～12 题</div><div class="warn">! 第 9 题没有识别到作答</div>${go('S-11:预检通过', '重拍第 2 页', 'sm')}${pri('S-10:已提交', '仍然提交', 'block')}`,
+  预检通过: () => `<div class="row">${ph('第 1 页', 90)}${ph('第 2 页', 90)}</div>${h('提交前检查')}<div class="ok">✓ 识别到第 1～12 题，每题都有作答</div>${pri('S-10:已提交', '确认提交', 'block')}`,
+  上传失败: () => `<div class="row">${ph('第 1 页 ✓', 90)}${ph('第 2 页 ✗', 90)}</div>${err('第 2 页上传失败')}${go('S-11:预检通过', '重试第 2 页', 'block')}<div class="muted">已上传成功的页不需要重传</div>`,
+}});
+def('S-12', { role: 's', title: '作业结果', back: true, req: 'GRD-03', states: { 默认: () => `
+  <div class="center"><div class="big">86 / 100</div><div class="muted">浮力小测 · 李老师已批改</div></div>${box('<b>老师评语</b>：整体不错，第 3 题注意受力分析的完整性。', 'gray')}
+  ${li('<span class="ok">✓</span> 第 1 题　5/5', '')}${li('<span class="bad">✗</span> 第 3 题　3/8', '扣分：漏画浮力方向　老师：受力图要完整', 'S-14')}${li('<span class="ok">✓</span> 第 4 题　5/5', '')}
+  <div class="muted">做错的 2 道题已自动加入错题本</div>` }});
+def('S-13', { role: 's', title: '错题本', tab: 'mis', topR: ['S-15', '+ 添加'], req: 'MIS-02', states: {
+  有错题: () => `<div class="center muted">温故，而知新。</div>${box(`<div class="row between"><span>今日待复习 <b>6</b> 道</span>${pri('S-17:正面', '开始复习', 'sm')}</div>`, 'gray')}
+    ${chips(['全部', '数学', '物理', '英语'], 0)} ${chips(['知识点▾', '来源▾', '状态▾'], -1)}
+    ${mcard('数学 · 勾股定理', '已知 Rt△ABC 中……求 AB 的长。', '留意：开方时别忘了化简。', '复习中 · 第 2 次 · 明天复习 · 错 2 次')}
+    ${mcard('物理 · 浮力', '一个木块漂浮在水面上，所受浮力……', '先画受力图再列平衡方程。', '待复习 · 3 天后 · 错 1 次')}
+    ${mcard('英语 · 现在完成时', '“I have lived here ___ three years.”', 'for + 时间段，since + 时间点。', '已掌握')}
+    <div class="q">Q1：错题卡片上去掉了单题掌握度 %，改为显示复习状态</div>`,
+  空: () => `<div class="center muted" style="margin-top:60px">错题本还是空的<br>拍照批改一份作业，做错的题可以一键加入</div>${go('S-03:作业批改', '拍照批改', 'pri block')}`,
+}});
+const mcard = (t, q, tip, s) => box(`<div class="muted">${t}</div><div data-go="S-14" style="cursor:pointer">${q}</div><div class="muted">${tip}</div><div class="muted">${s}</div><div class="row" style="margin-top:4px">${go('S-01:引导式对话中', '讲解', 'sm')}${go('S-20:选择题', '变式练习', 'sm')}</div>`);
+def('S-14', { role: 's', title: '错题详情', back: true, req: 'MIS-03, MIS-04', states: { 默认: () => `
+  <div class="muted">数学 · 勾股定理 · 拍照批改 · 错 2 次</div>${box('在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。')}
+  <div>我的答案：<span class="bad">5√2</span></div><div>正确答案：<span class="ok">5</span></div>${box('<b>解析</b><br>① 确定斜边 AB ② AB² = 9 + 16 ③ AB = 5', 'gray')}
+  ${lab('错因')}${chips(['计算失误▾'], 0)}${lab('笔记')}${inp('写点什么……')}<div class="muted">复习：第 2 次 · 下次 12 月 5 日</div>
+  <div class="grid2">${go('S-01:引导式对话中', '讲解这道题')}${pri('S-20:选择题', '练变式题')}</div><div class="row" style="margin-top:6px">${go('S-13', '标记已掌握', 'sm')}${go('S-13', '移出错题本', 'sm')}</div>` }});
+def('S-15', { role: 's', title: '添加错题', back: true, req: 'MIS-01', states: { 默认: () => `
+  ${seg(['拍照录入', '手动输入'], 0)}${ph('拍照框选题目', 120)}${lab('题目')}${inp('', 1)}${lab('我的答案')}${inp('')}${lab('正确答案')}${inp('')}${lab('学科 / 知识点')}${chips(['数学▾', '选择知识点▾'], -1)}${pri('S-14', '保存', 'block')}` }});
+def('S-16', { role: 's', title: '复习', tab: 'rev', req: 'REV', states: {
+  有到期: () => `<div class="center muted">让知识，留下来。</div>${box(`<div class="big">10</div><div class="muted">今日到期：6 道错题 · 4 张卡片</div>${pri('S-17:正面', '开始复习', 'block')}`)}
+    <div class="grid2">${stat('32', '本周复习次数')}${stat('68%', '记得比例')}${stat('12', '已掌握')}${stat('27', '复习中')}</div>
+    ${h('我的卡片组 <span class="tag">加分</span>')}${li('数学 · 二次根式公式', '8 张', 'S-27')}${li('英语 · 现在完成时', '12 张', 'S-27')}${go('S-27', 'AI 生成卡片', 'sm')}
+    <div class="q">由旧“知识卡片”Tab 改造：错题和卡片在同一个复习队列</div>`,
+  无到期: () => `<div class="center" style="margin:50px 0"><div class="big">今天没有要复习的</div><div class="muted">明天有 4 道题到期</div></div>${go('S-19', '去做一组练习', 'block')}`,
+}});
+def('S-17', { role: 's', title: '今日复习 2 / 10', back: true, req: 'REV-02', states: {
+  正面: () => `${box(`<div class="muted">错题 · 数学 · 勾股定理 · 第 2 次复习</div><div style="margin:30px 0">已知 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。</div><div class="center muted">轻点卡片，查看答案</div>`)}
+    <div class="muted center">不用急着翻面，先给自己一点思考的时间。</div>${inp('（可选）写下你的答案')}${pri('S-17:翻面', '翻面看答案', 'block')}`,
+  翻面: () => `${box(`<div class="muted">答案</div><div class="big">5</div><div>解析：① 确定斜边 ② AB² = 9 + 16 ③ 开方</div>`)}<div class="center">你掌握得怎么样？</div>
+    <div class="grid3">${go('S-17:正面', '忘记')}${go('S-17:正面', '模糊')}${pri('S-18', '记得')}</div><div class="muted center">忘记 → 1 天后 · 模糊 → 保持间隔 · 记得 → 进入下一档</div>`,
+}});
+def('S-18', { role: 's', title: '复习完成', back: true, req: 'REV-03', states: { 默认: () => `
+  <div class="center" style="margin:40px 0"><div class="big">本轮复习完成</div><div class="muted">共复习 10 道</div></div><div class="grid3">${stat(6, '记得')}${stat(3, '模糊')}${stat(1, '忘记')}</div>
+  <div class="center muted" style="margin:12px">明天要复习 4 道</div>${go('S-17:正面', '再来一轮', 'block')}${pri('S-16:有到期', '完成', 'block')}` }});
+def('S-19', { role: 's', title: '练习设置', back: true, req: 'PRC-01', states: {
+  默认: () => `${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${lab('知识点（1～5 个）')}${chips(['勾股定理 ×', '+ 添加'], 0)}${lab('题量')}${seg(['5', '10', '15'], 1)}${lab('难度')}${seg(['基础', '提高', '挑战'], 0)}
+    <div class="muted">优先从题库选题，不够的部分由 AI 生成</div>${pri('S-20:选择题', '开始练习', 'block')}`,
+  生成失败: () => `${err('出题失败，请重试')}<div class="muted">你的设置已保留</div>${pri('S-20:选择题', '重试', 'block')}`,
+}});
+const qhead = `<div class="row between"><span>× 勾股定理练习</span><span>3 / 10</span><span class="muted">05:12</span></div>${bar(30)}`;
+def('S-20', { role: 's', title: '作答', back: true, req: 'PRC-02, HW-03', states: {
+  选择题: () => `${qhead}<div style="margin:14px 0">【单选】直角三角形两直角边为 6 和 8，斜边长为（　）</div>${['A. 9', 'B. 10', 'C. 12', 'D. 14'].map(x => box('○ ' + x)).join('')}
+    <div class="row between" style="margin-top:12px">${go('S-20:选择题', '上一题')}${go('S-20:答题卡', '答题卡')}${go('S-20:解答题', '下一题')}</div>`,
+  解答题: () => `${qhead}<div style="margin:14px 0">【解答】一个梯子长 5 m，底端离墙 3 m，梯子顶端离地多高？写出过程。</div>${inp('输入作答过程……', 1)}${go('S-03:作业批改', '拍照上传手写过程', 'block')}
+    <div class="row between">${go('S-20:选择题', '上一题')}${go('S-20:答题卡', '答题卡')}${pri('S-20:未答提示', '提交')}</div>`,
+  答题卡: () => `${qhead}${h('答题卡')}<div class="grid4">${[...Array(10)].map((_, i) => `<span class="chip ${i < 3 ? 'on' : ''}">${i + 1}</span>`).join('')}</div><div class="muted">已答 3 / 10</div>${pri('S-20:未答提示', '提交')}`,
+  未答提示: () => `${qhead}<div class="modal"><b>还有 7 题没有作答</b><div class="muted">确定现在提交吗？</div><div class="row" style="margin-top:8px">${go('S-20:选择题', '继续作答')}${pri('S-21:默认', '确认提交')}</div></div><div class="muted">在线作业提交后回到作业详情</div>`,
+}});
+def('S-21', { role: 's', title: '练习结果', back: true, req: 'PRC-03', states: {
+  默认: () => `<div class="center"><div class="big">8 / 10</div><div class="muted">正确率 80% · 用时 12 分钟</div></div>${box('勾股定理　掌握度 48 → <b>56</b> ↑', 'gray')}
+    ${li('<span class="ok">✓</span> 第 1 题', '')}${li('<span class="bad">✗</span> 第 4 题', '已加入错题本 · 查看解析', 'S-14')}${li('<span class="bad">✗</span> 第 7 题', '已加入错题本', 'S-14')}${go('S-19', '再练一组', 'block')}`,
+  待判分: () => `<div class="center"><div class="big">7 / 9</div><div class="muted">1 题待判分</div></div>${box('⏳ 第 10 题（解答题）正在判分，完成后自动更新', 'gray')}${li('<span class="ok">✓</span> 第 1 题', '')}`,
+}});
+def('S-22', { role: 's', title: '练习记录', back: true, req: 'PRC-04', states: { 默认: () => li('勾股定理 · 10 题', '12 月 3 日 · 8/10', 'S-21') + li('浮力 · 5 题', '12 月 2 日 · 3/5', 'S-21') }});
+def('S-23', { role: 's', title: '学情画像', back: true, webTab: 'pro', req: 'PRO-02', states: {
+  默认: () => `${chips(['数学', '物理', '英语'], 0)}<div class="row between"><span>平均掌握度 <b>71</b></span><span class="muted">近 4 周 ↑ 6</span></div>${ph('折线：近 4 周掌握度趋势', 80)}
+    ${h('第十七章 勾股定理')}${kp('勾股定理', 48)}${kp('勾股定理的逆定理', 76)}${h('第十六章 二次根式')}${kp('二次根式的乘除', 90)}${kp('二次根式的加减', null)}
+    ${h('薄弱知识点')}<div class="row between"><span>勾股定理 48</span>${go('S-19', '去练习', 'sm')}</div><div class="row between"><span>浮力 52</span>${go('S-19', '去练习', 'sm')}</div>`,
+  数据不足: () => `${chips(['数学', '物理', '英语'], 1)}<div class="center muted" style="margin-top:50px">物理的作答还太少，暂时没法分析<br>每个知识点至少作答 3 次后显示掌握度</div>${go('S-19', '去做一组练习', 'pri block')}`,
+}});
+def('S-24', { role: 's', title: '知识点详情', back: true, req: 'PRO-03', states: { 默认: () => `
+  <b>勾股定理</b><div class="muted">数学 · 八年级下 · 第十七章</div>${box('直角三角形两直角边的平方和等于斜边的平方：a² + b² = c²', 'gray')}
+  <div class="row between"><span>掌握度 48 · 薄弱</span><span class="muted">最近 10 次作答 对 4</span></div>${bar(48)}
+  ${h('最近作答')}<div class="muted">✗ ✓ ✗ ✗ ✓ ✓ ✗ ✗ ✓ ✗</div>${h('相关错题')}${li('已知 Rt△ABC 中……求 AB', '复习中', 'S-14')}
+  <div class="grid2">${pri('S-19', '去练习')}${go('S-01:直接讲解', '问 AI 讲讲')}</div>` }});
+def('S-25', { role: 's', title: '我的班级', back: true, req: 'CLS-04', states: {
+  有班级: () => box(`<b>八年级 3 班 · 数学</b><div class="muted">李老师 · 班级内姓名：张小雅</div><div class="row">${go('S-09', '查看作业', 'sm')}${go('S-25:空', '退出班级', 'sm')}</div>`) + box(`<b>八年级 3 班 · 物理</b><div class="muted">王老师</div>`) + go('S-26:输入', '+ 加入新班级', 'block'),
+  空: () => `<div class="center muted" style="margin-top:60px">还没有加入班级</div>${pri('S-26:输入', '输入邀请码加入', 'block')}`,
+}});
+def('S-26', { role: 's', title: '加入班级', back: true, req: 'CLS-02', states: {
+  输入: () => `${lab('输入老师给你的 6 位邀请码')}<div class="row">${'□□□□□□'.split('').map(() => ph('', 44)).join('')}</div>${pri('S-26:确认班级', '下一步', 'block')}`,
+  确认班级: () => `${box('<b>八年级 3 班 · 数学</b><div class="muted">李老师 · 42 名同学</div>')}${lab('你在班里的名字（真实姓名，方便老师认出你）')}${inp('张小雅')}${pri('S-25:有班级', '确认加入', 'block')}`,
+  年级不一致: () => `${box('<b>九年级 1 班 · 数学</b><div class="muted">李老师</div>')}${box('这个班级是九年级，你填的是八年级，确定要加入吗？', 'err')}${lab('班级内姓名')}${inp('')}${pri('S-25:有班级', '仍然加入', 'block')}`,
+  邀请码无效: () => `${lab('邀请码')}${inp('AB12CD')}${err('邀请码无效，请向老师确认')}`,
+  已在班中: () => `${lab('邀请码')}${inp('K7M2Q9')}${err('你已经在这个班级中')}`,
+}});
+def('S-27', { role: 's', title: '卡片组', back: true, bonus: true, req: 'PRC-06（加分）', states: { 默认: () => `
+  ${h('AI 生成卡片')}${inp('输入范围，例如：英语 现在完成时 概念与例句')}${pri('S-27', '生成', 'sm')}<div class="muted">每次生成保存为新卡组，不覆盖已有卡组</div>
+  <div class="q">Q4：旧设计生成后会替换卡组并重置进度，按建议改为保存成新卡组</div>
+  ${h('我的卡片组')}${li('数学 · 二次根式公式', '8 张 · 3 张今日到期', 'S-17:正面')}${li('英语 · 现在完成时', '12 张', 'S-17:正面')}${go('S-27', '+ 手动建卡', 'block')}` }});
+def('S-28', { role: 's', title: '口语对练', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${chips(['自我介绍', '问路', '周末计划'], 0)}${ph('对话气泡', 300)}<div class="center">${pri('S-28', '按住说话')}</div>` }});
+def('S-29', { role: 's', title: '作文批改', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${seg(['拍照', '输入'], 0)}${ph('作文照片', 200)}${pri('S-29', '开始批改', 'block')}<div class="muted">结果：内容 / 结构 / 语言 / 书写 四项得分 + 修改建议 + 范文</div>` }});
+
+// ── 教师 ──
+def('T-01', { role: 't', title: '工作台', tab: 'tw', req: '—', states: { 默认: () => `
+  <div class="row between"><b>李老师，下午好</b>${ico('C-08', '铃铛 2')}</div>
+  <div class="row">${pri('T-06:选题', '+ 布置作业')}${go('T-11', '+ 写教案')}${go('T-16', '+ 组卷')}</div>
+  ${h('待复核')}${tbl(['作业', '班级', '已交', '待复核'], [['二次根式练习', '八(3)', '38/42', '35'], ['浮力小测', '八(5)', '40/40', '4']], ['T-07:批改复核', 'T-07:批改复核'])}
+  ${h('进行中的作业')}${tbl(['作业', '班级', '截止', '已交'], [['Unit 3 阅读', '八(3)', '12/5 20:00', '20/42']], ['T-07:提交情况'])}
+  ${h('班级学情速览')}${box(`<div class="row between"><span>八(3) 数学 · 平均掌握度 71 · 最弱：勾股定理</span>${ico('T-18:默认', '查看')}</div>`)}` }});
+def('T-02', { role: 't', title: '班级', tab: 'cls', req: 'CLS-03', states: {
+  默认: () => `<div class="row between"><span></span>${pri('T-03:填写', '+ 新建班级')}</div><div class="grid3">${['八年级 3 班 · 数学|42 人 · 邀请码 K7M2Q9', '八年级 5 班 · 数学|40 人 · 邀请码 P3X8RT', '七年级 2 班 · 数学|38 人 · 邀请码 H4N6WE'].map(x => box(`<b>${x.split('|')[0]}</b><div class="muted">${x.split('|')[1]}</div>${go('T-04', '进入', 'sm')}`)).join('')}</div><div class="muted">已归档 1 个班级 ▸</div>`,
+  空: () => `<div class="center muted" style="margin-top:80px">还没有班级<br>创建班级后，把邀请码发给学生即可加入</div><div class="center">${pri('T-03:填写', '+ 新建班级')}</div>`,
+}});
+def('T-03', { role: 't', title: '新建班级', back: true, req: 'CLS-01', states: {
+  填写: () => `<div style="max-width:420px">${lab('班级名称')}${inp('例如：八年级 3 班')}${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}<div class="muted">一个班级只对应一个学科</div>${pri('T-03:创建成功', '创建', 'block')}</div>`,
+  创建成功: () => `<div class="center" style="margin-top:40px"><div class="muted">八年级 3 班 · 数学 创建成功</div><div class="big" style="font-size:40px;letter-spacing:8px">K7M2Q9</div><div class="muted">把邀请码发给学生，在 App“我的 → 我的班级”中输入即可加入</div><div class="row" style="justify-content:center;margin-top:10px">${go('T-03:创建成功', '复制邀请码')}${pri('T-04', '进入班级')}</div></div>`,
+}});
+def('T-04', { role: 't', title: '八年级 3 班 · 数学', back: true, req: 'CLS-03', states: { 默认: () => `
+  <div class="row between"><span>邀请码 <b>K7M2Q9</b> ${go('T-04', '复制', 'sm')}${go('T-04', '重置', 'sm')}</span><span>${go('T-18:默认', '班级学情', 'sm')}${go('T-04', '归档班级', 'sm')}</span></div>
+  ${h('学生 42 人')}${tbl(['班级内姓名', '加入时间', '作业完成率', '操作'], [['张小雅', '11/20', '100%', '改名 · 移出 · 重置密码'], ['王一', '11/20', '92%', '…'], ['张三', '11/21', '60%', '…']], ['T-19', 'T-19', 'T-19'])}
+  ${h('作业')}${tbl(['作业', '截止', '状态'], [['二次根式练习', '12/3', '待复核'], ['勾股定理小测', '11/28', '已发布']], ['T-07:提交情况', 'T-07:作业分析'])}` }});
+def('T-05', { role: 't', title: '作业', tab: 'hw', req: 'HW-04', states: { 默认: () => `
+  <div class="row between"><span>${chips(['全部班级▾', '全部状态▾'], -1)}</span>${pri('T-06:选题', '+ 布置作业')}</div>
+  ${tbl(['作业', '班级', '截止', '已交', '状态', '平均分'], [['二次根式练习', '八(3)', '12/3 20:00', '38/42', '待复核', '—'], ['Unit 3 阅读', '八(3)', '12/5 20:00', '20/42', '进行中', '—'], ['勾股定理小测', '八(3) 八(5)', '11/28', '80/82', '已发布', '78']], ['T-07:批改复核', 'T-07:提交情况', 'T-07:作业分析'])}` }});
+const step3 = n => `<div class="row">${['① 选题', '② 设置', '③ 预览'].map((x, i) => `<span class="chip ${i === n ? 'on' : ''}">${x}</span>`).join('')}</div>`;
+def('T-06', { role: 't', title: '布置作业', back: true, req: 'HW-01', states: {
+  选题: () => `${step3(0)}${h('题目来源')}${box('● 选一份试卷　' + chips(['二次根式单元卷▾']))}${box('○ 从题库挑题')}${box('○ AI 按知识点出题')}<div class="muted">最多 30 道题</div>${pri('T-06:设置', '下一步')}`,
+  设置: () => `${step3(1)}<div style="max-width:520px">${lab('标题')}${inp('二次根式练习')}${lab('布置给（同一学科，可多选）')}${chips(['☑ 八(3)', '☐ 八(5)'], 0)}${lab('截止时间（至少 1 小时后）')}${inp('2026-12-05 20:00')}${lab('提交方式')}${seg(['在线作答', '拍照上传', '两者都可以'], 2)}${lab('允许迟交')}${chips(['是', '否'], 0)}${lab('答案和解析何时可见')}${seg(['发布批改结果后', '截止后'], 0)}</div><div class="row">${go('T-06:选题', '上一步')}${pri('T-06:预览', '下一步')}</div>`,
+  预览: () => `${step3(2)}${box('<b>二次根式练习</b> · 八(3) · 截止 12/5 20:00 · 两者都可以 · 允许迟交<div class="muted">共 12 题 · 100 分</div>')}${ph('题目预览（学生看到的样子）', 220)}<div class="muted">发布后不能修改题目，只能改截止时间或撤回（有人提交后不能撤回）</div><div class="row">${go('T-06:设置', '上一步')}${pri('T-07:提交情况', '发布')}</div>`,
+}});
+const hwTabs = n => `<div class="muted">二次根式练习 · 八(3) · 截止 12/5 20:00</div>${seg(['提交情况', '批改复核', '作业分析'], n, ['T-07:提交情况', 'T-07:批改复核', 'T-07:作业分析'])}`;
+def('T-07', { role: 't', title: '作业详情', back: true, req: 'GRD-02, ANA-03', states: {
+  提交情况: () => `${hwTabs(0)}<div class="grid4">${stat(38, '已交')}${stat(2, '迟交')}${stat(2, '未交')}${stat('—', '平均分')}</div>${h('未交')}<div>张三、王五 ${go('T-07', '复制名单', 'sm')}</div>${h('已交')}${tbl(['姓名', '提交时间', '方式', '状态'], [['张小雅', '12/3 18:02', '拍照', '待复核'], ['王一', '12/3 17:40', '在线', '待复核'], ['李二', '12/4 09:10', '拍照', '迟交 · 待复核']], ['T-08', 'T-08', 'T-08'])}`,
+  批改复核: () => `${hwTabs(1)}${box('AI 已批改 38 份 · <b class="warn">有疑问 11 题次</b> · 需人工批改 1 题次')}<div class="row">${pri('T-09', '先看有疑问的题')}${go('T-08', '逐个学生复核')}${go('T-07:批改复核', '全部发布')}</div>
+    ${tbl(['姓名', 'AI 得分', '有疑问', '状态'], [['张小雅', '86', '1', '待复核'], ['王一', '92', '0', '已复核'], ['李二', '64', '3', '待复核']], ['T-08', 'T-08', 'T-08'])}`,
+  作业分析: () => `${hwTabs(2)}<div class="grid2">${ph('每题正确率柱状图', 180)}${ph('得分分布', 180)}</div>${h('常见错误答案')}${tbl(['题号', '正确率', '常见错误'], [['第 3 题', '38%', '5√2（14 人）· 7（5 人）'], ['第 7 题', '55%', '漏写 ±（9 人）']])}`,
+}});
+def('T-08', { role: 't', title: '逐生复核', back: true, req: 'GRD-02', states: { 默认: () => `
+  <div style="display:grid;grid-template-columns:140px 1fr 300px;gap:10px;height:620px">
+  <div style="border-right:1px solid #ddd">${['✓ 王一', '● 张小雅', '○ 李二', '○ 赵四', '○ ……'].map(x => `<div class="li">${x}</div>`).join('')}</div>
+  <div><div class="muted">张小雅 · 第 2 / 38 个 · 拍照提交</div>${ph('作答原图（可缩放、翻页）', 560)}</div>
+  <div style="overflow:auto">${h('AI 判分')}<div>第 1 题 <span class="ok">✓</span> 5/5</div><div>第 2 题 <span class="bad">✗</span> 0/5</div>
+  ${box(`<b class="warn">第 3 题 ! 3/8 置信度低</b><div class="muted">扣分：第二步漏开方</div>${lab('得分')}${inp('3')}${lab('评语')}${inp('')}`, 'err')}
+  <div>……</div>${lab('总分')}<b>86</b>${lab('整体评语')}${inp('', 1)}<div class="row">${go('T-08', '上一个')}${pri('T-08', '确认并下一个')}</div>${go('T-07:批改复核', '发布该生结果', 'sm')}</div></div>` }});
+def('T-09', { role: 't', title: '按题复核 · 第 3 题', back: true, req: 'GRD-02', states: { 默认: () => `
+  ${box('第 3 题：在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB。（8 分）　标准答案：5', 'gray')}<div class="muted">全班 AI 拿不准的作答 6 份</div>
+  <div class="grid3">${['张小雅 · AI 3 分', '李二 · AI 4 分', '赵四 · AI 0 分', '钱五 · AI 6 分', '孙六 · 需人工批改', '周七 · AI 2 分'].map(x => box(`${ph('作答截图', 80)}<div>${x}</div><div class="row">${inp('得分')}${go('T-09', '确认', 'sm')}</div>`)).join('')}</div>
+  <div class="row">${pri('T-09', '全部按 AI 分确认')}${go('T-07:批改复核', '下一题')}</div>` }});
+def('T-10', { role: 't', title: '备课', tab: 'prep', req: 'PREP-05', states: {
+  教案: () => `${seg(['教案', 'PPT'], 0, ['', 'T-10:PPT'])}<div class="row between">${inp('搜索课题')}${pri('T-11', '+ 新建教案')}</div>${tbl(['课题', '学科年级', '课时', '更新'], [['17.1 勾股定理（第 1 课时）', '数学 八下', '1', '今天'], ['16.2 二次根式的乘除', '数学 八下', '2', '11/28']], ['T-12:编辑', 'T-12:编辑'])}`,
+  PPT: () => `${seg(['教案', 'PPT'], 1, ['T-10:教案', ''])}<div class="row between">${inp('搜索课题')}${pri('T-13', '+ 新建 PPT')}</div><div class="grid4">${['勾股定理 · 15 页', '二次根式 · 12 页'].map(x => box(ph('封面', 80) + `<div data-go="T-14:完成" style="cursor:pointer">${x}</div>`)).join('')}</div>`,
+}});
+def('T-11', { role: 't', title: '新建教案', back: true, webOnly: true, req: 'PREP-01', states: { 默认: () => `<div style="max-width:560px">
+  ${lab('学科 / 年级')}${chips(['数学▾', '八年级下▾'], -1)}${lab('课题（从知识点体系选，或手动输入）')}${inp('第十七章 › 17.1 勾股定理')}${lab('课时数')}${seg(['1', '2', '3'], 0)}${lab('课型')}${seg(['新授', '复习', '习题', '实验'], 0)}
+  ${lab('关联班级（可选，AI 会参考该班学情）')}${chips(['八(3)▾'])}${lab('补充要求（≤ 300 字）')}${inp('例如：多用生活中的例子引入', 1)}${pri('T-12:生成中', '生成教案', 'block')}</div>` }});
+const planBody = `<b>一、教学目标</b><div>1. 理解勾股定理的内容……</div><b>二、重点难点</b><div>重点：勾股定理的应用（参考八(3)学情：勾股定理掌握度 48）</div><b>三、教学过程</b><div>环节 1 情境导入（5 分钟）……</div>`;
+def('T-12', { role: 't', title: '17.1 勾股定理（第 1 课时）', back: true, webOnly: 'edit', req: 'PREP-02, PREP-03', states: {
+  生成中: () => `<div class="muted">正在生成……（流式展示，约 1 分钟）</div>${box(planBody + '<div class="muted">▍</div>')}`,
+  编辑: () => `<div class="row between"><span class="muted">已自动保存</span><span>${go('T-12:编辑', '导出 Word')}${pri('T-13', '生成 PPT')}${go('T-12:编辑', '另存一份')}</span></div>${box(planBody + `<div class="modal" style="width:320px">选中文字后浮出：${go('T-12:编辑', 'AI 扩写', 'sm')}${go('T-12:编辑', 'AI 精简', 'sm')}${go('T-12:编辑', '换一种讲法', 'sm')}</div><b>四、板书设计</b><div>……</div>`)}`,
+  生成中断: () => `${box(planBody)}${err('生成中断，已保留生成的部分')}<div class="row">${go('T-12:编辑', '继续生成')}${go('T-12:生成中', '重新生成')}</div>`,
+}});
+def('T-13', { role: 't', title: '新建 PPT', back: true, webOnly: true, req: 'PREP-04', states: { 默认: () => `<div style="max-width:560px">
+  ${lab('来源')}${seg(['从教案生成', '按课题生成'], 0)}${chips(['17.1 勾股定理（第 1 课时）▾'])}${lab('页数（10～25）')}${inp('15')}${lab('模板')}<div class="grid3">${ph('模板 1', 70)}${ph('模板 2', 70)}${ph('模板 3', 70)}</div>${pri('T-14:生成中', '生成 PPT', 'block')}</div>` }});
+def('T-14', { role: 't', title: '勾股定理 PPT', back: true, webOnly: 'edit', req: 'PREP-04', states: {
+  生成中: () => `${box('正在生成第 8 / 15 页（约 2 分钟），可以离开页面' + bar(53))}<div style="display:grid;grid-template-columns:110px 1fr;gap:10px">${'<div>' + [1, 2, 3, 4, 5, 6, 7].map(i => ph(i, 56)).join('') + '</div>'}${ph('已生成的页可以先看', 400)}</div>`,
+  完成: () => `<div class="row between"><span></span>${pri('T-14:完成', '导出 pptx')}</div><div style="display:grid;grid-template-columns:110px 1fr;gap:10px"><div>${[1, 2, '▶3', 4, 5].map(i => ph(i, 56)).join('')}${go('T-14:完成', '+ 页', 'sm')}</div><div>${ph('第 3 页：勾股定理的发现<br>· 毕达哥拉斯的故事 · ……', 380)}<div class="row">${go('T-14:完成', '编辑文字')}${go('T-14:完成', 'AI 重写本页')}${go('T-14:完成', '删除本页')}</div><div class="muted">缩略图可以拖动排序</div></div></div>`,
+  失败: () => `${err('PPT 生成失败')}<div class="muted">你填写的参数已保留</div>${pri('T-14:生成中', '重试')}`,
+}});
+def('T-15', { role: 't', title: '组卷', tab: 'paper', req: 'PAPER-02', states: { 默认: () => `
+  <div class="row between"><span>${go('T-22', '个人题库', 'sm')}<span class="tag">加分</span></span>${pri('T-16', '+ 新建试卷')}</div>
+  ${tbl(['试卷', '学科年级', '题数', '总分', '更新'], [['二次根式单元卷', '数学 八下', '18', '100', '今天'], ['勾股定理小测', '数学 八下', '10', '50', '11/27']], ['T-17:默认', 'T-17:默认'])}` }});
+def('T-16', { role: 't', title: '组卷设置', back: true, webOnly: true, req: 'PAPER-01', states: {
+  默认: () => `<div style="max-width:620px">${lab('学科 / 年级')}${chips(['数学▾', '八年级下▾'], -1)}${lab('知识点范围')}${chips(['二次根式 ×', '二次根式的乘除 ×', '二次根式的加减 ×', '+ 添加'], -1)}
+    ${lab('题型和题量')}${tbl(['题型', '题量', '每题分值'], [['单选', '10', '3'], ['填空', '5', '4'], ['解答', '3', '—']])}${lab('难度分布')}${inp('基础 60% · 提高 30% · 挑战 10%')}${lab('总分')}${inp('100')}${pri('T-17:默认', '生成试卷（约 1 分钟）', 'block')}</div>`,
+  部分失败: () => `${err('“二次根式的加减”题目不足，AI 生成失败 2 题；已生成其余部分')}${pri('T-17:检查提示', '进入试卷，手动补题')}`,
+}});
+def('T-17', { role: 't', title: '二次根式单元卷', back: true, webOnly: 'edit', req: 'PAPER-01, PAPER-02', states: {
+  默认: () => paper('<span class="ok">总分 100 ✓　知识点覆盖 3/3 ✓</span>'),
+  检查提示: () => paper('<span class="warn">总分 92，与设置的 100 不符　·　“二次根式的加减”未覆盖</span>'),
+}});
+function paper(check) {
+  return `<div class="row between">${check}<span>${go('T-17', '导出学生版')}${go('T-17', '导出教师版')}${pri('T-06:设置', '布置为作业')}</span></div>
+  ${h('一、单选题（每题 3 分，共 30 分）')}${[1, 2].map(i => box(`<div class="row between"><span>${i}. …… ${i === 1 ? '<span class="tag">AI 生成</span>' : ''}</span><span>${go('T-17', '换一题', 'sm')}${go('T-17', '编辑', 'sm')} 分值 3</span></div>`)).join('')}
+  ${h('二、填空题 ……')}${h('三、解答题 ……')}${go('T-17', '+ 添加题目', 'ghost')}<span class="muted">　拖动可排序</span>`;
+}
+def('T-18', { role: 't', title: '学情', tab: 'ana', req: 'ANA-01', states: {
+  默认: () => `<div class="row between"><span>${chips(['八(3) 数学▾', '最近一个月▾'], -1)}</span>${pri('T-20:生成中', '生成学情报告')}</div>
+    <div class="grid3">${stat('95%', '作业完成率')}${stat(78, '平均分')}${stat('74%', '正确率')}</div>
+    ${h('知识点热力图')}<div class="heat">${heatRow('二次根式', [92, 88, 85, 70, 60, 75])}${heatRow('勾股定理', [48, 30, 55, 62, 80, 41])}${heatRow('平行四边形', [70, 66, 90, 84, 77, 58])}</div><div class="muted">颜色越深掌握度越低 · 点击格子查看知识点</div>
+    <div class="grid2"><div>${h('高频错题 TOP10')}${tbl(['题目', '错误率'], [['第 3 题 勾股定理求边长', '62%'], ['第 7 题 二次根式化简', '45%']], ['T-07:作业分析', 'T-07:作业分析'])}</div><div>${h('需要关注的学生')}${tbl(['姓名', '掌握度', '最弱'], [['张三', '45', '勾股定理'], ['王五', '51', '二次根式']], ['T-19', 'T-19'])}</div></div>
+    <div class="q">只统计本班作业数据；学生的自主学习对老师不可见</div>`,
+  数据不足: () => `${chips(['七(2) 数学▾'], -1)}<div class="center muted" style="margin-top:80px">这个班级还没有作业数据<br>布置并批改一次作业后，这里会显示学情</div><div class="center">${pri('T-06:选题', '去布置作业')}</div>`,
+}});
+def('T-19', { role: 't', title: '张小雅 · 八(3) 数学', back: true, req: 'ANA-02', states: { 默认: () => `
+  <div class="grid3">${stat(82, '平均分')}${stat('100%', '完成率')}${stat(71, '平均掌握度')}</div><div class="grid2">${ph('成绩趋势（每次作业）', 160)}${ph('错因分布：计算失误 45% · 概念不清 30% · …', 160)}</div>
+  ${h('知识点掌握度（基于本班作业）')}${kp('勾股定理', 48, 'T-19')}${kp('二次根式的乘除', 90, 'T-19')}${go('T-20:生成中', '生成该生学情报告')}` }});
+def('T-20', { role: 't', title: '学情报告 · 八(3) 数学', back: true, req: 'ANA-04', states: {
+  生成中: () => `${box('① 统计数据 ✓<br>② AI 解读与建议 … 生成中')}`,
+  编辑: () => `<div class="row between"><span class="muted">报告中的数字来自统计数据，AI 只做解读</span><span>${go('T-20:编辑', '导出 Word')}${go('T-20:编辑', '导出 PDF')}</span></div>
+    ${box('<b>一、整体情况</b><div>完成率 95%，平均分 78……</div><b>二、主要问题</b><div>勾股定理平均掌握度 48，62% 的学生在第 3 题出错……</div><b>三、教学建议</b><div>下节课用 10 分钟复习勾股定理的斜边判断；张三、王五建议个别辅导……</div>')}${go('T-11', '根据报告写下节课教案')}`,
+  解读失败: () => `${box('<b>统计数据</b><div>完成率 95% · 平均分 78 · ……</div>')}${err('AI 解读生成失败，统计部分已保留')}${pri('T-20:生成中', '重试解读')}`,
+}});
+def('T-21', { role: 't', title: 'AI 助教', tab: 'ai', req: 'ASK-07', composer: 't', states: {
+  空状态: () => `<div class="center" style="margin:60px 0 20px"><div class="big">今天想准备什么？</div></div>${go('T-21:对话中', '勾股定理有哪几种证明方法适合初二学生？', 'block')}${go('T-21:对话中', '学生总把斜边找错，怎么讲？', 'block')}`,
+  对话中: () => `<div class="bubble me">学生总把斜边找错，怎么讲？</div><div class="bubble ai">${steps([['常见原因', '学生习惯把最长的边当斜边，忽略直角位置……'], ['讲法建议', '先让学生标出直角，再指出直角对边……'], ['课堂练习', '给出 3 道直角位置变化的题……']], 3)}</div><div class="q">和学生端同一个对话引擎；没有引导式和“加入错题本”</div>`,
+}});
+def('T-22', { role: 't', title: '个人题库', back: true, bonus: true, req: 'PAPER-03（加分）', states: { 默认: () => `${chips(['数学▾', '知识点▾', '题型▾'], -1)}${go('T-22', '+ 录入题目')}${go('T-22', '拍照录入')}${tbl(['题目', '知识点', '题型', '难度'], [['直角三角形两直角边为 6 和 8……', '勾股定理', '单选', '2'], ['化简 √12 + √27', '二次根式的加减', '填空', '3']])}` }});
+
+// ───────────── 外壳与导航 ─────────────
+const NAV = {
+  sp: [['chat', '对话', 'S-01'], ['today', '今日', 'S-08'], ['mis', '错题本', 'S-13'], ['rev', '复习', 'S-16'], ['me', '我的', 'C-04']],
+  sw: [['chat', '对话', 'S-01'], ['today', '今日任务', 'S-08'], ['hw', '作业', 'S-09'], ['mis', '错题本', 'S-13'], ['rev', '复习', 'S-16'], ['pro', '学情', 'S-23'], ['me', '我的', 'C-04']],
+  tw: [['tw', '工作台', 'T-01'], ['cls', '班级', 'T-02'], ['hw', '作业', 'T-05'], ['prep', '备课', 'T-10'], ['paper', '组卷', 'T-15'], ['ana', '学情', 'T-18'], ['ai', 'AI 助教', 'T-21'], ['me', '我的', 'C-04']],
+  tp: [['tw', '工作台', 'T-01'], ['hw', '作业', 'T-05'], ['ana', '学情', 'T-18'], ['me', '我的', 'C-04']],
+};
+const ENDS = { sp: '学生 · 手机', sw: '学生 · Web', tw: '教师 · Web', tp: '教师 · 手机' };
+const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's' };
+const isPhone = () => S.end === 'sp' || S.end === 'tp';
+
+function tabOf(p) {
+  if (S.end === 'sw' && p.webTab) return p.webTab;
+  return p.tab;
+}
+function body(p) {
+  const st = S.state && p.states[S.state] ? S.state : Object.keys(p.states)[0];
+  S.state = st;
+  if (S.end === 'tp' && p.webOnly === true) return `<div class="center" style="margin-top:80px"><div class="big">请在电脑上打开</div><div class="muted">新建备课和组卷请使用雅典娜 Web 端</div></div>${go('T-01', '返回工作台', 'block')}`;
+  const ro = S.end === 'tp' && p.webOnly === 'edit' ? box('手机上只能查看和导出，编辑请使用 Web 端', 'gray') : '';
+  return ro + p.states[st]();
+}
+function render() {
+  const p = P[S.page];
+  const stage = document.getElementById('stage');
+  const expbar = S.exp && !p.bare ? `<div class="expbar"><span>体验模式</span><button data-switch="1">切换到${S.role === 's' ? '老师' : '学生'}视角</button></div>` : '';
+  const top = p.bare ? '' : `<div class="topbar">${p.back ? '<button class="ico" data-back="1">← 返回</button>' : p.topL ? ico(...p.topL) : ''}<span class="t">${p.title}</span>${p.topR ? ico(...p.topR) : ''}${!p.back && isPhone() ? ico('C-08', '铃铛') : ''}</div>`;
+  const comp = p.composer === true ? composer() : p.composer === 't' ? composer(false).replace(/S-01:引导式对话中/g, 'T-21:对话中').replace(/S-03:拍照答疑/g, 'T-21') : '';
+  const cur = tabOf(p);
+  if (isPhone() || p.bare) {
+    const tabs = !p.bare && cur && isPhone() ? `<div class="tabs">${NAV[S.end].map(n => `<button class="${n[0] === cur ? 'on' : ''}" data-go="${n[2]}">${n[1]}</button>`).join('')}</div>` : '';
+    const cls = isPhone() ? 'phone' : 'phone';
+    stage.innerHTML = `<div class="${cls}">${expbar}${top}<div class="${p.bare ? 'full' : 'content'}">${body(p)}</div>${comp}${tabs}</div>`;
+  } else {
+    const recent = S.end === 'sw' ? `<div class="sub">最近对话</div><div class="recent" data-go="S-01:引导式对话中">勾股定理求边长</div><div class="recent" data-go="S-01:直接讲解">浮力的方向</div>` : '';
+    const newChat = S.end === 'sw' ? go('S-01:空状态', '+ 开启新对话', 'block') : '';
+    const badges = { today: 2, hw: 1, mis: 6, rev: 10 };
+    stage.innerHTML = `<div class="web"><div class="side"><div class="logo">雅典娜</div>${newChat}${NAV[S.end].map(n => `<button class="nav ${n[0] === cur ? 'on' : ''}" data-go="${n[2]}"><span>${n[1]}</span><span>${S.end === 'sw' && badges[n[0]] || ''}</span></button>`).join('')}${recent}</div>
+      <div class="main">${expbar}${top}<div class="content">${body(p)}</div>${comp}</div></div>`;
+  }
+  renderIndex(); renderNotes();
+}
+function renderIndex() {
+  const groups = [['公共', 'c'], ['学生', 's'], ['教师', 't']];
+  document.getElementById('index').innerHTML = `<h1>雅典娜 · 低保真原型</h1>
+    <div class="ends">${Object.keys(ENDS).map(k => `<button class="${S.end === k ? 'on' : ''}" data-end="${k}">${ENDS[k]}</button>`).join('')}</div>
+    <label class="exp"><input type="checkbox" id="expck" ${S.exp ? 'checked' : ''}> 体验模式（显示视角切换条）</label>
+    ${groups.filter(g => g[1] === 'c' || g[1] === S.role).map(g => `<div class="group">${g[0]}</div>` + Object.values(P).filter(p => p.role === g[1]).map(p => `<button class="pl ${p.id === S.page ? 'on' : ''}" data-go="${p.id}"><span class="id">${p.id}</span>${p.title}${p.bonus ? ' <span class="tag">加分</span>' : ''}</button>`).join('')).join('')}`;
+}
+function renderNotes() {
+  const p = P[S.page];
+  const outs = [...new Set([...document.querySelectorAll('#stage [data-go]')].map(e => e.dataset.go.split(':')[0]).filter(x => x !== p.id && P[x]))];
+  document.getElementById('notes').innerHTML = `<h2>${p.id} ${p.title}</h2><div class="meta">对应需求：${p.req}${p.bonus ? ' · 加分项' : ''}</div>
+    <div class="muted">页面状态 / 异常</div><div class="states">${Object.keys(p.states).map(k => `<button class="${k === S.state ? 'on' : ''}" data-state="${k}">${k}</button>`).join('')}</div>
+    <div class="muted">本页可跳转到</div><p>${outs.map(x => `<button class="ico" data-go="${x}">${x} ${P[x].title}</button>`).join('<br>') || '—'}</p>
+    <div class="muted" style="margin-top:16px">说明</div><p>灰色线框只表达结构和跳转，不代表视觉。黄色虚线框是设计备注，<b>Q1～Q7</b> 指 03 文档 0.3 节待确认的问题，目前按建议方案绘制。</p>
+    <p>流程与需求详见 <code>docs/02-功能需求.md</code>、<code>docs/03-流程与原型.md</code>。</p>`;
+}
+function nav(target, push = true) {
+  const [id, st] = target.split(':');
+  if (!P[id]) return;
+  const p = P[id];
+  if (push && S.page !== id) S.stack.push(S.page + ':' + S.state);
+  if (p.role !== 'c' && p.role !== S.role) setRole(p.role);
+  S.page = id; S.state = st || null;
+  render();
+}
+function setRole(r) {
+  S.role = r;
+  if (r === 's' && !S.end.startsWith('s')) S.end = isPhone() ? 'sp' : 'sw';
+  if (r === 't' && !S.end.startsWith('t')) S.end = isPhone() ? 'tp' : 'tw';
+}
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch]');
+  if (!t) return;
+  const d = t.dataset;
+  if (d.go) nav(d.go);
+  else if (d.back) { const prev = S.stack.pop(); if (prev) nav(prev, false); }
+  else if (d.state) { S.state = d.state; render(); }
+  else if (d.end) { S.end = d.end; const r = d.end[0]; if (r !== S.role) { S.role = r; S.page = r === 's' ? 'S-01' : 'T-01'; S.state = null; } render(); }
+  else if (d.login) { S.exp = false; setRole(d.login); S.stack = []; nav(d.login === 's' ? 'S-01' : 'T-01', false); }
+  else if (d.exp) { S.pendingRole = d.exp; nav('C-03:生成中'); }
+  else if (d.expdone) { S.exp = true; setRole(S.pendingRole); S.stack = []; nav(S.pendingRole === 's' ? 'S-01:空状态' : 'T-01', false); }
+  else if (d.switch) { const r = S.role === 's' ? 't' : 's'; setRole(r); S.stack = []; nav(r === 's' ? 'S-08' : 'T-07:批改复核', false); }
+});
+document.addEventListener('change', e => { if (e.target.id === 'expck') { S.exp = e.target.checked; render(); } });
+// 地址栏 #页面ID[:状态][@端]，例如 #T-08@tw，便于分享某一页
+const [hashPage, hashEnd] = decodeURIComponent(location.hash.slice(1)).split('@');
+if (ENDS[hashEnd]) { S.end = hashEnd; S.role = hashEnd[0]; }
+if (hashPage && P[hashPage.split(':')[0]]) nav(hashPage, false); else render();
+</script>
+</body>
+</html>
