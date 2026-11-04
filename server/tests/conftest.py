@@ -1,15 +1,17 @@
 import asyncio
 import os
+import tempfile
 from collections.abc import AsyncIterator
 
 import asyncpg
 import pytest
 from sqlalchemy.engine import make_url
 
-# 测试库和开发库同一个 PostgreSQL，库名加 _test；必须在导入 app 之前改掉
+# 测试库和开发库同一个 PostgreSQL，库名加 _test；文件放临时目录；都必须在导入 app 之前改掉
 _dev_url = make_url(os.environ["DATABASE_URL"])
 TEST_URL = _dev_url.set(database=f"{_dev_url.database}_test")
 os.environ["DATABASE_URL"] = TEST_URL.render_as_string(hide_password=False)
+os.environ["FILES_DIR"] = tempfile.mkdtemp(prefix="athena-test-files-")
 
 from httpx import ASGITransport, AsyncClient  # noqa: E402
 from sqlalchemy import text  # noqa: E402

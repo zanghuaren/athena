@@ -30,8 +30,10 @@ services:
         required: false
     environment:
       DATABASE_URL: postgresql+asyncpg://athena:athena@db:5432/athena
+      FILE_SECRET: dev-file-secret
     volumes:
       - ../server:/app
+      - files-data:/data/files
     ports:
       - "127.0.0.1:8000:8000"
     depends_on:
@@ -40,3 +42,4 @@ services:
 
 volumes:
   db-data:
+  files-data:

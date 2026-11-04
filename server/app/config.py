@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from pydantic_settings import BaseSettings
 
 
@@ -11,6 +13,9 @@ class Settings(BaseSettings):
     model_fast: str = "deepseek-flash"
     model_vision: str = "deepseek-flash"
     model_reasoning: str = "deepseek-v4-pro"
+    # 上传的图片和导出文件放在本地目录（技术方案第 3 节）；文件链接用 file_secret 签名
+    files_dir: Path = Path("/data/files")
+    file_secret: str
 
 
 settings = Settings()
