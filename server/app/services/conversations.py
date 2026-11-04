@@ -1,5 +1,6 @@
 """AI 答疑（ASK）：会话管理和流式回答，技术方案 5.3。"""
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from contextlib import aclosing
@@ -35,6 +36,8 @@ class Reply:
     prefix: str = ""
     # 输入命中敏感词时不调用模型，直接回复这段话
     blocked_reply: str | None = None
+    # 会话的第一个问题：回答的同时用它生成标题
+    first_question: str | None = None
 
 
 # ---------- 会话管理 ----------
@@ -124,6 +127,7 @@ async def start_reply(
         return Reply(conversation.id, last.id, model_messages, prefix=last.content)
 
     blocked = data.action is None and safety.is_sensitive(data.content)
+    first_question = None
     if data.action == "regenerate":
         assert last is not None
         await db.delete(last)
@@ -137,6 +141,7 @@ async def start_reply(
         history.append(question)
         conversation.turn_count += 1
         if conversation.turn_count == 1 and not blocked:
+            first_question = content
             conversation.title = content[:20]
 
     answer = Message(
@@ -151,7 +156,8 @@ async def start_reply(
     if blocked:
         logger.warning("ask input blocked conversation=%s", conversation.id)
         return Reply(conversation.id, answer.id, [], blocked_reply=answer.content)
-    return Reply(conversation.id, answer.id, _model_messages(user, conversation, history))
+    model_messages = _model_messages(user, conversation, history)
+    return Reply(conversation.id, answer.id, model_messages, first_question=first_question)
 
 
 def _check_action(
@@ -227,6 +233,8 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
         yield "done", {"message_id": reply.message_id, "status": "blocked"}
         return
 
+    # 标题只看问题就够了，和回答同时生成，回答结束时通常已经好了
+    title_task = asyncio.create_task(_title(reply.first_question)) if reply.first_question else None
     text = reply.prefix
     status = "interrupted"
     try:
@@ -248,6 +256,7 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
     except AppError as exc:
         yield "error", {"code": exc.code, "message": exc.message}
     finally:
+        # 客户端断开时这里会被取消，保存不能跟着取消
         with anyio.CancelScope(shield=True):
             async with SessionLocal() as db:
                 await db.execute(
@@ -255,28 +264,44 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
                     .where(Message.id == reply.message_id)
                     .values(content=text, status=status)
                 )
+                if title_task and (title := await title_task):
+                    await db.execute(
+                        update(Conversation)
+                        .where(Conversation.id == reply.conversation_id)
+                        .values(title=title)
+                    )
                 await db.commit()
 
 
-# ---------- 回答之后：标题和摘要 ----------
+# ---------- 标题和摘要：失败了不影响对话 ----------
+
+
+async def _title(question: str) -> str | None:
+    messages = [
+        {"role": "system", "content": prompts.load("ask/title")},
+        {"role": "user", "content": question},
+    ]
+    try:
+        title = await complete_text("ask_title", Model.FAST, messages)
+    except AppError as exc:
+        logger.warning("ask title failed: %s", exc.code)
+        return None
+    return title.strip().strip('“”"《》。')[:30] or None
 
 
 async def after_reply(conversation_id: int, new_turn: bool) -> None:
-    """第一轮之后生成标题；超过 20 轮后，把移出上下文的那一轮并进摘要。失败不影响对话。"""
+    """超过 20 轮后，把刚移出上下文的那一轮并进摘要。"""
     if not new_turn:
         return
     async with SessionLocal() as db:
         conversation = await db.get(Conversation, conversation_id)
-        if conversation is None:
+        if conversation is None or conversation.turn_count <= CONTEXT_TURNS:
             return
         turns = _turns(await messages_of(db, conversation_id))
         try:
-            if conversation.turn_count == 1:
-                await _generate_title(conversation, turns[0])
-            elif conversation.turn_count > CONTEXT_TURNS:
-                await _merge_summary(conversation, turns[-CONTEXT_TURNS - 1])
+            await _merge_summary(conversation, turns[-CONTEXT_TURNS - 1])
         except AppError as exc:
-            logger.warning("ask after_reply failed conversation=%s: %s", conversation_id, exc.code)
+            logger.warning("ask summary failed conversation=%s: %s", conversation_id, exc.code)
             return
         await db.commit()
 
@@ -284,20 +309,6 @@ async def after_reply(conversation_id: int, new_turn: bool) -> None:
 def _turn_text(turn: list[Message]) -> str:
     names = {"user": "学生", "assistant": "老师"}
     return "\n\n".join(f"{names[m.role]}：{_as_model_message(m)['content']}" for m in turn)
-
-
-async def _generate_title(conversation: Conversation, turn: list[Message]) -> None:
-    if any(m.status == "blocked" for m in turn):
-        return
-    # 只看回答的开头就够起标题了
-    text = _turn_text(turn)[:1500]
-    messages = [
-        {"role": "system", "content": prompts.load("ask/title")},
-        {"role": "user", "content": text},
-    ]
-    title = (await complete_text("ask_title", Model.FAST, messages)).strip().strip('“”"《》。')
-    if title:
-        conversation.title = title[:30]
 
 
 async def _merge_summary(conversation: Conversation, turn: list[Message]) -> None:
