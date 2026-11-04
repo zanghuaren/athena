@@ -199,8 +199,6 @@ th{color:var(--soft);font-weight:500;font-size:12px}
 th:first-child,td:first-child{padding-left:0}
 tr.click{cursor:pointer}
 tr.click:hover td{color:var(--clay)}
-.heat{display:grid;grid-template-columns:110px repeat(6,1fr);gap:4px;font-size:12px;align-items:center;margin:8px 0}
-.heat i{display:block;height:26px;border-radius:3px}
 .modal{border:1px solid var(--line);border-radius:12px;padding:18px;background:var(--surface);margin:12px 0;box-shadow:0 18px 50px #4c382626}
 .modal b{font:600 16px var(--serif)}
 .center{text-align:center}
@@ -271,7 +269,6 @@ tr.click:hover td{color:var(--clay)}
 .phone .review-students .li{flex:0 0 auto;width:auto;padding:8px 12px;border:1px solid var(--line);border-radius:6px}
 .phone .review-original .ph{height:260px!important}
 .phone .review-score .h{margin-top:0}
-.phone .review-score .row{position:sticky;bottom:-28px;background:var(--paper);padding:12px 0}
 .phone .grid3.review-by-question{grid-template-columns:1fr}
 .answer-sheet{padding:22px;border:1px solid var(--line);border-radius:8px;background:var(--surface);line-height:1.9;min-height:320px}
 .answer-sheet h3{font:600 20px var(--serif)}
@@ -280,14 +277,16 @@ tr.click:hover td{color:var(--clay)}
 .scoring-guide{margin:16px 0;padding:12px;border:1px solid var(--line);border-radius:7px}.scoring-guide summary{cursor:pointer;font-weight:600}
 .review-students .selected{color:var(--clay);background:var(--clay-tint)}
 .review-score .in,.review-by-question .in{width:100%;font:inherit;color:var(--ink)}
-.review-footer{background:var(--paper);padding:12px 0}.phone .review-footer{position:sticky;bottom:-28px}
+.review-footer{background:var(--paper);padding:12px 0}.phone .review-footer{position:sticky;bottom:0;z-index:2;padding:10px 0}.phone .review-footer p{margin:0}.phone .review-footer .btn{margin:8px 0}
 .knowledge-row{display:grid;width:100%;grid-template-columns:minmax(160px,1fr) minmax(80px,180px) 100px 20px;align-items:center;gap:16px;text-align:left;padding:18px 0;border-bottom:1px solid var(--line)}
 .knowledge-row small{display:block;color:var(--muted);margin-top:4px}.phone .knowledge-row{grid-template-columns:minmax(0,1fr) 80px 20px;gap:10px}.phone .knowledge-row .bar{display:none}
 .answer-dialog{width:min(90vw,700px);max-height:90vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}.answer-dialog::backdrop{background:#0008}
 
 .study-card{display:block;padding:18px 0}.study-card h3{font-size:16px}.study-card .status{margin-top:10px;font-size:12px;text-align:left;color:var(--muted)}
 .study-card .actions{margin:10px 0}.study-card .status:before{content:"复习状态："}
-.phone .review-layout .answer-sheet{min-height:0;padding:16px}.phone .review-layout .triangle{height:135px}
+.phone .review-layout .answer-sheet{min-height:0;padding:16px}.phone .review-layout .triangle{height:100px}
+.phone .review-original .answer-sheet{font-size:13px;line-height:1.65}.phone .review-original .answer-sheet p{margin:8px 0}.phone .review-original .answer-sheet h3{font-size:17px;margin:10px 0}.phone .review-original .handwriting{font-size:17px;padding-top:12px}
+.phone .content:has(.review-layout){scroll-padding-bottom:140px}
 @container workspace (max-width:1100px){
   .review-layout{grid-template-columns:minmax(0,1fr) 260px;gap:16px}
   .review-students{grid-column:1/-1;display:flex;gap:8px;overflow:auto}
@@ -414,7 +413,6 @@ const lv = v => v == null ? 'none' : v < 60 ? 'weak' : v < 85 ? 'mid' : 'good';
 const bar = (v, cls = '') => `<div class="bar ${cls}"><i style="width:${v}%"></i></div>`;
 const stats = arr => `<div class="stats" style="grid-template-columns:repeat(${arr.length},1fr)">${arr.map(([v, t]) => `<div><b>${v}</b><span>${t}</span></div>`).join('')}</div>`;
 const kp = (name, v, id = 'S-24') => `<div class="kp" role="button" tabindex="0" data-go="${id}"><span>${name}</span>${v == null ? bar(0) : bar(v, lv(v))}<span class="lv ${lv(v)}">${v == null ? '数据不足' : `<span class="num">${v}</span> ` + ({ weak: '薄弱', mid: '一般', good: '掌握' })[lv(v)]}</span></div>`;
-const heatRow = (name, vals) => `<span>${name}</span>` + vals.map(v => `<i title="掌握度 ${v}" style="background:color-mix(in srgb,var(--clay) ${Math.round((100 - v) * 0.9)}%,var(--surface))"></i>`).join('');
 const steps = (arr, shown) => `<div class="steps">${arr.map((s, i) => `<div class="step ${i >= shown ? 'dim' : ''}"><span class="step-number">${i + 1}</span><div><h4>${s[0]}</h4><p>${i >= shown ? '等你回应后展开' : s[1]}</p></div></div>`).join('')}</div>`;
 const me = t => `<div class="me"><div>${t}</div></div>`;
 const ai = inner => `<div class="ai"><div class="ai-head">${ic('temple')}<span>ATHENA</span></div>${inner}</div>`;
@@ -440,6 +438,7 @@ const REVIEW = [
   {name:'孙六',score:null,base:72,answer:'手写区域较淡，无法可靠识别',reason:'识别失败，需要老师查看原图并给分。'},
   {name:'周七',score:2,base:78,answer:'AB² = 3 + 4 = 7',reason:'列式未平方两条直角边。'},
 ].map(x => ({...x,reviewed:false,published:false,comment:''}));
+const studentHomeworkState=()=>REVIEW[0].published?'已发布':S.homeworkSubmitted?'已提交':'未提交';
 const activeHomework = () => HOMEWORKS[S.homework];
 const pendingReviews = () => REVIEW.filter(x => !x.reviewed).length;
 const homeworkLink = (key, state, sub) => li(HOMEWORKS[key].title, sub, 'S-10:'+state).replace('data-go=', `data-homework="${key}" data-go=`);
@@ -603,7 +602,7 @@ def('S-04', { role: 's', title: '框选题目', back: true, req: 'SCAN-02', stat
   多道题: () => `${ph('框里有 2 道题', 300)}${err('请只框选一道题')}${go('S-04:框选', '重新框选', 'block')}`,
 }});
 def('S-05', { role: 's', title: '批改中', back: true, req: 'SCAN-03', states: {
-  进行中: () => `${ph('作业原图', 250)}${li('<span class="ok">✓</span> 识别题目：共 10 题')}${li('<span class="warn">…</span> 识别手写作答 6 / 10')}${li('<span class="muted">○ 逐题批改</span>')}<p class="muted">可以离开这个页面，批改会在后台继续，完成后在“我的 › 批改记录”里查看</p>${pri('S-06', '查看准备结果', 'block')}`,
+  进行中: () => `${ph('作业原图', 250)}${li('<span class="ok">✓</span> 识别题目：共 10 题')}${li('<span class="warn">…</span> 识别手写作答 6 / 10')}${li('<span class="muted">○ 逐题批改</span>')}<p class="muted">可以离开这个页面，批改会在后台继续，完成后在“我的 › 批改记录”里查看</p>${pri('S-06', '查看批改结果', 'block')}`,
   照片不清楚: () => `${ph('作业原图', 250)}${err('照片太模糊，没法识别')}<p class="muted">光线充足、手机和纸面平行、把作业放平，再拍一次</p>${go('S-03:作业批改', '重新拍', 'pri block')}`,
   不是作业: () => `${ph('一张风景照', 250)}${err('没有识别到题目')}${go('S-03:作业批改', '重新拍', 'pri block')}`,
   超过20题: () => `${err('这页超过 20 道题，只批改了前 20 道，剩下的请分开拍')}${pri('S-06', '查看结果', 'block')}`,
@@ -633,9 +632,10 @@ def('S-08', { role: 's', title: '今日', tab: 'today', req: 'HOME', states: {
   全部完成: () => `${sectTop('', '今日任务')}${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}<div class="center" style="margin:50px 0 20px"><div class="big">今天的任务都完成了</div><p class="muted">明天有 4 道题要复习</p></div>${go('S-19', '再练一组', 'block')}`,
 }});
 def('S-09', { role: 's', title: '全部作业', tab: 'today', webTab: 'hw', req: 'HW-02', states: {
-  有作业: () => `${S.end === 'sw' ? sectTop('', '作业') : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}
-    <div class="filters">${['待完成','已提交','已批改'].map((x,i) => `<button class="chip ${S.hwFilter===i?'on':''}" data-hw-filter="${i}" aria-pressed="${S.hwFilter===i}">${x} ${i===0?(S.homeworkSubmitted?0:1):i===1?(S.homeworkSubmitted?2:1):1}</button>`).join('')}</div>
-    ${S.hwFilter===0 ? (S.homeworkSubmitted ? '<p class="muted">没有待完成作业</p>' : homeworkLink('main','未提交','八年级 3 班 · 数学 · 今晚 20:00 截止')) : S.hwFilter===1 ? homeworkLink('submitted','已提交','八年级 3 班 · 数学 · 等待老师复核') + (S.homeworkSubmitted ? homeworkLink('main','已提交','八年级 3 班 · 数学 · 已提交') : '') : homeworkLink('published','已发布','八年级 3 班 · 数学 · 已批改 86 分')}`,
+  有作业: () => {const state=studentHomeworkState(),filter=['未提交','已提交','已发布'][S.hwFilter];return `${S.end==='sw'?sectTop('','作业'):seg(['今日任务','全部作业'],1,['S-08',''])}
+    <div class="filters">${['待完成','已提交','已批改'].map((x,i)=>`<button class="chip ${S.hwFilter===i?'on':''}" data-hw-filter="${i}" aria-pressed="${S.hwFilter===i}">${x} ${Number(['未提交','已提交','已发布'][i]===state)+Number(i>0)}</button>`).join('')}</div>
+    ${filter===state?homeworkLink('main',state,'八年级 3 班 · 数学 · '+(state==='未提交'?'今晚 20:00 截止':state==='已发布'?'已发布 '+(REVIEW[0].base+REVIEW[0].score)+' 分':'等待老师复核')):''}${S.hwFilter===1?homeworkLink('submitted','已提交','八年级 3 班 · 数学 · 等待老师复核'):S.hwFilter===2?homeworkLink('published','已发布','八年级 3 班 · 数学 · 已批改 86 分'):state!=='未提交'?'<p class="muted">没有待完成作业</p>':''}`},
+
   未加入班级: () => `${S.end === 'sw' ? sectTop('', '作业') : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}<p class="center muted" style="margin-top:60px">加入老师的班级后，作业会出现在这里</p>${pri('S-26:输入', '输入邀请码加入班级', 'block')}`,
 }});
 const hwHead = (dl = '今晚 20:00 截止，还剩 1 小时', late = '允许迟交') => `${sectTop('', activeHomework().title, '八年级 3 班 · '+activeHomework().subject+' · '+activeHomework().teacher)}${stats([[activeHomework().count, '道题'], ['100', '总分'], ['20:00', '截止']])}<p class="muted">${dl} · 在线作答或拍照提交都可以 · ${late}</p>`;
@@ -726,18 +726,18 @@ function practiceResult() {
 }
 def('S-21',{role:'s',title:'练习结果',back:true,req:'PRC-03',states:{默认:()=>practiceResult(),待判分:()=>practiceResult()}});
 def('S-22', { role: 's', title: '练习记录', back: true, req: 'PRC-04', states: { 默认: () => li('勾股定理 · 10 题', '12 月 3 日 · 8 / 10', 'S-21') + li('浮力 · 5 题', '12 月 2 日 · 3 / 5', 'S-21') }});
-def('S-23', { role: 's', title: '学情画像', back: true, webTab: 'pro', req: 'PRO-02', states: {
-  默认: () => `${filters(['数学', '物理', '英语'], 0)}${stats([['71', '平均掌握度'], ['↑ 6', '近 4 周'], ['1', '薄弱知识点']])}${ph('近 4 周掌握度趋势', 90)}
-    ${h('第十七章 勾股定理')}${kp('勾股定理', 48)}${kp('勾股定理的逆定理', 76)}${h('第十六章 二次根式')}${kp('二次根式的乘除', 90)}${kp('二次根式的加减', null)}
-    ${h('建议练习')}<div class="li row between"><span class="lt">勾股定理 <span class="num bad">48</span></span>${ico('S-19', '去练习')}</div><div class="li row between"><span class="lt">勾股定理的逆定理 <span class="num">76</span></span>${ico('S-19', '去练习')}</div>`,
-  数据不足: () => `${filters(['数学', '物理', '英语'], 1)}<p class="muted" style="margin:40px 0 10px">物理的作答还太少。每个知识点至少作答 3 次，这里才会显示掌握度。</p>${go('S-19', '做一组物理练习', 'pri block')}`,
+const PROFILE=[
+  {topic:0,value:48,attempts:10,correct:4}, {topic:4,value:76,attempts:10,correct:7}, {topic:5,value:90,attempts:10,correct:9},
+  {topic:1,value:52,attempts:10,correct:5}, {topic:2,value:55,attempts:10,correct:5},
+];
+def('S-23',{role:'s',title:'学情画像',back:true,webTab:'pro',req:'PRO-02',states:{
+  默认:()=>{const rows=PROFILE.filter(x=>TOPICS[x.topic].subject===S.profileSubject);return `<div class="filters" aria-label="学情学科">${['数学','物理','英语'].map(x=>`<button class="chip ${S.profileSubject===x?'on':''}" data-profile-subject="${x}" aria-pressed="${S.profileSubject===x}">${x}</button>`).join('')}</div>${stats([[Math.round(rows.reduce((sum,x)=>sum+x.value,0)/rows.length),'平均掌握度 / 100'],[rows.filter(x=>x.value<60).length,'薄弱知识点']])}<p class="muted">每个知识点按最近 10 次作答加权；至少作答 3 次后显示掌握度。</p>${h('知识点掌握情况')}${rows.map(x=>`<button class="knowledge-row" data-profile-topic="${x.topic}"><span><b>${TOPICS[x.topic].title}</b><small>${TOPICS[x.topic].subject} · 最近 ${x.attempts} 次作答</small></span>${bar(x.value,lv(x.value))}<span class="lv ${lv(x.value)}">${x.value} / 100</span>${ic('right')}</button>`).join('')}${h('接下来可以练什么')}${rows.filter(x=>x.value<60).map(x=>`<div class="li row between"><span>${TOPICS[x.topic].title}</span><button class="ico" data-profile-practice="${x.topic}">去练习</button></div>`).join('')}`},
+  数据不足:()=>`${sectTop('','数据还不够')}<p class="muted">每个知识点至少作答 3 次后才会显示掌握度。</p>${go('S-19','做一组练习','pri block')}`,
 }});
-def('S-24', { role: 's', title: '知识点详情', back: true, req: 'PRO-03', states: { 默认: () => `
-  ${sectTop('', '勾股定理', '数学 · 八年级下 · 第十七章')}${box('直角三角形两直角边的平方和，等于斜边的平方：<span class="math">a² + b² = c²</span>', 'gray')}
-  <div class="row between"><span>掌握度 <b class="num bad">48</b> · 薄弱</span><span class="muted">最近 10 次作答对了 4 次</span></div>${bar(48, 'weak')}
-  ${h('最近作答')}<p class="num" style="letter-spacing:.3em"><span class="bad">✗</span><span class="ok">✓</span><span class="bad">✗✗</span><span class="ok">✓✓</span><span class="bad">✗✗</span><span class="ok">✓</span><span class="bad">✗</span></p>
-  ${h('相关错题')}${li('已知 Rt△ABC 中……求 AB 的长', '第 2 次复习', 'S-14')}
-  <div class="grid2" style="margin-top:16px">${pri('S-19', '去练习')}${go('S-01:直接讲解', '请 AI 讲讲')}</div>` }});
+def('S-24',{role:'s',title:'知识点详情',back:true,req:'PRO-03',states:{默认:()=>{
+  const x=PROFILE.find(x=>x.topic===S.profileTopic)||PROFILE[0],topic=TOPICS[x.topic];
+  return `${sectTop('',topic.title,topic.subject+' · 八年级')}${box(topic.steps.map(y=>y[1]).join(' '),'gray')}${stats([[x.value,'掌握度 / 100'],[x.correct+' / '+x.attempts,'最近作答答对']])}${bar(x.value,lv(x.value))}<p class="muted">近期作答权重更高，掌握度与正确率的数值可能不同。</p>${h('相关错题')}${MISTAKES.filter(m=>m.topic===x.topic&&!m.removed).map(mcard).join('')||'<p class="muted">没有相关错题。</p>'}<div class="grid2"><button class="btn pri" data-profile-practice="${x.topic}">去练习</button><button class="btn" data-chat-topic="${x.topic}">请 AI 讲讲</button></div>`;
+}}});
 def('S-25', { role: 's', title: '我的班级', back: true, req: 'CLS-04', states: {
   有班级: () => li('八年级 3 班 · 数学', '李老师 · 班级内姓名：张小雅', 'S-09') + li('八年级 3 班 · 物理', '王老师', 'S-09') + `<div class="actions">${ico('S-25:空', '退出班级')}</div>` + go('S-26:输入', '加入新班级', 'block'),
   空: () => `<p class="center muted" style="margin-top:60px">还没有加入班级</p>${pri('S-26:输入', '输入邀请码加入', 'block')}`,
@@ -759,7 +759,7 @@ def('S-29', { role: 's', title: '作文批改', back: true, bonus: true, req: 'P
 
 // ── 教师 ──
 def('T-01', { role: 't', title: '工作台', tab: 'tw', req: '—', states: { 默认: () => `
-  ${sectTop('', '李老师，下午好', '有 ${pendingReviews()} 份作业等你复核')}
+  ${sectTop('', '李老师，下午好', '有 '+pendingReviews()+' 份作业等你复核')}
   <div class="row">${pri('T-06:选题', '布置作业')}${go('T-11', '写教案')}${go('T-16', '组卷')}</div>
   ${h('待复核')}${tbl(['作业', '班级', '已交', '待复核'], [['勾股定理练习', '八(3)', '38 / 42', String(pendingReviews())], ['平行四边形小测', '八(5)', '40 / 40', '0']], ['T-07:批改复核', 'T-07:批改复核'])}
   ${h('进行中的作业')}${tbl(['作业', '班级', '截止', '已交'], [['二次根式练习', '八(3)', '12 月 5 日 20:00', '20 / 42']], ['T-07:提交情况'])}
@@ -804,7 +804,7 @@ function reviewScore(index, compact=false) {
   return `<section class="box ${x.reviewed?'':'err'}" data-review-row="${index}"><b>${x.name} · ${x.reviewed?'已复核':x.score===null?'需人工批改':'AI 待核对'}</b><p>${x.reason}</p>
     ${compact?answerSheet(x):''}<label class="lab" for="review-score-${index}">第 3 题得分（0～8 分）</label><input class="in" id="review-score-${index}" data-review-score="${index}" type="number" min="0" max="8" step="1" value="${x.score??''}" placeholder="请输入人工评分">
     <label class="lab" for="review-comment-${index}">评语</label><textarea class="in area" id="review-comment-${index}" data-review-comment="${index}">${escapeHTML(x.comment)}</textarea>
-    <p class="muted">总分 <b data-review-total="${index}">${x.score===null?'待给分':x.base+x.score}</b> / 100 · ${x.published?'已发布':x.reviewed?'已保存复核':'未确认复核'}</p>
+    <p class="muted">总分 <b data-review-total="${index}">${x.score===null?'待给分':x.base+x.score}</b> / 100 · <span data-review-state="${index}">${x.published?'已发布':x.reviewed?'已保存复核':'未确认复核'}</span></p>
     ${compact?`<button class="btn" data-save-review="${index}">${x.reviewed?'保存修改':'保存复核'}</button>`:''}</section>`;
 }
 def('T-08', { role:'t',title:'逐生复核',back:true,req:'GRD-02',states:{默认:()=>`
@@ -891,7 +891,7 @@ const NAV = {
   tp: [['tw', '工作台', 'T-01', 'temple'], ['hw', '作业', 'T-05', 'checklist'], ['ana', '学情', 'T-18', 'chart'], ['me', '我的', 'C-04', 'user']],
 };
 const ENDS = { sp: '学生 · 手机', sw: '学生 · Web', tw: '教师 · Web', tp: '教师 · 手机' };
-const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's', answerSource: 'practice', uploadPages: 2, handwritten: false, homeworkSubmitted: false, homework: 'main', hwFilter: 0, reviewIndex: 0, publishTarget: 'all', knowledge: 0, hideIndex: innerWidth<760, hideNotes: innerWidth<760, designNotes: [], fields: {}, choices: {}, chatDraft: {s:'',t:''}, messages: [], teacherMessages: [], topic: 0, guideStep: 0, chatMode: 'guided', scrollChat: false, historySearch: '', selectedAnswer: null, profileName:'小雅', teacherName:'李老师', registerRole:'s', theme:'light', reduceMotion:false, reviewSession:[], reviewCursor:0, reviewRatings:[], mistakeSubject:'全部', mistakeSource:'', mistakeStatus:'', mistakeKnowledge:'', practiceTopic:0, practiceCount:10, exerciseTopic:0, exerciseIndex:0, exerciseTotal:10, exerciseAnswers:{}, exerciseAttachments:{} };
+const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's', answerSource: 'practice', uploadPages: 2, handwritten: false, homeworkSubmitted: false, homework: 'main', hwFilter: 0, reviewIndex: 0, publishTarget: 'all', knowledge: 0, hideIndex: innerWidth<760, hideNotes: innerWidth<760, designNotes: [], fields: {}, choices: {}, chatDraft: {s:'',t:''}, messages: [], teacherMessages: [], topic: 0, guideStep: 0, chatMode: 'guided', scrollChat: false, historySearch: '', selectedAnswer: null, profileName:'小雅', teacherName:'李老师', registerRole:'s', theme:'light', reduceMotion:false, reviewSession:[], reviewCursor:0, reviewRatings:[], mistakeSubject:'全部', mistakeSource:'', mistakeStatus:'', mistakeKnowledge:'', practiceTopic:0, practiceCount:10, exerciseTopic:0, exerciseIndex:0, exerciseTotal:10, exerciseAnswers:{}, exerciseAttachments:{}, profileSubject:'数学', profileTopic:0 };
 const isPhone = () => S.end === 'sp' || S.end === 'tp';
 const tabOf = p => S.end === 'sw' && p.webTab ? p.webTab : p.tab;
 
@@ -938,10 +938,12 @@ function render() {
   const content=stage.querySelector('.content'),key=S.page+':'+S.state;
   if(content){content.scrollTop=S.scrollChat||p.dock&&oldKey!==key?content.scrollHeight:oldKey===key?oldScroll:0;}
   S.scrollChat=false;stage.dataset.view=key;
+  history.replaceState(null,'','#'+encodeURIComponent(key)+'@'+S.end);
   const composer=stage.querySelector('#chat-input');if(composer?.value)composer.style.height=Math.min(composer.scrollHeight,112)+'px';
   if(oldKey===key&&activeId)document.getElementById(activeId)?.focus({preventScroll:true});
   stage.querySelectorAll('.tabs button.on,.nav.on').forEach(e=>e.setAttribute('aria-current','page'));
   stage.querySelectorAll('button:not([type])').forEach(e=>e.type='button');
+  stage.querySelectorAll('[data-go]:not(button):not([role])').forEach(e=>{e.setAttribute('role','button');e.tabIndex=0});
 }
 function renderIndex() {
   const groups = [['公共', 'c'], ['学生', 's'], ['教师', 't']];
@@ -965,7 +967,10 @@ function renderNotes() {
 function nav(target, push = true) {
   const [id, st] = target.split(':');
   if (!P[id]) return;
-  if (push && S.page !== id) S.stack.push(S.page + ':' + S.state);
+  if(id==='S-10'&&st==='已提交'&&['S-20','S-11'].includes(S.page)){
+    while(S.stack.length&&/^S-(10|11|20|03):/.test(S.stack.at(-1).target))S.stack.pop();push=false;
+  }
+  if (push && S.page !== id) S.stack.push({target:S.page+':'+S.state,topic:S.topic,homework:S.homework,answerSource:S.answerSource,profileTopic:S.profileTopic});
   if (P[id].role !== 'c' && P[id].role !== S.role) setRole(P[id].role);
   if(id==='S-17'&&S.page!=='S-17'&&(!S.reviewSession.length||S.reviewCursor>=S.reviewSession.length))startReview(S.page==='S-13'||S.page==='S-08');
   if(id==='S-16'&&!st&&!dueItems().length){S.page=id;S.state='无到期';render();return}
@@ -991,10 +996,13 @@ function setRole(r) {
   if (r === 't' && !S.end.startsWith('t')) S.end = isPhone() ? 'tp' : 'tw';
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch],[data-theme-set],[data-capture],[data-submit-answer],[data-hw-filter],[data-review-student],[data-save-review],[data-publish],[data-confirm-publish],[data-knowledge],[data-zoom-answer],[data-panel],[data-preview],[data-choice],[data-send-chat],[data-chat-topic],[data-chat-action],[data-history-edit],[data-save-profile],[data-feedback],[data-mistake-subject],[data-add-mistake],[data-add-manual],[data-master-mistake],[data-remove-mistake],[data-undo-mistake],[data-save-note],[data-rate-review],[data-start-practice],[data-question-move],[data-question-jump]');
+  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch],[data-theme-set],[data-capture],[data-submit-answer],[data-hw-filter],[data-review-student],[data-save-review],[data-publish],[data-confirm-publish],[data-knowledge],[data-zoom-answer],[data-panel],[data-preview],[data-choice],[data-send-chat],[data-chat-topic],[data-chat-action],[data-history-edit],[data-save-profile],[data-feedback],[data-mistake-subject],[data-add-mistake],[data-add-manual],[data-master-mistake],[data-remove-mistake],[data-undo-mistake],[data-save-note],[data-rate-review],[data-start-practice],[data-question-move],[data-question-jump],[data-profile-subject],[data-profile-topic],[data-profile-practice]');
   if (!t) return;
   const d = t.dataset;
-  if(d.mistakeSubject){S.mistakeSubject=d.mistakeSubject;render();}
+  if(d.profileSubject){S.profileSubject=d.profileSubject;render();}
+  else if(d.profileTopic!==undefined){S.profileTopic=Number(d.profileTopic);S.topic=S.profileTopic;nav('S-24');}
+  else if(d.profilePractice!==undefined){S.practiceTopic=Number(d.profilePractice);nav('S-19');}
+  else if(d.mistakeSubject){S.mistakeSubject=d.mistakeSubject;render();}
   else if(d.addMistake){const x=MISTAKES.find(x=>x.topic===S.topic);x.removed=false;nav('S-13');announce('错题已保留在本中，复习进度未重置');}
   else if(d.addManual){
     const fields=[...document.querySelectorAll('#stage [data-field]')],question=fields[0].value.trim(),own=fields[1].value.trim(),answer=fields[2].value.trim(),title=fields[3].value.trim();
@@ -1044,15 +1052,16 @@ document.addEventListener('click', e => {
     if (d.nextReview) { const next=REVIEW.findIndex(x=>!x.reviewed); if (next<0) { nav('T-07:批改复核'); return; } S.reviewIndex=next; }
     render();
   }
-  else if (d.publish) { S.publishTarget=d.publish; nav('T-07:发布确认'); }
+  else if (d.publish) {const eligible=(d.publish==='all'?REVIEW:[REVIEW[S.reviewIndex]]).filter(x=>x.reviewed&&!x.published);if(!eligible.length){announce('请先保存复核，再发布结果');return}S.publishTarget=d.publish;nav('T-07:发布确认');}
   else if (d.confirmPublish) { (S.publishTarget==='all'?REVIEW:[REVIEW[S.reviewIndex]]).filter(x=>x.reviewed).forEach(x=>x.published=true); nav('T-07:已发布'); }
   else if (d.knowledge !== undefined) { S.knowledge=Number(d.knowledge); nav('T-18:知识点详情'); }
   else if (d.zoomAnswer) {
     const dialog=document.createElement('dialog');dialog.className='answer-dialog';dialog.innerHTML='<form method="dialog"><button class="btn">关闭作答大图</button></form>'+answerSheet(REVIEW[S.reviewIndex]);document.body.append(dialog);dialog.addEventListener('close',()=>dialog.remove());dialog.showModal();
   }
   else if (d.capture) {
-    if (d.capture === '手写作答') { S.handwritten = true; S.exerciseAttachments[S.exerciseIndex]=true;if(!S.exerciseAnswers[S.exerciseIndex])S.exerciseAnswers[S.exerciseIndex]='已上传手写过程';nav('S-20:解答题'); }
-    else { if (d.capture === '作业加页' && S.uploadPages < 10) S.uploadPages++; nav('S-11:预检通过'); }
+    S.stack.pop();
+    if (d.capture === '手写作答') { S.handwritten = true; S.exerciseAttachments[S.exerciseIndex]=true;if(!S.exerciseAnswers[S.exerciseIndex])S.exerciseAnswers[S.exerciseIndex]='已上传手写过程';nav('S-20:解答题',false); }
+    else { if (d.capture === '作业加页' && S.uploadPages < 10) S.uploadPages++; nav('S-11:预检通过',false); }
   }
   else if (d.submitAnswer) {
     if(S.answerSource==='practice')for(let i=0;i<S.exerciseTotal;i++){
@@ -1066,9 +1075,9 @@ document.addEventListener('click', e => {
   }
   else if (d.go) { const card=t.closest('[data-mistake-topic]');if(card){S.topic=Number(card.dataset.mistakeTopic);if(d.go.startsWith('S-01')){S.messages=[];S.guideStep=0;}}
     if(d.registerRole)S.registerRole=d.registerRole; if (d.homework) S.homework=d.homework; else if (d.go==='S-10:未提交') S.homework='main'; nav(d.go); }
-  else if (d.back) { const prev = S.stack.pop(); if (prev) nav(prev, false); }
+  else if (d.back) { const prev=S.stack.pop();if(prev){Object.assign(S,{topic:prev.topic,homework:prev.homework,answerSource:prev.answerSource,profileTopic:prev.profileTopic});nav(prev.target,false)}else nav(S.role==='s'?'S-01':'T-01',false); }
   else if (d.state) { if(S.page==='S-01'&&['直接讲解','引导式对话中'].includes(d.state)){S.messages=[];S.chatMode=d.state==='直接讲解'?'direct':'guided';}S.state = d.state; render(); }
-  else if (d.end) { S.end = d.end; const r = d.end[0]; if (r !== S.role) { S.role = r; S.page = r === 's' ? 'S-01' : 'T-01'; S.state = null; } render(); }
+  else if (d.end) { S.stack=[]; S.end = d.end; const r = d.end[0]; if (r !== S.role) { S.role = r; S.page = r === 's' ? 'S-01' : 'T-01'; S.state = null; } render(); }
   else if (d.themeSet) { S.theme=d.themeSet;document.documentElement.dataset.theme = d.themeSet; render(); }
   else if (d.login) { S.exp = false; setRole(d.login); S.stack = []; nav(d.login === 's' ? 'S-01' : 'T-01', false); }
   else if (d.exp) { S.pendingRole = d.exp; nav('C-03:生成中'); }
@@ -1084,9 +1093,9 @@ document.addEventListener('input', e => {
   if(d.historySearch) {S.historySearch=e.target.value;let found=false;document.querySelectorAll('[data-history-row]').forEach(row=>{const item=HISTORY.find(x=>x.topic===Number(row.dataset.historyRow)),show=(item.title+TOPICS[item.topic].subject).includes(S.historySearch);row.hidden=!show;found ||= show});document.getElementById('history-empty').hidden=found;}
   if (d.reviewScore !== undefined) {
     const x=REVIEW[Number(d.reviewScore)]; x.score=e.target.value===''?null:Number(e.target.value); x.reviewed=false; x.published=false;
-    document.querySelector(`[data-review-total="${d.reviewScore}"]`).textContent=x.score===null?'待给分':x.base+x.score;
+    document.querySelector(`[data-review-total="${d.reviewScore}"]`).textContent=x.score===null?'待给分':x.base+x.score;document.querySelector(`[data-review-state="${d.reviewScore}"]`).textContent='有修改，待保存复核';
   }
-  if (d.reviewComment !== undefined) REVIEW[Number(d.reviewComment)].comment=e.target.value;
+  if(d.reviewComment!==undefined){const x=REVIEW[Number(d.reviewComment)];x.comment=e.target.value;x.reviewed=false;x.published=false;document.querySelector(`[data-review-state="${d.reviewComment}"]`).textContent='有修改，待保存复核';}
 });
 document.addEventListener('change',e=>{
   const d=e.target.dataset;
