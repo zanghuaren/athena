@@ -19,6 +19,8 @@ _client = AsyncOpenAI(
     timeout=60,
     max_retries=1,
 )
+# 前缀续写（接着一段已有的回答往下写）只在 beta 地址上提供
+_beta_client = _client.with_options(base_url=f"{settings.deepseek_base_url}/beta")
 
 
 class Model(StrEnum):
@@ -55,13 +57,22 @@ def _log(scene: str, model: Model, started: float, tokens: int | None, failed: b
     )
 
 
-async def stream_text(scene: str, model: Model, messages: list[dict]) -> AsyncIterator[str]:
-    """逐段产出回答文字。出错抛 AppError；调用方中途停止迭代时连接随之关闭。"""
+async def stream_text(
+    scene: str, model: Model, messages: list[dict], prefix: str = ""
+) -> AsyncIterator[str]:
+    """逐段产出回答文字；传了 prefix 时接着它往下写，产出的不含 prefix 本身。
+
+    出错抛 AppError；调用方中途停止迭代时连接随之关闭。
+    """
     started = time.monotonic()
     tokens = None
     failed = True
+    client = _client
+    if prefix:
+        client = _beta_client
+        messages = [*messages, {"role": "assistant", "content": prefix, "prefix": True}]
     try:
-        stream = await _client.chat.completions.create(
+        stream = await client.chat.completions.create(
             messages=messages,
             stream=True,
             stream_options={"include_usage": True},
