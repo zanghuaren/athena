@@ -1,9 +1,14 @@
+import logging
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import api_router
 from app.config import settings
 from app.errors import register_error_handlers
+
+# 应用日志（如模型调用记录）输出到标准输出；uvicorn 只配置了它自己的日志
+logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 
 app = FastAPI(
     title="雅典娜 API",
