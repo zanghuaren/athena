@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">雅典娜</string>
+    <string name="title_activity_main">雅典娜</string>
+    <string name="package_name">com.athena.edu</string>
+    <string name="custom_url_scheme">com.athena.edu</string>
+</resources>
