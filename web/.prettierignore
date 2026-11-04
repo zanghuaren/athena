@@ -1,0 +1,4 @@
+dist
+android
+src/api/schema.d.ts
+package-lock.json

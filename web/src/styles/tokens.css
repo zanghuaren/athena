@@ -1,0 +1,45 @@
+/* 设计变量，取自原型 docs/prototype/index.html 的 :root；组件里不写死色值 */
+:root {
+  --paper: #f6f2eb;
+  --surface: #fdfbf5;
+  --surface-alt: #eee8df;
+  --ink: #26201a;
+  --muted: #6e6459;
+  --line: #ded6c9;
+  --clay: #a84d30;
+  --clay-tint: #f2e2d7;
+  --olive: #606a4e;
+  --olive-tint: #e8ebdf;
+  --ochre: #9a6b1f;
+  --canvas: #e9e4db;
+  --soft: #786a5a;
+  --danger: #a33332;
+  --danger-tint: #f5e6e3;
+  --focus: #8f442b;
+  --serif: 'Songti SC', 'STSong', 'Noto Serif CJK SC', 'SimSun', serif;
+  --sans: 'HarmonyOS Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --latin: 'Baskerville', 'Palatino Linotype', 'Book Antiqua', serif;
+  --shadow: 0 16px 50px #4c382611;
+  color-scheme: light;
+}
+
+[data-theme='dark'] {
+  --paper: #211d18;
+  --surface: #2a251f;
+  --surface-alt: #352e25;
+  --ink: #eee7db;
+  --muted: #b8ab98;
+  --line: #4b4033;
+  --clay: #e09a77;
+  --clay-tint: #493127;
+  --olive: #b1ba99;
+  --olive-tint: #373d2c;
+  --ochre: #d6a75a;
+  --canvas: #181511;
+  --soft: #b0a18b;
+  --danger: #f0a09a;
+  --danger-tint: #482b29;
+  --focus: #efb08f;
+  --shadow: 0 16px 50px #0002;
+  color-scheme: dark;
+}

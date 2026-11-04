@@ -1,0 +1,17 @@
+.box {
+  margin: 10px 0;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.gray {
+  background: var(--surface-alt);
+  border-color: transparent;
+}
+
+.error {
+  background: var(--danger-tint);
+  border-color: color-mix(in srgb, var(--danger) 35%, transparent);
+  color: var(--danger);
+}

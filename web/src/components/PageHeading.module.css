@@ -1,0 +1,15 @@
+.heading {
+  margin: 0 0 16px;
+}
+
+.heading h2 {
+  margin: 0;
+  font: 500 25px/40px var(--serif);
+  letter-spacing: 0.06em;
+}
+
+.heading p {
+  margin: 6px 0 0;
+  font-size: 13px;
+  color: var(--muted);
+}

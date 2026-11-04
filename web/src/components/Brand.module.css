@@ -1,0 +1,24 @@
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--clay);
+}
+
+.mark {
+  width: 30px;
+  height: 34px;
+}
+
+.brand strong {
+  display: block;
+  font: 19px/1.4 var(--serif);
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+.brand span {
+  font: 9px var(--latin);
+  letter-spacing: 0.25em;
+  color: var(--muted);
+}
