@@ -1,0 +1,45 @@
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown p {
+  margin: 0 0 0.6em;
+}
+
+.markdown table {
+  border-collapse: collapse;
+  margin: 0.6em 0;
+}
+
+.markdown th,
+.markdown td {
+  padding: 4px 12px;
+  border: 1px solid var(--line);
+}
+
+/* 长公式在手机上横向滚动，不撑破页面 */
+.markdown :global(.katex-display) {
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 2px 0;
+}
+
+.markdown :global(.math-raw) {
+  font-family: ui-monospace, monospace;
+  font-size: 0.9em;
+  color: var(--danger);
+}
+
+.markdown :global(.blank) {
+  display: inline-block;
+  min-width: 3.5em;
+  margin: 0 0.2em;
+  border-bottom: 1px solid currentColor;
+  text-align: center;
+  font: 13px/1.4 var(--latin);
+  color: var(--clay);
+}

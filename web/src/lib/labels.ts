@@ -1,4 +1,4 @@
-import type { User } from '../api/client';
+import type { Question, User } from '../api/client';
 
 type Subject = NonNullable<User['preferred_subject']>;
 type Grade = NonNullable<User['grade']>;
@@ -13,6 +13,17 @@ export const GRADE_LABELS: Record<Grade, string> = {
   7: '七年级',
   8: '八年级',
   9: '九年级',
+};
+
+export const QUESTION_TYPE_LABELS: Record<Question['type'], string> = {
+  single: '单选题',
+  multiple: '多选题',
+  judge: '判断题',
+  blank: '填空题',
+  solution: '解答题',
+  cloze: '完形填空',
+  reading: '阅读理解',
+  essay: '作文',
 };
 
 export const SUBJECT_OPTIONS = Object.entries(SUBJECT_LABELS).map(([value, label]) => ({

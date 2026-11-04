@@ -72,6 +72,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/knowledge-tree": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Knowledge Tree */
+        get: operations["get_knowledge_tree_api_v1_knowledge_tree_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/knowledge-points/{point_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Knowledge Point */
+        get: operations["get_knowledge_point_api_v1_knowledge_points__point_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/questions/{question_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Question */
+        get: operations["get_question_api_v1_questions__question_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -93,16 +144,105 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnalysisStep */
+        AnalysisStep: {
+            /** Title */
+            title: string;
+            /** Body */
+            body: string;
+        };
         /** AuthOut */
         AuthOut: {
             /** Token */
             token: string;
             user: components["schemas"]["UserOut"];
         };
+        /**
+         * BlanksAnswer
+         * @description 每空一个列表，列表里是这一空的所有等价答案。
+         */
+        BlanksAnswer: {
+            /** Blanks */
+            blanks: string[][];
+        };
+        /** ChapterBrief */
+        ChapterBrief: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /** Title */
+            title: string;
+            /** Grade */
+            grade: (7 | 8 | 9) | null;
+        };
+        /** ChapterNode */
+        ChapterNode: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Title */
+            title: string;
+            /** Grade */
+            grade: (7 | 8 | 9) | null;
+            /** Knowledge Points */
+            knowledge_points: components["schemas"]["KnowledgePointBrief"][];
+        };
+        /** ChoiceAnswer */
+        ChoiceAnswer: {
+            /** Choice */
+            choice: string[];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** JudgeAnswer */
+        JudgeAnswer: {
+            /** Judge */
+            judge: boolean;
+        };
+        /** KnowledgePointBrief */
+        KnowledgePointBrief: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Grades */
+            grades: (7 | 8 | 9)[];
+        };
+        /** KnowledgePointOut */
+        KnowledgePointOut: {
+            /** Id */
+            id: number;
+            /** Code */
+            code: string;
+            /** Name */
+            name: string;
+            /** Grades */
+            grades: (7 | 8 | 9)[];
+            /** Description */
+            description: string;
+            chapter: components["schemas"]["ChapterBrief"];
+        };
+        /** KnowledgeTree */
+        KnowledgeTree: {
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /** Chapters */
+            chapters: components["schemas"]["ChapterNode"][];
         };
         /** LoginIn */
         LoginIn: {
@@ -110,6 +250,72 @@ export interface components {
             username: string;
             /** Password */
             password: string;
+        };
+        /** Option */
+        Option: {
+            /** Key */
+            key: string;
+            /** Text */
+            text: string;
+        };
+        /** QuestionContent */
+        QuestionContent: {
+            /** Stem */
+            stem: string;
+            /**
+             * Images
+             * @default []
+             */
+            images: number[];
+            /** Options */
+            options?: components["schemas"]["Option"][] | null;
+            /** Blank Count */
+            blank_count?: number | null;
+            /** Material */
+            material?: string | null;
+            /** Sub Questions */
+            sub_questions?: components["schemas"]["SubQuestion"][] | null;
+        };
+        /**
+         * QuestionOut
+         * @description 答案、解析、评分要点按接口约定第 3 节决定是否返回，不返回时为 null。
+         */
+        QuestionOut: {
+            /** Id */
+            id: number;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "single" | "multiple" | "judge" | "blank" | "solution" | "cloze" | "reading" | "essay";
+            content: components["schemas"]["QuestionContent"];
+            /** Difficulty */
+            difficulty: number;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "preset" | "scan" | "ai" | "teacher" | "manual";
+            /** Knowledge Points */
+            knowledge_points: components["schemas"]["KnowledgePointBrief"][];
+            /** Answer */
+            answer: components["schemas"]["ChoiceAnswer"] | components["schemas"]["JudgeAnswer"] | components["schemas"]["BlanksAnswer"] | components["schemas"]["TextAnswer"] | components["schemas"]["SubAnswer"] | null;
+            /** Analysis */
+            analysis: components["schemas"]["AnalysisStep"][] | null;
+            /** Scoring Points */
+            scoring_points: components["schemas"]["ScoringPoint"][] | null;
+        };
+        /** ScoringPoint */
+        ScoringPoint: {
+            /** Point */
+            point: string;
+            /** Score */
+            score: number;
         };
         /** StudentRegister */
         StudentRegister: {
@@ -130,6 +336,43 @@ export interface components {
              */
             grade: 7 | 8 | 9;
         };
+        /** SubAnswer */
+        SubAnswer: {
+            /** Sub */
+            sub: components["schemas"]["SubAnswerItem"][];
+        };
+        /** SubAnswerItem */
+        SubAnswerItem: {
+            /** Seq */
+            seq: number;
+            /** Choice */
+            choice?: string[] | null;
+            /** Judge */
+            judge?: boolean | null;
+            /** Blanks */
+            blanks?: string[][] | null;
+        };
+        /** SubQuestion */
+        SubQuestion: {
+            /** Seq */
+            seq: number;
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "single" | "multiple" | "judge" | "blank";
+            /**
+             * Stem
+             * @default
+             */
+            stem: string;
+            /** Options */
+            options?: components["schemas"]["Option"][] | null;
+            /** Blank Count */
+            blank_count?: number | null;
+            /** Score */
+            score: number;
+        };
         /** TeacherRegister */
         TeacherRegister: {
             /**
@@ -147,6 +390,13 @@ export interface components {
             teach_subjects: ("math" | "physics" | "english")[];
             /** Teach Grades */
             teach_grades: (7 | 8 | 9)[];
+        };
+        /** TextAnswer */
+        TextAnswer: {
+            /** Text */
+            text: string;
+            /** Final */
+            final?: string | null;
         };
         /** UserOut */
         UserOut: {
@@ -296,6 +546,100 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UserOut"];
+                };
+            };
+        };
+    };
+    get_knowledge_tree_api_v1_knowledge_tree_get: {
+        parameters: {
+            query: {
+                subject: "math" | "physics" | "english";
+                grade?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgeTree"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_knowledge_point_api_v1_knowledge_points__point_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                point_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["KnowledgePointOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_question_api_v1_questions__question_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                question_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["QuestionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

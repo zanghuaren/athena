@@ -1,0 +1,157 @@
+.question {
+  min-width: 0;
+}
+
+.meta {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--clay);
+}
+
+.stem {
+  margin: 0 0 16px;
+  font: 500 18px/1.8 var(--serif);
+}
+
+.material {
+  margin: 0 0 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  background: var(--surface-alt);
+  font-size: 15px;
+  line-height: 1.9;
+}
+
+.options {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.options li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 6px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+  line-height: 1.8;
+}
+
+.key,
+.seq {
+  font-family: var(--latin);
+  color: var(--muted);
+}
+
+.subs,
+.answerList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.subs > li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 6px;
+  padding: 12px 0;
+  line-height: 1.8;
+}
+
+.subs > li + li {
+  border-top: 1px solid var(--line);
+}
+
+.answerList li {
+  display: flex;
+  gap: 8px;
+  line-height: 1.9;
+}
+
+.section {
+  margin-top: 22px;
+}
+
+.section h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.final {
+  margin: 8px 0 0;
+}
+
+.blanks {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px 16px;
+}
+
+.alt {
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.points {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.points li {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+
+.score {
+  flex: none;
+  font-family: var(--latin);
+  color: var(--clay);
+}
+
+/* 与原型的 .steps 一致 */
+.steps {
+  display: grid;
+  gap: 14px;
+}
+
+.step {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.stepNumber {
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  border: 1px solid color-mix(in srgb, var(--clay) 40%, transparent);
+  border-radius: 50%;
+  text-align: center;
+  font: 13px/24px var(--latin);
+  color: var(--clay);
+}
+
+.step h5 {
+  margin: 0 0 3px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.step p {
+  font-size: 14px;
+  line-height: 1.9;
+  color: var(--muted);
+}
+
+.subs .options li:last-child {
+  border-bottom: 0;
+}

@@ -3,6 +3,7 @@ import { getToken } from '../lib/session';
 import type { components, paths } from './schema';
 
 export type User = components['schemas']['UserOut'];
+export type Question = components['schemas']['QuestionOut'];
 
 const REQUEST_TIMEOUT_MS = 15_000;
 
