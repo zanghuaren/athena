@@ -30,3 +30,12 @@ async def get_current_user(db: DB, token: Token) -> User:
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+async def get_current_student(user: CurrentUser) -> User:
+    if user.role != "student":
+        raise AppError(403, "FORBIDDEN", "只有学生可以使用这个功能")
+    return user
+
+
+CurrentStudent = Annotated[User, Depends(get_current_student)]

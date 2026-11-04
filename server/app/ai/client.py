@@ -7,6 +7,7 @@ from enum import StrEnum
 
 import openai
 from openai import AsyncOpenAI
+from pydantic import BaseModel, ValidationError
 
 from app.config import settings
 from app.errors import AppError
@@ -91,12 +92,17 @@ async def stream_text(
         _log(scene, model, started, tokens, failed)
 
 
-async def complete_text(scene: str, model: Model, messages: list[dict]) -> str:
+async def complete_text(
+    scene: str, model: Model, messages: list[dict], json_output: bool = False
+) -> str:
     started = time.monotonic()
     tokens = None
     failed = True
+    extra = {"response_format": {"type": "json_object"}} if json_output else {}
     try:
-        resp = await _client.chat.completions.create(messages=messages, **_model_args(model))
+        resp = await _client.chat.completions.create(
+            messages=messages, **_model_args(model), **extra
+        )
         tokens = resp.usage.total_tokens if resp.usage else None
         failed = False
         return resp.choices[0].message.content or ""
@@ -104,3 +110,16 @@ async def complete_text(scene: str, model: Model, messages: list[dict]) -> str:
         raise _app_error(exc) from exc
     finally:
         _log(scene, model, started, tokens, failed)
+
+
+async def complete_json[T: BaseModel](
+    scene: str, model: Model, messages: list[dict], schema: type[T]
+) -> T:
+    """输出按 schema 校验，不合格时重新生成，最多重试 2 次。"""
+    for _ in range(3):
+        text = await complete_text(scene, model, messages, json_output=True)
+        try:
+            return schema.model_validate_json(text)
+        except ValidationError as exc:
+            logger.warning("ai scene=%s invalid output: %s", scene, exc.errors()[:3])
+    raise AppError(502, "AI_UNAVAILABLE", "AI 服务暂时不可用，请稍后再试")
