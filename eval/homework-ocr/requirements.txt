@@ -1,0 +1,3 @@
+# Only needed to restore the HEIC photographs as JPEG; not an app dependency.
+Pillow==13.0.0
+pillow-heif==1.8.1

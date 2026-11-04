@@ -1,0 +1,6 @@
+# Public availability does not establish permission to redistribute these images.
+images/
+source-labels/
+references/
+runs/
+__pycache__/
