@@ -1,0 +1,16 @@
+.hero {
+  display: grid;
+  gap: 18px;
+  margin: 40px 0 28px;
+}
+
+.footer {
+  text-align: center;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.footer a {
+  color: var(--clay);
+  font-size: 13px;
+}

@@ -1,0 +1,17 @@
+.h {
+  margin: 8px 0 0;
+  font: 600 16px/1.5 var(--serif);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  margin-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.row input {
+  accent-color: var(--clay);
+}

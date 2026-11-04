@@ -1,0 +1,39 @@
+.top {
+  margin-top: 22px;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+}
+
+.option:hover .optionTitle {
+  color: var(--clay);
+}
+
+.optionIcon {
+  width: 18px;
+  color: var(--olive);
+}
+
+.optionTitle {
+  display: block;
+  font-size: 14px;
+}
+
+.optionDesc {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.chevron {
+  margin-left: auto;
+  width: 14px;
+  color: var(--soft);
+}
