@@ -6,6 +6,7 @@ import MarkdownIt, { type StateInline } from 'markdown-it';
 const md = new MarkdownIt({ html: false, breaks: true, linkify: false });
 
 md.inline.ruler.before('escape', 'math', math);
+md.inline.ruler.before('escape', 'math_paren', mathParen);
 md.inline.ruler.before('emphasis', 'blank', blank);
 
 md.renderer.rules.math = (tokens, idx) => {
@@ -56,6 +57,27 @@ function math(state: StateInline, silent: boolean): boolean {
     token.markup = markup;
   }
   state.pos = end + markup.length;
+  return true;
+}
+
+/**
+ * `\\(...\\)` 和 `\\[...\\]`。提示词要求模型用 `$`，但看图讲题时它常常还是用这两种写法，
+ * 不识别的话页面上会显示一串反斜杠。
+ */
+function mathParen(state: StateInline, silent: boolean): boolean {
+  const { src, pos } = state;
+  const open = src.slice(pos, pos + 2);
+  const close = { '\\(': '\\)', '\\[': '\\]' }[open];
+  if (!close) return false;
+  const end = src.indexOf(close, pos + 2);
+  if (end === -1 || end === pos + 2) return false;
+
+  if (!silent) {
+    const token = state.push('math', '', 0);
+    token.content = src.slice(pos + 2, end);
+    token.markup = open === '\\(' ? '$' : '$$';
+  }
+  state.pos = end + 2;
   return true;
 }
 

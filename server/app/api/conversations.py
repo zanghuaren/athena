@@ -7,6 +7,7 @@ from starlette.background import BackgroundTask
 
 from app.api.deps import CurrentUser
 from app.db import DB
+from app.models import Message
 from app.schemas.conversation import (
     ConversationDetail,
     ConversationIn,
@@ -16,7 +17,7 @@ from app.schemas.conversation import (
     MessageIn,
     MessageOut,
 )
-from app.services import conversations
+from app.services import conversations, files
 
 router = APIRouter(prefix="/conversations", tags=["答疑"])
 
@@ -49,8 +50,15 @@ async def get_conversation(db: DB, user: CurrentUser, conversation_id: int) -> C
     messages = await conversations.messages_of(db, conversation_id)
     return ConversationDetail(
         **ConversationOut.model_validate(conversation).model_dump(),
-        messages=[MessageOut.model_validate(m) for m in messages],
+        messages=[_message_out(m) for m in messages],
     )
+
+
+def _message_out(message: Message) -> MessageOut:
+    out = MessageOut.model_validate(message)
+    if message.image_file:
+        out.image = files.file_out(message.image_file)
+    return out
 
 
 @router.patch("/{conversation_id}")

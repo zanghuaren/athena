@@ -1,5 +1,6 @@
 """文件：上传的图片统一转成 JPEG，访问地址带过期时间和签名，见接口约定 2.3、技术方案第 8 节。"""
 
+import base64
 import hashlib
 import hmac
 import io
@@ -101,3 +102,9 @@ async def get_signed(db: AsyncSession, file_id: int, exp: int, sig: str) -> File
 def _sign(file_id: int, exp: int) -> str:
     message = f"{file_id}:{exp}".encode()
     return hmac.new(settings.file_secret.encode(), message, hashlib.sha256).hexdigest()
+
+
+async def data_url(file: File) -> str:
+    """交给模型看图用的 data URL。"""
+    data = await anyio.Path(settings.files_dir / file.path).read_bytes()
+    return f"data:{file.mime};base64,{base64.b64encode(data).decode()}"

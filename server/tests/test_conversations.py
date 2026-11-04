@@ -1,9 +1,12 @@
+import io
 import json
 
 import pytest
+from PIL import Image, ImageDraw, ImageFont
 from sqlalchemy import update
 
 from app.ai import safety
+from app.ai.client import Model
 from app.config import settings
 from app.db import SessionLocal
 from app.models import Conversation, Message, User
@@ -36,6 +39,18 @@ async def _detail(client, headers, conversation_id) -> dict:
     resp = await client.get(f"/api/v1/conversations/{conversation_id}", headers=headers)
     assert resp.status_code == 200
     return resp.json()
+
+
+async def _upload(client, headers, text: str = "") -> int:
+    image = Image.new("RGB", (480, 160), "white")
+    ImageDraw.Draw(image).text((30, 50), text, fill="black", font=ImageFont.load_default(56))
+    data = io.BytesIO()
+    image.save(data, "PNG")
+    resp = await client.post(
+        "/api/v1/files", files={"file": ("q.png", data.getvalue())}, headers=headers
+    )
+    assert resp.status_code == 201
+    return resp.json()["id"]
 
 
 async def _add_turns(conversation_id: int, count: int) -> None:
@@ -162,6 +177,68 @@ async def test_context_keeps_recent_turns_and_skips_blocked(client, student):
     # 最近 20 轮是第 4～22 轮加上这次的新问题，第 22 轮被拦截不带上
     assert contents[1:3] == ["问题4", "回答4"]
     assert contents[-3:] == ["问题21", "回答21", "新问题"]
+
+
+async def test_image_message_rules(client, student, teacher):
+    conv = await _create(client, student)
+    url = f"/api/v1/conversations/{conv['id']}/messages"
+    image_id = await _upload(client, student)
+    await _add_turns(conv["id"], 1)
+    resp = await client.post(
+        url, json={"action": "hint", "image_file_id": image_id}, headers=student
+    )
+    assert resp.json()["error"]["message"] == "这个操作不能附图"
+    # 别人的图片按不存在处理
+    others = await _upload(client, teacher)
+    resp = await client.post(
+        url, json={"content": "看图", "image_file_id": others}, headers=student
+    )
+    assert resp.status_code == 404
+
+
+async def test_image_message_goes_to_vision_model(client, student):
+    conv = await _create(client, student, subject="math")
+    image_id = await _upload(client, student, "1 + 1 = ?")
+    async with SessionLocal() as db:
+        user = await db.get(User, 1)
+        conversation = await db.get(Conversation, conv["id"])
+        body = MessageIn(image_file_id=image_id)
+        reply = await conversations.start_reply(db, user, conversation, body)
+
+    assert reply.model is Model.VISION
+    # 标题也看图生成
+    assert reply.first_question == reply.model_messages[-1]["content"]
+    assert "没有看清题目" in reply.model_messages[0]["content"]
+    text, image = reply.model_messages[-1]["content"]
+    assert text["text"] == "请讲解图片里的题目。"
+    assert image["image_url"]["url"].startswith("data:image/jpeg;base64,")
+
+    detail = await _detail(client, student, conv["id"])
+    assert detail["title"] == conversations.IMAGE_TITLE
+    question = detail["messages"][0]
+    assert question["image"]["id"] == image_id
+    assert (await client.get(question["image"]["url"])).status_code == 200
+    assert detail["messages"][1]["image"] is None
+
+
+@needs_key
+async def test_reply_reads_image(client, student):
+    conv = await _create(client, student, subject="math", explain_mode="direct")
+    image_id = await _upload(client, student, "12 + 30 = ?")
+    events = await _send(
+        client, student, conv["id"], content="图里的算式等于多少？", image_file_id=image_id
+    )
+    assert events[-1][1]["status"] == "done"
+    assert "42" in "".join(d["text"] for e, d in events if e == "delta")
+    title = (await _detail(client, student, conv["id"]))["title"]
+    assert title not in ("新对话", "图里的算式等于多少？")
+
+
+@needs_key
+async def test_reply_says_unclear_image(client, student):
+    conv = await _create(client, student, subject="math", explain_mode="direct")
+    events = await _send(client, student, conv["id"], image_file_id=await _upload(client, student))
+    assert "没有看清" in "".join(d["text"] for e, d in events if e == "delta")
 
 
 @needs_key

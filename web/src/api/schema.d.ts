@@ -441,7 +441,7 @@ export interface components {
         };
         /**
          * MessageIn
-         * @description 普通提问只传 content；点按钮的动作只传 action，见接口约定 2.1。
+         * @description 普通提问传 content，可以附一张图；点按钮的动作只传 action，见接口约定 2.1。
          */
         MessageIn: {
             /**
@@ -449,6 +449,8 @@ export interface components {
              * @default
              */
             content: string;
+            /** Image File Id */
+            image_file_id?: number | null;
             /** Action */
             action?: ("hint" | "full" | "example" | "continue" | "regenerate") | null;
         };
@@ -470,6 +472,7 @@ export interface components {
              * @enum {string}
              */
             status: "done" | "interrupted" | "blocked";
+            image?: components["schemas"]["FileOut"] | null;
             /**
              * Created At
              * Format: date-time

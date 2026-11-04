@@ -7,6 +7,12 @@ describe('renderMarkdown', () => {
     expect(renderMarkdown('$$\\frac{1}{2}$$')).toContain('katex-display');
   });
 
+  it('也认 \\(...\\) 和 \\[...\\] 写的公式', () => {
+    expect(renderInline('比值 \\(\\frac{12}{13}\\) 不变')).toContain('class="katex"');
+    expect(renderMarkdown('\\[\nx = 2\n\\]')).toContain('katex-display');
+    expect(renderInline('括号 \\(只开不关')).toBe('括号 (只开不关');
+  });
+
   it('钱数里的 $ 不当成公式', () => {
     expect(renderInline('costs $5 and $10')).toBe('costs $5 and $10');
     expect(renderInline('\\$x$')).toBe('$x$');

@@ -3,6 +3,7 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.schemas.file import FileOut
 from app.schemas.user import ExplainMode, Subject
 
 Title = Annotated[str, Field(min_length=1, max_length=30)]
@@ -51,6 +52,8 @@ class MessageOut(BaseModel):
     action: Literal["hint", "full", "example"] | None
     content: str
     status: Literal["done", "interrupted", "blocked"]
+    # 带签名的地址要由接口层填，不从表里直接读
+    image: FileOut | None = None
     created_at: datetime
 
 
@@ -59,9 +62,10 @@ class ConversationDetail(ConversationOut):
 
 
 class MessageIn(BaseModel):
-    """普通提问只传 content；点按钮的动作只传 action，见接口约定 2.1。"""
+    """普通提问传 content，可以附一张图；点按钮的动作只传 action，见接口约定 2.1。"""
 
     content: str = ""
+    image_file_id: int | None = None
     action: MessageAction | None = None
 
     @field_validator("content")
@@ -73,6 +77,8 @@ class MessageIn(BaseModel):
 
     @model_validator(mode="after")
     def _content_required(self):
-        if self.action is None and not self.content.strip():
+        if self.action is None and not self.content.strip() and self.image_file_id is None:
             raise ValueError("请输入问题")
+        if self.action and self.image_file_id is not None:
+            raise ValueError("这个操作不能附图")
         return self

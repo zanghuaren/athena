@@ -16,12 +16,14 @@ from app.db import SessionLocal
 from app.errors import AppError
 from app.models import Conversation, Message, User
 from app.schemas.conversation import ConversationIn, ConversationPatch, MessageIn
+from app.services import files
 
 logger = logging.getLogger(__name__)
 
 MAX_TURNS = 50
 CONTEXT_TURNS = 20
 DEFAULT_TITLE = "新对话"
+IMAGE_TITLE = "图片提问"
 _GRADE_NAMES = {7: "七年级（初一）", 8: "八年级（初二）", 9: "九年级（初三）"}
 
 
@@ -36,8 +38,13 @@ class Reply:
     prefix: str = ""
     # 输入命中敏感词时不调用模型，直接回复这段话
     blocked_reply: str | None = None
-    # 会话的第一个问题：回答的同时用它生成标题
-    first_question: str | None = None
+    # 会话的第一个问题（和交给模型的内容一样，可能带图）：回答的同时用它生成标题
+    first_question: str | list[dict] | None = None
+
+    @property
+    def model(self) -> Model:
+        has_image = any(isinstance(m["content"], list) for m in self.model_messages)
+        return Model.VISION if has_image else Model.FAST
 
 
 # ---------- 会话管理 ----------
@@ -120,14 +127,15 @@ async def start_reply(
     history = await messages_of(db, conversation.id)
     last = history[-1] if history else None
     _check_action(user, conversation, data, last)
+    image = await files.get_owned(db, user, data.image_file_id) if data.image_file_id else None
 
     if data.action == "continue":
         assert last is not None
-        model_messages = _model_messages(user, conversation, history[:-1])
+        model_messages = await _model_messages(user, conversation, history[:-1])
         return Reply(conversation.id, last.id, model_messages, prefix=last.content)
 
     blocked = data.action is None and safety.is_sensitive(data.content)
-    first_question = None
+    is_first = False
     if data.action == "regenerate":
         assert last is not None
         await db.delete(last)
@@ -135,14 +143,18 @@ async def start_reply(
     else:
         content = "" if data.action else data.content.strip()
         question = Message(
-            conversation_id=conversation.id, role="user", action=data.action, content=content
+            conversation_id=conversation.id,
+            role="user",
+            action=data.action,
+            content=content,
+            image_file=image,
         )
         db.add(question)
         history.append(question)
         conversation.turn_count += 1
         if conversation.turn_count == 1 and not blocked:
-            first_question = content
-            conversation.title = content[:20]
+            is_first = True
+            conversation.title = content[:20] or IMAGE_TITLE
 
     answer = Message(
         conversation_id=conversation.id,
@@ -156,7 +168,8 @@ async def start_reply(
     if blocked:
         logger.warning("ask input blocked conversation=%s", conversation.id)
         return Reply(conversation.id, answer.id, [], blocked_reply=answer.content)
-    model_messages = _model_messages(user, conversation, history)
+    model_messages = await _model_messages(user, conversation, history)
+    first_question = model_messages[-1]["content"] if is_first else None
     return Reply(conversation.id, answer.id, model_messages, first_question=first_question)
 
 
@@ -184,7 +197,7 @@ def _check_action(
                 reject("教师端不支持这个操作")
 
 
-def _system_prompt(user: User, conversation: Conversation) -> str:
+def _system_prompt(user: User, conversation: Conversation, has_image: bool) -> str:
     if user.role == "student":
         parts = [prompts.render("ask/student", grade=_GRADE_NAMES.get(user.grade, "初中"))]
     else:
@@ -192,6 +205,8 @@ def _system_prompt(user: User, conversation: Conversation) -> str:
     parts.append(prompts.load(f"ask/{conversation.subject or 'auto'}"))
     if conversation.explain_mode:
         parts.append(prompts.load(f"ask/{conversation.explain_mode}"))
+    if has_image:
+        parts.append(prompts.load("ask/image"))
     parts += [prompts.load("format"), prompts.load("safety")]
     if conversation.summary:
         parts.append(f"## 更早的对话摘要\n\n{conversation.summary}")
@@ -215,13 +230,28 @@ def _as_model_message(message: Message) -> dict:
     return {"role": message.role, "content": message.content}
 
 
-def _model_messages(user: User, conversation: Conversation, history: list[Message]) -> list[dict]:
-    messages = [{"role": "system", "content": _system_prompt(user, conversation)}]
-    for turn in _turns(history)[-CONTEXT_TURNS:]:
-        # 被拦截的一轮不再交给模型；还没有内容的回答（正在生成的这条）也跳过
-        if any(m.status == "blocked" for m in turn):
-            continue
-        messages += [_as_model_message(m) for m in turn if m.role == "user" or m.content]
+async def _model_messages(
+    user: User, conversation: Conversation, history: list[Message]
+) -> list[dict]:
+    # 被拦截的一轮不再交给模型；还没有内容的回答（正在生成的这条）也跳过
+    turns = [
+        turn
+        for turn in _turns(history)[-CONTEXT_TURNS:]
+        if not any(m.status == "blocked" for m in turn)
+    ]
+    has_image = any(m.image_file for turn in turns for m in turn)
+    messages = [{"role": "system", "content": _system_prompt(user, conversation, has_image)}]
+    for message in (m for turn in turns for m in turn if m.role == "user" or m.content):
+        entry = _as_model_message(message)
+        if message.image_file:
+            entry["content"] = [
+                {"type": "text", "text": entry["content"] or "请讲解图片里的题目。"},
+                {
+                    "type": "image_url",
+                    "image_url": {"url": await files.data_url(message.image_file)},
+                },
+            ]
+        messages.append(entry)
     return messages
 
 
@@ -239,7 +269,7 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
     status = "interrupted"
     try:
         async with aclosing(
-            stream_text("ask", Model.FAST, reply.model_messages, reply.prefix)
+            stream_text("ask", reply.model, reply.model_messages, reply.prefix)
         ) as pieces:
             async for piece in pieces:
                 text += piece
@@ -276,13 +306,15 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
 # ---------- 标题和摘要：失败了不影响对话 ----------
 
 
-async def _title(question: str) -> str | None:
+async def _title(question: str | list[dict]) -> str | None:
     messages = [
         {"role": "system", "content": prompts.load("ask/title")},
         {"role": "user", "content": question},
     ]
+    # 学生可能只写了“讲一下第一题”，题目在图里，标题也要看图
+    model = Model.VISION if isinstance(question, list) else Model.FAST
     try:
-        title = await complete_text("ask_title", Model.FAST, messages)
+        title = await complete_text("ask_title", model, messages)
     except AppError as exc:
         logger.warning("ask title failed: %s", exc.code)
         return None
@@ -308,7 +340,11 @@ async def after_reply(conversation_id: int, new_turn: bool) -> None:
 
 def _turn_text(turn: list[Message]) -> str:
     names = {"user": "学生", "assistant": "老师"}
-    return "\n\n".join(f"{names[m.role]}：{_as_model_message(m)['content']}" for m in turn)
+    lines = []
+    for m in turn:
+        image = "（附了一张图片）" if m.image_file_id else ""
+        lines.append(f"{names[m.role]}：{_as_model_message(m)['content']}{image}")
+    return "\n\n".join(lines)
 
 
 async def _merge_summary(conversation: Conversation, turn: list[Message]) -> None:

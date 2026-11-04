@@ -1,7 +1,8 @@
 from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, Index, Integer, Text
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, CreatedAtMixin, IdMixin, TimestampMixin
+from app.models.file import File
 from app.models.knowledge import SUBJECT_CHECK
 
 
@@ -48,3 +49,8 @@ class Message(IdMixin, CreatedAtMixin, Base):
     action: Mapped[str | None] = mapped_column(Text)
     content: Mapped[str] = mapped_column(Text)
     status: Mapped[str] = mapped_column(Text, server_default="done")
+    image_file_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("files.id", ondelete="SET NULL")
+    )
+    # 返回消息时要带图片地址，查消息时一起查出来
+    image_file: Mapped[File | None] = relationship(lazy="selectin")
