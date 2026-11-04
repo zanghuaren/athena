@@ -1,0 +1,185 @@
+{
+  "subject": "english",
+  "chapters": [
+    {
+      "code": "E-01", "grade": null, "title": "名词",
+      "points": [
+        {"code": "E-01-01", "name": "可数名词的复数", "grades": [7], "description": "规则变化（加 -s、-es，辅音字母加 y 变 i 加 -es 等）和不规则变化（man→men、child→children 等）。"},
+        {"code": "E-01-02", "name": "不可数名词与数量表达", "grades": [7], "description": "不可数名词没有复数形式，用 a piece of、a glass of 等表示数量；many / much、few / little 的区别。"},
+        {"code": "E-01-03", "name": "名词所有格", "grades": [7, 8], "description": "'s 所有格和 of 所有格，共同拥有与各自拥有的区别。"}
+      ]
+    },
+    {
+      "code": "E-02", "grade": null, "title": "代词",
+      "points": [
+        {"code": "E-02-01", "name": "人称代词与物主代词", "grades": [7], "description": "主格与宾格的用法，形容词性物主代词后接名词，名词性物主代词单独使用。"},
+        {"code": "E-02-02", "name": "反身代词", "grades": [8], "description": "myself、yourself 等的形式，以及 enjoy oneself、help oneself 等固定搭配。"},
+        {"code": "E-02-03", "name": "指示代词与疑问代词", "grades": [7], "description": "this / that / these / those 的用法，who、whose、what、which 的区别。"},
+        {"code": "E-02-04", "name": "不定代词", "grades": [7, 8, 9], "description": "some / any、both / either / neither、all / none、other / another，以及 something、anyone 等复合不定代词。"},
+        {"code": "E-02-05", "name": "it 的用法", "grades": [8, 9], "description": "it 指代事物、时间、天气、距离，作形式主语和形式宾语（It is + adj. + to do）。"}
+      ]
+    },
+    {
+      "code": "E-03", "grade": null, "title": "冠词与数词",
+      "points": [
+        {"code": "E-03-01", "name": "不定冠词 a / an", "grades": [7], "description": "根据后面单词的发音（而不是字母）选择 a 或 an，泛指和第一次提到时使用。"},
+        {"code": "E-03-02", "name": "定冠词 the 与零冠词", "grades": [7, 8], "description": "特指、再次提到、独一无二的事物和乐器前用 the；三餐、球类、学科前不用冠词。"},
+        {"code": "E-03-03", "name": "基数词与序数词", "grades": [7], "description": "基数词和序数词的构成与拼写，日期、年份、时刻的表达。"},
+        {"code": "E-03-04", "name": "数词的特殊用法", "grades": [8, 9], "description": "hundreds of 与 two hundred 的区别，分数、百分数的表达，“数词 + 名词”作定语时用单数（a five-year-old boy）。"}
+      ]
+    },
+    {
+      "code": "E-04", "grade": null, "title": "形容词和副词",
+      "points": [
+        {"code": "E-04-01", "name": "形容词与副词的用法", "grades": [7], "description": "形容词作定语和表语，副词修饰动词、形容词和副词；系动词后接形容词；形容词修饰不定代词时后置。"},
+        {"code": "E-04-02", "name": "比较级和最高级的构成", "grades": [8], "description": "规则变化与不规则变化（good / well→better→best 等）。"},
+        {"code": "E-04-03", "name": "比较等级的句型", "grades": [8], "description": "as...as、比较级 + than、the + 最高级 + in / of，“the + 比较级, the + 比较级”，比较级 + and + 比较级。"},
+        {"code": "E-04-04", "name": "易混形容词与副词", "grades": [8, 9], "description": "辨析 already / yet、too / also / either、hard / hardly、alone / lonely 等。"}
+      ]
+    },
+    {
+      "code": "E-05", "grade": null, "title": "介词与连词",
+      "points": [
+        {"code": "E-05-01", "name": "时间介词", "grades": [7], "description": "at、on、in 表示时间的区别，以及 for、since、during、after 等的用法。"},
+        {"code": "E-05-02", "name": "地点与方位介词", "grades": [7], "description": "at / in、on / over / above、across / through、between / among 等的区别。"},
+        {"code": "E-05-03", "name": "其他常用介词", "grades": [7, 8], "description": "表示方式、工具和伴随的 by、with、in，以及 like、except、besides 等。"},
+        {"code": "E-05-04", "name": "并列连词", "grades": [7, 8], "description": "and、but、or、so 的用法，both...and、either...or、neither...nor、not only...but also。"}
+      ]
+    },
+    {
+      "code": "E-06", "grade": null, "title": "动词时态",
+      "points": [
+        {"code": "E-06-01", "name": "一般现在时", "grades": [7], "description": "表示经常性、习惯性的动作或客观事实，主语为第三人称单数时动词加 -s 或 -es。"},
+        {"code": "E-06-02", "name": "现在进行时", "grades": [7], "description": "be + doing 表示正在进行的动作，现在分词的构成，look、listen、now 等标志词。"},
+        {"code": "E-06-03", "name": "一般过去时", "grades": [7, 8], "description": "过去发生的动作或状态，规则动词和常见不规则动词的过去式。"},
+        {"code": "E-06-04", "name": "一般将来时", "grades": [7, 8], "description": "will do 和 be going to do 的用法，以及“主将从现”。"},
+        {"code": "E-06-05", "name": "过去进行时", "grades": [8], "description": "was / were + doing 表示过去某一时刻正在进行的动作，常与 when、while 连用。"},
+        {"code": "E-06-06", "name": "现在完成时", "grades": [8, 9], "description": "have / has + 过去分词；与 for、since 连用；have been to 与 have gone to 的区别；短暂性动词不能与一段时间连用。"},
+        {"code": "E-06-07", "name": "过去完成时", "grades": [9], "description": "had + 过去分词表示“过去的过去”，常见于 by the end of last year 和宾语从句中。"},
+        {"code": "E-06-08", "name": "时态的综合辨析", "grades": [8, 9], "description": "根据时间状语和上下文选择正确的时态。"}
+      ]
+    },
+    {
+      "code": "E-07", "grade": null, "title": "被动语态",
+      "points": [
+        {"code": "E-07-01", "name": "一般现在时和一般过去时的被动语态", "grades": [9], "description": "am / is / are / was / were + 过去分词，主动句改为被动句。"},
+        {"code": "E-07-02", "name": "其他时态与含情态动词的被动语态", "grades": [9], "description": "will be done、have been done、can / must / should be done 等。"},
+        {"code": "E-07-03", "name": "被动语态的特殊情况", "grades": [9], "description": "make / see 等后接 do 的结构变为被动时要补 to，以及不能用于被动语态的动词。"}
+      ]
+    },
+    {
+      "code": "E-08", "grade": null, "title": "情态动词",
+      "points": [
+        {"code": "E-08-01", "name": "can / could 与 may / might", "grades": [7, 8], "description": "表示能力、许可、请求和推测，could 表示委婉语气。"},
+        {"code": "E-08-02", "name": "must、have to 与 need", "grades": [8], "description": "must 表示主观必须，have to 表示客观需要；must 开头的问句用 needn't 或 don't have to 作否定回答。"},
+        {"code": "E-08-03", "name": "should 与 had better", "grades": [8], "description": "表示建议和义务，had better (not) do 的用法。"},
+        {"code": "E-08-04", "name": "情态动词表推测", "grades": [9], "description": "must（肯定）、may / might / could（可能）、can't（不可能）表示推测。"}
+      ]
+    },
+    {
+      "code": "E-09", "grade": null, "title": "非谓语动词",
+      "points": [
+        {"code": "E-09-01", "name": "动词不定式", "grades": [8, 9], "description": "want / decide / hope 等后接 to do；ask / tell sb. to do；疑问词 + to do；too...to、enough to。"},
+        {"code": "E-09-02", "name": "动名词", "grades": [8, 9], "description": "enjoy / finish / mind / practice 等后接 doing，介词后接 doing，doing 作主语。"},
+        {"code": "E-09-03", "name": "省略 to 的不定式", "grades": [8, 9], "description": "make、let、have 及 see、hear、watch 等感官动词后接 do；why not do、had better do。"},
+        {"code": "E-09-04", "name": "to do 与 doing 的辨析", "grades": [9], "description": "stop / remember / forget / try 等接 to do 和 doing 时意义不同。"}
+      ]
+    },
+    {
+      "code": "E-10", "grade": null, "title": "句子类型与句子成分",
+      "points": [
+        {"code": "E-10-01", "name": "句子成分与五种基本句型", "grades": [8, 9], "description": "主谓、主谓宾、主系表、主谓双宾、主谓宾宾补，识别句子主干。"},
+        {"code": "E-10-02", "name": "一般疑问句与特殊疑问句", "grades": [7], "description": "疑问句的语序、简略回答，用特殊疑问词对划线部分提问。"},
+        {"code": "E-10-03", "name": "选择疑问句与反意疑问句", "grades": [8, 9], "description": "前肯后否、前否后肯；陈述部分含 never、hardly 等否定词时的反意疑问句及回答。"},
+        {"code": "E-10-04", "name": "祈使句", "grades": [7], "description": "肯定和否定形式（Don't...），Let's...，祈使句 + and / or + 陈述句。"},
+        {"code": "E-10-05", "name": "感叹句", "grades": [8], "description": "What + (a / an) + adj. + n. 与 How + adj. / adv. 的区别。"},
+        {"code": "E-10-06", "name": "There be 句型", "grades": [7], "description": "表示“某处有某物”，be 的形式遵循“就近原则”；与 have 的区别。"},
+        {"code": "E-10-07", "name": "简单句、并列句和复合句", "grades": [9], "description": "区分三种句子结构，能用连词合并句子或进行句型转换。"}
+      ]
+    },
+    {
+      "code": "E-11", "grade": null, "title": "宾语从句",
+      "points": [
+        {"code": "E-11-01", "name": "宾语从句的引导词", "grades": [8, 9], "description": "that、if / whether 和特殊疑问词引导宾语从句，if 与 whether 的区别。"},
+        {"code": "E-11-02", "name": "宾语从句的语序", "grades": [8, 9], "description": "宾语从句必须用陈述句语序。"},
+        {"code": "E-11-03", "name": "宾语从句的时态", "grades": [9], "description": "主句是过去时，从句一般用相应的过去时态；表示客观真理时仍用一般现在时。"}
+      ]
+    },
+    {
+      "code": "E-12", "grade": null, "title": "状语从句",
+      "points": [
+        {"code": "E-12-01", "name": "时间状语从句", "grades": [8, 9], "description": "when、while、before、after、until（not...until）、as soon as、since 引导的从句，主将从现。"},
+        {"code": "E-12-02", "name": "条件状语从句", "grades": [8, 9], "description": "if、unless 引导的条件状语从句，主将从现。"},
+        {"code": "E-12-03", "name": "原因、结果与目的状语从句", "grades": [9], "description": "because、since、so...that、such...that、so that 引导的从句。"},
+        {"code": "E-12-04", "name": "让步与比较状语从句", "grades": [9], "description": "although / though 不能与 but 连用，even if；as...as、than 引导的比较状语从句。"}
+      ]
+    },
+    {
+      "code": "E-13", "grade": null, "title": "定语从句",
+      "points": [
+        {"code": "E-13-01", "name": "关系代词 who、which、that", "grades": [9], "description": "先行词为人或物时关系代词的选择，以及关系代词在从句中作主语或宾语。"},
+        {"code": "E-13-02", "name": "只用 that 的情况", "grades": [9], "description": "先行词是不定代词、被序数词或最高级修饰、同时指人和物时用 that。"},
+        {"code": "E-13-03", "name": "定语从句的主谓一致", "grades": [9], "description": "关系代词作主语时，从句谓语动词与先行词的人称和数保持一致。"}
+      ]
+    },
+    {
+      "code": "E-14", "grade": null, "title": "主谓一致",
+      "points": [
+        {"code": "E-14-01", "name": "语法一致", "grades": [8, 9], "description": "单数主语用单数谓语、复数主语用复数谓语；动名词、不定式作主语时谓语用单数。"},
+        {"code": "E-14-02", "name": "意义一致与就近原则", "grades": [9], "description": "集体名词、表示时间金钱的复数名词的谓语形式；either...or、neither...nor、not only...but also 遵循就近原则。"}
+      ]
+    },
+    {
+      "code": "E-15", "grade": null, "title": "构词法",
+      "points": [
+        {"code": "E-15-01", "name": "派生词（前缀和后缀）", "grades": [8, 9], "description": "un-、dis-、im- 等前缀改变词义，-ful、-less、-ly、-tion、-er 等后缀改变词性。"},
+        {"code": "E-15-02", "name": "合成词与转化", "grades": [8, 9], "description": "两个词合成新词，以及同一个词在不同词性之间的转化。"},
+        {"code": "E-15-03", "name": "根据语境填写单词的正确形式", "grades": [7, 8, 9], "description": "根据句子结构判断词性，再写出名词复数、动词时态、比较级或派生词等正确形式。"}
+      ]
+    },
+    {
+      "code": "E-16", "grade": null, "title": "词汇辨析与固定搭配",
+      "points": [
+        {"code": "E-16-01", "name": "常见动词辨析", "grades": [7, 8, 9], "description": "say / speak / talk / tell、borrow / lend、spend / cost / pay / take 等的区别。"},
+        {"code": "E-16-02", "name": "动词短语", "grades": [7, 8, 9], "description": "look after、give up、take off、put on 等常用短语动词，以及代词作宾语时的位置。"},
+        {"code": "E-16-03", "name": "常用固定搭配与习惯用语", "grades": [7, 8, 9], "description": "be interested in、be good at、be afraid of 等搭配，以及 in time、on time 等习惯用语。"},
+        {"code": "E-16-04", "name": "话题词汇", "grades": [7, 8, 9], "description": "围绕个人情况、学校生活、饮食健康、环境保护等话题的核心词汇，在语境中选词填空。"}
+      ]
+    },
+    {
+      "code": "E-17", "grade": null, "title": "完形填空",
+      "points": [
+        {"code": "E-17-01", "name": "根据上下文逻辑选词", "grades": [7, 8, 9], "description": "利用转折、因果、并列等逻辑关系和前后文的复现、同义信息确定答案。"},
+        {"code": "E-17-02", "name": "根据词语搭配和语法选词", "grades": [7, 8, 9], "description": "利用固定搭配、词性和语法规则排除干扰项。"},
+        {"code": "E-17-03", "name": "理解语篇主旨与情感态度", "grades": [8, 9], "description": "把握全文主线和作者态度，选出符合情感变化的词。"}
+      ]
+    },
+    {
+      "code": "E-18", "grade": null, "title": "阅读理解",
+      "points": [
+        {"code": "E-18-01", "name": "细节理解", "grades": [7, 8, 9], "description": "按题干关键词回到原文定位，比对同义改写，排除张冠李戴、偷换概念的选项。"},
+        {"code": "E-18-02", "name": "主旨大意", "grades": [7, 8, 9], "description": "抓住首尾段和段落主题句，概括文章或段落大意，选出最佳标题。"},
+        {"code": "E-18-03", "name": "推理判断", "grades": [8, 9], "description": "根据文中信息推断隐含意思、作者态度和写作目的，不能脱离原文过度推断。"},
+        {"code": "E-18-04", "name": "词义猜测与指代", "grades": [8, 9], "description": "利用上下文、构词法和同义反义线索推测生词含义，判断代词指代的对象。"},
+        {"code": "E-18-05", "name": "篇章结构与任务型阅读", "grades": [8, 9], "description": "理清文章结构，完成还原句子、回答问题和信息转换等任务。"},
+        {"code": "E-18-06", "name": "图表与应用文阅读", "grades": [7, 8, 9], "description": "从广告、海报、时间表、图表等非连续文本中快速提取和比较信息。"}
+      ]
+    },
+    {
+      "code": "E-19", "grade": null, "title": "书面表达",
+      "points": [
+        {"code": "E-19-01", "name": "句子的连接与过渡", "grades": [7, 8, 9], "description": "使用 first、however、in addition、as a result 等连接词，使行文连贯。"},
+        {"code": "E-19-02", "name": "记叙文写作", "grades": [7, 8, 9], "description": "交代时间、地点、人物和经过，时态统一，结尾写出感受或收获。"},
+        {"code": "E-19-03", "name": "说明文与议论文写作", "grades": [8, 9], "description": "介绍事物或表达观点，结构清楚、理由充分。"},
+        {"code": "E-19-04", "name": "应用文写作", "grades": [7, 8, 9], "description": "书信、邮件、通知、倡议书的格式和常用表达。"}
+      ]
+    },
+    {
+      "code": "E-20", "grade": null, "title": "交际用语",
+      "points": [
+        {"code": "E-20-01", "name": "日常交际用语", "grades": [7, 8, 9], "description": "问候、介绍、道歉、感谢、请求、邀请、问路、购物、就医等场景的常用表达和应答。"},
+        {"code": "E-20-02", "name": "补全对话", "grades": [7, 8, 9], "description": "根据上下文语境，选择或写出符合逻辑的句子补全对话。"}
+      ]
+    }
+  ]
+}
