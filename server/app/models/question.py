@@ -2,10 +2,10 @@ from typing import Any
 
 from sqlalchemy import BigInteger, CheckConstraint, ForeignKey, SmallInteger, Text
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, CreatedAtMixin, IdMixin, TimestampMixin
-from app.models.knowledge import SUBJECT_CHECK
+from app.models.knowledge import SUBJECT_CHECK, KnowledgePoint
 
 
 class Question(IdMixin, TimestampMixin, Base):
@@ -36,6 +36,10 @@ class Question(IdMixin, TimestampMixin, Base):
         BigInteger, ForeignKey("questions.id", ondelete="SET NULL")
     )
     content_text: Mapped[str] = mapped_column(Text)
+
+    knowledge_points: Mapped[list[KnowledgePoint]] = relationship(
+        secondary="question_knowledge_points", order_by=KnowledgePoint.code
+    )
 
 
 class QuestionKnowledgePoint(CreatedAtMixin, Base):

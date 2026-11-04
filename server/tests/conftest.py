@@ -55,3 +55,29 @@ async def _clean_tables():
 async def client() -> AsyncIterator[AsyncClient]:
     async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as c:
         yield c
+
+
+async def _register(client: AsyncClient, data: dict) -> dict[str, str]:
+    resp = await client.post("/api/v1/auth/register", json={"password": "abc12345", **data})
+    assert resp.status_code == 201
+    return {"Authorization": f"Bearer {resp.json()['token']}"}
+
+
+@pytest.fixture
+async def student(client) -> dict[str, str]:
+    """学生账号的请求头。"""
+    data = {"role": "student", "username": "student_a", "display_name": "小雅", "grade": 8}
+    return await _register(client, data)
+
+
+@pytest.fixture
+async def teacher(client) -> dict[str, str]:
+    """教师账号的请求头。"""
+    data = {
+        "role": "teacher",
+        "username": "teacher_a",
+        "display_name": "李老师",
+        "teach_subjects": ["math"],
+        "teach_grades": [8],
+    }
+    return await _register(client, data)

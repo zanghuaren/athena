@@ -1,10 +1,12 @@
 from typing import Annotated
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from sqlalchemy import func
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload, selectinload
 
+from app.errors import AppError
 from app.models import Chapter, KnowledgePoint
 from app.schemas.user import Grade, Subject
 
@@ -96,3 +98,28 @@ async def _upsert(db: AsyncSession, model: type[Chapter | KnowledgePoint], **val
         set_={**{k: v for k, v in values.items() if k != "code"}, "updated_at": func.now()},
     ).returning(model.id)
     return await db.scalar(stmt)
+
+
+async def tree(db: AsyncSession, subject: str, grade: int | None) -> list[Chapter]:
+    """按年级筛选时，只加载适用于这个年级的知识点，没有知识点的章节不返回。"""
+    points = Chapter.knowledge_points
+    if grade is not None:
+        points = points.and_(KnowledgePoint.grades.contains([grade]))
+    chapters = await db.scalars(
+        select(Chapter)
+        .where(Chapter.subject == subject)
+        .order_by(Chapter.sort)
+        .options(selectinload(points))
+    )
+    return [ch for ch in chapters if ch.knowledge_points]
+
+
+async def get_point(db: AsyncSession, point_id: int) -> KnowledgePoint:
+    point = await db.scalar(
+        select(KnowledgePoint)
+        .where(KnowledgePoint.id == point_id)
+        .options(joinedload(KnowledgePoint.chapter))
+    )
+    if point is None:
+        raise AppError(404, "NOT_FOUND", "知识点不存在")
+    return point

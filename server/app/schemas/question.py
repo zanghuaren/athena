@@ -4,6 +4,9 @@ from typing import Annotated, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
+from app.schemas.knowledge import KnowledgePointBrief
+from app.schemas.user import Subject
+
 QuestionType = Literal[
     "single", "multiple", "judge", "blank", "solution", "cloze", "reading", "essay"
 ]
@@ -115,6 +118,26 @@ class QuestionBody(_Strict):
         if self.type not in ("solution", "essay") and self.scoring_points is not None:
             raise ValueError("只有解答题和作文有评分要点")
         return self
+
+
+QuestionSource = Literal["preset", "scan", "ai", "teacher", "manual"]
+
+
+class QuestionOut(BaseModel):
+    """答案、解析、评分要点按接口约定第 3 节决定是否返回，不返回时为 null。"""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    subject: Subject
+    type: QuestionType
+    content: QuestionContent
+    difficulty: int
+    source: QuestionSource
+    knowledge_points: list[KnowledgePointBrief]
+    answer: Answer | None
+    analysis: list[AnalysisStep] | None
+    scoring_points: list[ScoringPoint] | None
 
 
 def _expect[T](answer: object, cls: type[T], message: str) -> T:
