@@ -257,6 +257,16 @@ tr.click:hover td{color:var(--clay)}
 .plink .s{font-size:12px;color:var(--muted)}
 .plink>svg{margin-left:auto;width:14px;color:var(--soft)}
 .plink .pi{color:var(--olive);width:18px}
+/* 复核在手机上按学生、原图、评分顺序阅读 */
+.review-layout{display:grid;grid-template-columns:140px minmax(0,1fr) 300px;gap:20px;min-height:640px}
+.review-layout>div{min-width:0}
+.phone .review-layout{display:flex;flex-direction:column;gap:16px;min-height:0}
+.phone .review-students{display:flex;overflow-x:auto;gap:8px;padding-bottom:4px}
+.phone .review-students .li{flex:0 0 auto;width:auto;padding:8px 12px;border:1px solid var(--line);border-radius:6px}
+.phone .review-original .ph{height:260px!important}
+.phone .review-score .h{margin-top:0}
+.phone .review-score .row{position:sticky;bottom:-28px;background:var(--paper);padding:12px 0}
+.phone .grid3.review-by-question{grid-template-columns:1fr}
 </style>
 </head>
 <body>
@@ -432,8 +442,15 @@ def('S-02', { role: 's', title: '会话历史', back: true, req: 'ASK-04', state
 }});
 def('S-03', { role: 's', title: '拍照', back: true, req: 'SCAN-01', states: {
   拍照答疑: () => cam(0), 作业批改: () => cam(1),
+  作业加页: () => capture('作业加页', '拍摄作业新的一页'),
+  重拍作业: () => capture('重拍作业', '重新拍摄第 2 页'),
+  手写作答: () => capture('手写作答', '拍摄这道题的解题过程'),
   格式不支持: () => cam(0) + err('不支持这种图片格式，请换一张 jpg 或 png 图片'),
 }});
+function capture(mode, title) {
+  return `${sectTop('', title, '照片会回到当前任务，确认后再提交')}${ph('请将纸面放平，对齐四角', 340)}
+    <button class="btn pri block" data-capture="${mode}">${ic('camera')}使用这张照片</button>`;
+}
 function cam(m) {
   return `${seg(['拍照答疑', '作业批改'], m, ['S-03:拍照答疑', 'S-03:作业批改'])}${ph(m ? '把整页作业放平，对齐四角' : '对准一道题', 470)}
   <div class="row between">${go(m ? 'S-05:进行中' : 'S-04:框选', '相册')}<button class="btn pri" style="width:64px;height:64px;border-radius:50%" data-go="${m ? 'S-05:进行中' : 'S-04:框选'}">${ic('camera')}</button><span class="muted">闪光灯</span></div>`;
@@ -488,9 +505,9 @@ def('S-10', { role: 's', title: '作业详情', back: true, req: 'HW-03', states
   已截止: () => hwHead('已截止', '不允许迟交') + err('作业已经截止，不能再提交'),
 }});
 def('S-11', { role: 's', title: '拍照提交', back: true, req: 'HW-03', states: {
-  预检有问题: () => `<div class="grid3">${ph('第 1 页', 110)}${ph('第 2 页', 110)}<button class="ph" style="height:110px" data-go="S-03:作业批改">+ 拍一页</button></div><p class="muted">拖动可以调整顺序，最多 10 页</p>
-    ${h('提交前检查')}${li('<span class="ok">✓</span> 识别到第 1～12 题')}${li('<span class="warn">!</span> 第 9 题没有识别到作答', '可能被手指挡住了', '')}${go('S-11:预检通过', '重拍第 2 页', 'block')}${pri('S-10:已提交', '仍然提交', 'block')}`,
-  预检通过: () => `<div class="grid3">${ph('第 1 页', 110)}${ph('第 2 页', 110)}</div>${h('提交前检查')}${li('<span class="ok">✓</span> 识别到第 1～12 题，每题都有作答')}${pri('S-10:已提交', '提交作业', 'block')}`,
+  预检有问题: () => `<div class="grid3">${ph('第 1 页', 110)}${ph('第 2 页', 110)}<button class="ph" style="height:110px" data-go="S-03:作业加页">+ 拍一页</button></div><p class="muted">拖动可以调整顺序，最多 10 页</p>
+    ${h('提交前检查')}${li('<span class="ok">✓</span> 识别到第 1～12 题')}${li('<span class="warn">!</span> 第 9 题没有识别到作答', '可能被手指挡住了', '')}${go('S-03:重拍作业', '重拍第 2 页', 'block')}${pri('S-10:已提交', '仍然提交', 'block')}`,
+  预检通过: () => `<div class="grid3">${Array.from({length:S.uploadPages}, (_,i) => ph('第 ' + (i+1) + ' 页', 110)).join('')}${S.uploadPages < 10 ? go('S-03:作业加页', '+ 拍一页') : ''}</div>${h('提交前检查')}${li('<span class="ok">✓</span> 识别到第 1～12 题，每题都有作答')}${pri('S-10:已提交', '提交作业', 'block')}`,
   上传失败: () => `<div class="grid3">${ph('第 1 页 ✓', 110)}${ph('第 2 页 ✗', 110)}</div>${err('第 2 页上传失败')}${go('S-11:预检通过', '重新上传第 2 页', 'block')}<p class="muted">已经上传成功的页不需要重传</p>`,
 }});
 def('S-12', { role: 's', title: '作业结果', back: true, req: 'GRD-03', states: { 默认: () => `
@@ -540,14 +557,14 @@ def('S-19', { role: 's', title: '练习设置', back: true, req: 'PRC-01', state
     <p class="muted">先从题库里选题，不够的部分由 AI 出题</p>${pri('S-20:选择题', '开始练习', 'block')}`,
   生成失败: () => `${err('出题失败')}<p class="muted">你的设置已保留，可以直接重试</p>${pri('S-20:选择题', '重试', 'block')}`,
 }});
-const qhead = `<div class="rv-progress"><span>勾股定理练习</span><span class="num">05:12</span><span><strong>3</strong> / 10</span></div><div class="rv-line"><span style="width:30%"></span></div>`;
+const qhead = () => `<div class="rv-progress"><span>${S.answerSource === 'homework' ? '二次根式练习 · 作业' : '勾股定理 · 自主练习'}</span><span class="num">05:12</span><span><strong>3</strong> / 10</span></div><div class="rv-line"><span style="width:30%"></span></div>`;
 def('S-20', { role: 's', title: '作答', back: true, req: 'PRC-02, HW-03', states: {
-  选择题: () => `${qhead}<p class="subject">单选题</p><div class="big" style="font-size:19px;line-height:1.8">直角三角形两直角边为 6 和 8，斜边长为（　）</div>${['A　9', 'B　10', 'C　12', 'D　14'].map((x, i) => `<div class="li"><span class="lt">${i === 1 ? '<span class="bad">●</span>' : '○'}　${x}</span></div>`).join('')}
+  选择题: () => `${qhead()}<p class="subject">单选题</p><div class="big" style="font-size:19px;line-height:1.8">直角三角形两直角边为 6 和 8，斜边长为（　）</div>${['A　9', 'B　10', 'C　12', 'D　14'].map((x, i) => `<div class="li"><span class="lt">${i === 1 ? '<span class="bad">●</span>' : '○'}　${x}</span></div>`).join('')}
     <div class="row between" style="margin-top:16px">${go('S-20:选择题', '上一题')}${go('S-20:答题卡', '答题卡')}${go('S-20:解答题', '下一题')}</div>`,
-  解答题: () => `${qhead}<p class="subject">解答题</p><div class="big" style="font-size:19px;line-height:1.8">梯子长 5 m，底端离墙 3 m，梯子顶端离地多高？写出过程。</div>${inp('写下解题过程', 1)}${go('S-03:作业批改', '拍照上传手写过程', 'block')}
+  解答题: () => `${qhead()}<p class="subject">解答题</p><div class="big" style="font-size:19px;line-height:1.8">梯子长 5 m，底端离墙 3 m，梯子顶端离地多高？写出过程。</div>${inp('写下解题过程', 1)}${S.handwritten ? box('已附上手写过程照片', 'gray') : ''}${go('S-03:手写作答', S.handwritten ? '重拍手写过程' : '拍照上传手写过程', 'block')}
     <div class="row between">${go('S-20:选择题', '上一题')}${go('S-20:答题卡', '答题卡')}${pri('S-20:未答提示', '提交')}</div>`,
-  答题卡: () => `${qhead}${h('答题卡')}<div class="grid4">${[...Array(10)].map((_, i) => `<span class="chip ${i < 3 ? 'on' : ''}" style="justify-content:center">${i + 1}</span>`).join('')}</div><p class="muted">已答 3 / 10</p>${pri('S-20:未答提示', '提交', 'block')}`,
-  未答提示: () => `${qhead}<div class="modal"><b>还有 7 题没有作答</b><p class="muted">现在提交，没答的题按错误计算。</p><div class="row">${go('S-20:选择题', '继续作答')}${pri('S-21:默认', '确认提交')}</div></div><p class="muted">在线作业提交后会回到作业详情</p>`,
+  答题卡: () => `${qhead()}${h('答题卡')}<div class="grid4">${[...Array(10)].map((_, i) => `<span class="chip ${i < 3 ? 'on' : ''}" style="justify-content:center">${i + 1}</span>`).join('')}</div><p class="muted">已答 3 / 10</p>${pri('S-20:未答提示', '提交', 'block')}`,
+  未答提示: () => `${qhead()}<div class="modal"><b>还有 7 题没有作答</b><p class="muted">现在提交，没答的题按错误计算。</p><div class="row">${go('S-20:选择题', '继续作答')}<button class="btn pri" data-submit-answer="1">${S.answerSource === 'homework' ? '确认提交作业' : '确认提交练习'}</button></div></div><p class="muted">${S.answerSource === 'homework' ? '提交后返回本次作业，等待老师复核发布结果。' : '提交后查看本次练习结果。'}</p>`,
 }});
 def('S-21', { role: 's', title: '练习结果', back: true, req: 'PRC-03', states: {
   默认: () => `${stats([['8 / 10', '得分'], ['80%', '正确率'], ['12′', '用时']])}${box('勾股定理的掌握度　<span class="num">48</span> → <b class="num ok">56</b>', 'gray')}
@@ -622,15 +639,15 @@ def('T-07', { role: 't', title: '作业详情', back: true, req: 'GRD-02, ANA-03
   作业分析: () => `${hwTabs(2)}<div class="grid2">${ph('每题正确率', 180)}${ph('得分分布', 180)}</div>${h('常见错误答案')}${tbl(['题号', '正确率', '常见错误'], [['第 3 题', '<span class="bad">38%</span>', '5√2（14 人）、7（5 人）'], ['第 7 题', '55%', '漏写 ±（9 人）']])}`,
 }});
 def('T-08', { role: 't', title: '逐生复核', back: true, req: 'GRD-02', states: { 默认: () => `
-  <div style="display:grid;grid-template-columns:140px minmax(0,1fr) 300px;gap:20px;min-height:640px">
-  <div>${['<span class="ok">✓</span> 王一', '<span class="bad">●</span> 张小雅', '○ 李二', '○ 赵四', '○ ……'].map(x => li(x)).join('')}</div>
-  <div><p class="muted">张小雅 · 第 2 / 38 个 · 拍照提交</p>${ph('作答原图（可以缩放、翻页）', 580)}</div>
-  <div>${h('AI 判分')}${li('第 1 题 <span class="ok">✓</span>　<span class="num">5 / 5</span>')}${li('第 2 题 <span class="bad">✗</span>　<span class="num">0 / 5</span>')}
+  <div class="review-layout">
+  <div class="review-students">${['<span class="ok">✓</span> 王一', '<span class="bad">●</span> 张小雅', '○ 李二', '○ 赵四', '○ ……'].map(x => li(x)).join('')}</div>
+  <div class="review-original"><p class="muted">张小雅 · 第 2 / 38 个 · 拍照提交</p>${ph('作答原图（可以缩放、翻页）', 580)}</div>
+  <div class="review-score">${h('AI 判分')}${li('第 1 题 <span class="ok">✓</span>　<span class="num">5 / 5</span>')}${li('第 2 题 <span class="bad">✗</span>　<span class="num">0 / 5</span>')}
   ${box(`<b>第 3 题　AI 拿不准　<span class="num">3 / 8</span></b><br><span class="muted">扣分：第二步漏开方</span>${lab('得分')}${val('3')}${lab('评语')}${inp('')}`, 'err')}
   ${lab('总分')}<div class="big num">86</div>${lab('整体评语')}${inp('', 1)}<div class="row" style="margin-top:10px">${go('T-08', '上一个')}${pri('T-08', '确认，下一个')}</div><div class="actions">${ico('T-07:批改复核', '发布这名学生的结果')}</div></div></div>` }});
 def('T-09', { role: 't', title: '按题复核', back: true, req: 'GRD-02', states: { 默认: () => `
   ${sectTop('', '第 3 题', '在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB。8 分，标准答案 5')}<p class="muted">全班有 6 份作答 AI 拿不准</p>
-  <div class="grid3">${['张小雅　AI 3 分', '李二　AI 4 分', '赵四　AI 0 分', '钱五　AI 6 分', '孙六　需要你来批', '周七　AI 2 分'].map(x => box(`${ph('作答截图', 84)}<div class="row between"><span>${x}</span><span class="row">${inp('得分')}${go('T-09', '确认', 'sm')}</span></div>`)).join('')}</div>
+  <div class="grid3 review-by-question">${['张小雅　AI 3 分', '李二　AI 4 分', '赵四　AI 0 分', '钱五　AI 6 分', '孙六　需要你来批', '周七　AI 2 分'].map(x => box(`${ph('作答截图', 84)}<div class="row between"><span>${x}</span><span class="row">${inp('得分')}${go('T-09', '确认', 'sm')}</span></div>`)).join('')}</div>
   <div class="row">${pri('T-09', '全部按 AI 分确认')}${go('T-07:批改复核', '下一题')}</div>` }});
 def('T-10', { role: 't', title: '备课', tab: 'prep', req: 'PREP-05', states: {
   教案: () => `${seg(['教案', 'PPT'], 0, ['', 'T-10:PPT'])}<div class="row between">${inp('搜索课题')}${pri('T-11', '新建教案')}</div>${tbl(['课题', '学科年级', '课时', '更新'], [['17.1 勾股定理（第 1 课时）', '数学 · 八年级下', '1', '今天'], ['16.2 二次根式的乘除', '数学 · 八年级下', '2', '11 月 28 日']], ['T-12:编辑', 'T-12:编辑'])}`,
@@ -700,7 +717,7 @@ const NAV = {
   tp: [['tw', '工作台', 'T-01', 'temple'], ['hw', '作业', 'T-05', 'checklist'], ['ana', '学情', 'T-18', 'chart'], ['me', '我的', 'C-04', 'user']],
 };
 const ENDS = { sp: '学生 · 手机', sw: '学生 · Web', tw: '教师 · Web', tp: '教师 · 手机' };
-const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's' };
+const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's', answerSource: 'practice', uploadPages: 2, handwritten: false, homeworkSubmitted: false };
 const isPhone = () => S.end === 'sp' || S.end === 'tp';
 const tabOf = p => S.end === 'sw' && p.webTab ? p.webTab : p.tab;
 
@@ -761,7 +778,9 @@ function nav(target, push = true) {
   if (!P[id]) return;
   if (push && S.page !== id) S.stack.push(S.page + ':' + S.state);
   if (P[id].role !== 'c' && P[id].role !== S.role) setRole(P[id].role);
-  S.page = id; S.state = st || null;
+  if (id === 'S-20' && S.page !== 'S-20' && S.page !== 'S-03') S.answerSource = S.page === 'S-10' ? 'homework' : 'practice';
+  if (id === 'S-10' && st === '已提交') S.homeworkSubmitted = true;
+  S.page = id; S.state = st || (id === 'S-10' && S.homeworkSubmitted ? '已提交' : null);
   render();
 }
 function setRole(r) {
@@ -770,10 +789,15 @@ function setRole(r) {
   if (r === 't' && !S.end.startsWith('t')) S.end = isPhone() ? 'tp' : 'tw';
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch],[data-theme-set]');
+  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch],[data-theme-set],[data-capture],[data-submit-answer]');
   if (!t) return;
   const d = t.dataset;
-  if (d.go) nav(d.go);
+  if (d.capture) {
+    if (d.capture === '手写作答') { S.handwritten = true; nav('S-20:解答题'); }
+    else { if (d.capture === '作业加页' && S.uploadPages < 10) S.uploadPages++; nav('S-11:预检通过'); }
+  }
+  else if (d.submitAnswer) nav(S.answerSource === 'homework' ? 'S-10:已提交' : 'S-21:默认');
+  else if (d.go) nav(d.go);
   else if (d.back) { const prev = S.stack.pop(); if (prev) nav(prev, false); }
   else if (d.state) { S.state = d.state; render(); }
   else if (d.end) { S.end = d.end; const r = d.end[0]; if (r !== S.role) { S.role = r; S.page = r === 's' ? 'S-01' : 'T-01'; S.state = null; } render(); }
