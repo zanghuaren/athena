@@ -1,0 +1,38 @@
+# 开发环境：只给本机用，端口绑定 127.0.0.1，密码是固定的开发密码
+name: athena-dev
+
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: athena
+      POSTGRES_PASSWORD: athena
+      POSTGRES_DB: athena
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "athena"]
+      interval: 2s
+      retries: 15
+
+  api:
+    build:
+      context: ../server
+      # 本机访问 PyPI 要走宿主机代理；没有设置代理时这两项为空，不影响构建
+      network: host
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+    command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
+    environment:
+      DATABASE_URL: postgresql+asyncpg://athena:athena@db:5432/athena
+    volumes:
+      - ../server:/app
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  db-data:
