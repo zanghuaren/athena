@@ -182,7 +182,7 @@ def('C-04', { role: 'c', title: '我的', tab: 'me', req: 'ME', states: { 默认
   <div class="row"><div class="ph" style="width:56px;height:56px;border-radius:28px">头像</div><div class="grow"><b>小雅</b><div class="muted">八年级 · 已加入 2 个班级</div></div>${ico('C-05', '编辑')}</div>
   ${h('学习')}${li('我的班级', '八年级 3 班 数学 · 八年级 3 班 物理', 'S-25')}${li('学情画像', '平均掌握度 71', 'S-23')}${li('批改记录', '拍照批改过的作业', 'S-07')}${li('练习记录', '', 'S-22')}
   ${h('其他')}${li('设置', '主题、讲解方式、修改密码', 'C-06')}${li('帮助与反馈', '', 'C-07')}
-  <div class="q">Q3 / Q5：按建议去掉了“历史记录”“我的收藏”，以及会员、教辅书架、隐私导出等旧入口</div>` : `
+  <div class="q">Q3 / Q5：去掉了“历史记录”“我的收藏”，以及会员、教辅书架、隐私导出等旧入口</div>` : `
   <div class="row"><div class="ph" style="width:56px;height:56px;border-radius:28px">头像</div><div class="grow"><b>李老师</b><div class="muted">数学 · 八年级 · 3 个班级</div></div>${ico('C-05', '编辑')}</div>
   ${h('教学')}${li('我的班级', '', 'T-02')}${li('个人题库 <span class="tag">加分</span>', '', 'T-22')}
   ${h('其他')}${li('设置', '主题、修改密码', 'C-06')}${li('帮助与反馈', '', 'C-07')}` }});
@@ -192,7 +192,7 @@ def('C-05', { role: 'c', title: '编辑资料', back: true, req: 'ME-01', states
   ${go('C-04', '保存', 'pri block')}` }});
 def('C-06', { role: 'c', title: '设置', back: true, req: 'ME-02～04', states: { 默认: () => `
   ${h('外观')}${seg(['纸感书房', '夜间自习', '跟随系统'], 2)}<div class="row between"><span>减少动态效果</span><span class="chip">关</span></div>
-  ${S.role === 's' ? `${h('学习偏好')}${lab('讲解方式')}${seg(['引导式（默认）', '直接讲解'], 0)}<div class="q">Q2：旧设计有三种（循序引导 / 先看结论 / 举例理解），按建议只保留两种</div>${lab('常用学科')}${chips(['数学', '物理', '英语'], 0)}` : ''}
+  ${S.role === 's' ? `${h('学习偏好')}${lab('讲解方式')}${seg(['引导式（默认）', '直接讲解'], 0)}<div class="q">Q2：旧设计有三种（循序引导 / 先看结论 / 举例理解），改为只保留两种</div>${lab('常用学科')}${chips(['数学', '物理', '英语'], 0)}` : ''}
   ${h('账号')}${S.exp ? '<div class="muted">体验账号不能修改密码</div>' : li('修改密码', '需要输入原密码', '')}
   ${go('C-01', '退出登录', 'block')}` }});
 def('C-07', { role: 'c', title: '帮助与反馈', back: true, req: 'ME-05', states: { 默认: () => `
@@ -368,7 +368,7 @@ def('S-26', { role: 's', title: '加入班级', back: true, req: 'CLS-02', state
 }});
 def('S-27', { role: 's', title: '卡片组', back: true, bonus: true, req: 'PRC-06（加分）', states: { 默认: () => `
   ${h('AI 生成卡片')}${inp('输入范围，例如：英语 现在完成时 概念与例句')}${pri('S-27', '生成', 'sm')}<div class="muted">每次生成保存为新卡组，不覆盖已有卡组</div>
-  <div class="q">Q4：旧设计生成后会替换卡组并重置进度，按建议改为保存成新卡组</div>
+  <div class="q">Q4：旧设计生成后会替换卡组并重置进度，改为保存成新卡组</div>
   ${h('我的卡片组')}${li('数学 · 二次根式公式', '8 张 · 3 张今日到期', 'S-17:正面')}${li('英语 · 现在完成时', '12 张', 'S-17:正面')}${go('S-27', '+ 手动建卡', 'block')}` }});
 def('S-28', { role: 's', title: '口语对练', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${chips(['自我介绍', '问路', '周末计划'], 0)}${ph('对话气泡', 300)}<div class="center">${pri('S-28', '按住说话')}</div>` }});
 def('S-29', { role: 's', title: '作文批改', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${seg(['拍照', '输入'], 0)}${ph('作文照片', 200)}${pri('S-29', '开始批改', 'block')}<div class="muted">结果：内容 / 结构 / 语言 / 书写 四项得分 + 修改建议 + 范文</div>` }});
@@ -534,7 +534,7 @@ function renderNotes() {
   document.getElementById('notes').innerHTML = `<h2>${p.id} ${p.title}</h2><div class="meta">对应需求：${p.req}${p.bonus ? ' · 加分项' : ''}</div>
     <div class="muted">页面状态 / 异常</div><div class="states">${Object.keys(p.states).map(k => `<button class="${k === S.state ? 'on' : ''}" data-state="${k}">${k}</button>`).join('')}</div>
     <div class="muted">本页可跳转到</div><p>${outs.map(x => `<button class="ico" data-go="${x}">${x} ${P[x].title}</button>`).join('<br>') || '—'}</p>
-    <div class="muted" style="margin-top:16px">说明</div><p>灰色线框只表达结构和跳转，不代表视觉。黄色虚线框是设计备注，<b>Q1～Q7</b> 指 03 文档 0.3 节待确认的问题，目前按建议方案绘制。</p>
+    <div class="muted" style="margin-top:16px">说明</div><p>灰色线框只表达结构和跳转，不代表视觉。黄色虚线框是设计备注，<b>Q1～Q7</b> 指 03 文档 0.3 节中对旧设计的调整，均已确认。</p>
     <p>流程与需求详见 <code>docs/02-功能需求.md</code>、<code>docs/03-流程与原型.md</code>。</p>`;
 }
 function nav(target, push = true) {
