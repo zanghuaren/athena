@@ -22,10 +22,6 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 #index,#notes{background:var(--paper);overflow-y:auto;padding:22px 18px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 #index{border-right:1px solid var(--line)}
 #notes{border-left:1px solid var(--line)}
-.review-title{display:flex;align-items:center;gap:12px;margin-bottom:20px}
-.review-monogram{width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--soft);font:24px var(--latin);color:var(--clay);flex:none}
-.review-title strong{display:block;font-size:14px;font-weight:600;letter-spacing:.04em}
-.review-title span{font-size:11px;color:var(--muted)}
 .ctl-label{font-size:11px;letter-spacing:.12em;color:var(--soft);margin:14px 0 6px}
 .ends{display:grid;grid-template-columns:1fr 1fr;gap:4px}
 .ends button,.states button{min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:12px;color:var(--muted)}
@@ -745,7 +741,7 @@ function render() {
 function renderIndex() {
   const groups = [['公共', 'c'], ['学生', 's'], ['教师', 't']];
   const theme = document.documentElement.dataset.theme === 'dark' ? 1 : 0;
-  document.getElementById('index').innerHTML = `<div class="review-title"><span class="review-monogram">A</span><div><strong>雅典娜 · 可点击原型</strong><span>示例数据 · 未连接模型</span></div></div>
+  document.getElementById('index').innerHTML = `
     <div class="ctl-label">终端</div><div class="ends">${Object.keys(ENDS).map(k => `<button class="${S.end === k ? 'on' : ''}" data-end="${k}">${ENDS[k]}</button>`).join('')}</div>
     <div class="ctl-label">阅读外观</div><div class="ends"><button class="${theme ? '' : 'on'}" data-theme-set="light">纸感书房</button><button class="${theme ? 'on' : ''}" data-theme-set="dark">夜间自习</button></div>
     <label class="exp"><input type="checkbox" id="expck" ${S.exp ? 'checked' : ''}> 体验模式（显示视角切换条）</label>
