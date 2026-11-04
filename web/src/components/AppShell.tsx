@@ -1,5 +1,14 @@
-import { NavLink, Outlet, useMatches, useNavigate, useOutletContext } from 'react-router';
+import {
+  Link,
+  NavLink,
+  Outlet,
+  useLocation,
+  useMatches,
+  useNavigate,
+  useOutletContext,
+} from 'react-router';
 import type { User } from '../api/client';
+import { useConversations } from '../api/conversations';
 import { userSummary } from '../lib/labels';
 import { Brand } from './Brand';
 import { Button } from './Button';
@@ -50,16 +59,28 @@ const NAV: Record<User['role'], { web: NavItem[]; phone: NavItem[]; motto: [stri
   },
 };
 
-/** back：二级页面，顶栏显示“返回”（原型里的 back 页面）。 */
-export type RouteHandle = { title: string; back?: boolean };
+type TopLink = { to: string; label: string; phoneOnly?: boolean; left?: boolean };
+
+/**
+ * back：二级页面，顶栏显示“返回”（原型里的 back 页面）。
+ * links：顶栏链接（原型的 topL / topR），left 的放在标题左边，phoneOnly 的只在手机上显示。
+ * fill：页面自己管理滚动和底部输入框（对话页），外框不加内边距、不滚动。
+ */
+export type RouteHandle = { title: string; back?: boolean; links?: TopLink[]; fill?: boolean };
 
 export function AppShell({ user }: { user: User }) {
   const nav = NAV[user.role];
   const navigate = useNavigate();
   const handle = useMatches().at(-1)?.handle as RouteHandle | undefined;
-  const navClass = ({ isActive }: { isActive: boolean }) => (isActive ? styles.on : undefined);
-  // 首页（/student、/teacher）是其他页面的前缀，只在完全匹配时高亮
+  const { pathname } = useLocation();
+  // 首页（/student、/teacher）是其他页面的前缀，只在完全匹配时高亮；学生首页是对话，会话和历史也算
   const home = `/${user.role}`;
+  const homeActive =
+    pathname === home || (user.role === 'student' && /^\/student\/(c\/|history)/.test(pathname));
+  const navClass =
+    (to: string) =>
+    ({ isActive }: { isActive: boolean }) =>
+      (to === home ? homeActive : isActive) ? styles.on : undefined;
 
   return (
     <div className={styles.shell}>
@@ -67,14 +88,21 @@ export function AppShell({ user }: { user: User }) {
         <div className={styles.brand}>
           <Brand />
         </div>
+        {user.role === 'student' && (
+          <NavLink to={home} end className={styles.newChat}>
+            <Icon name="plus" />
+            开启新对话
+          </NavLink>
+        )}
         <nav>
           {nav.web.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.to === home} className={navClass}>
+            <NavLink key={n.to} to={n.to} end={n.to === home} className={navClass(n.to)}>
               <Icon name={n.icon} />
               {n.label}
             </NavLink>
           ))}
         </nav>
+        {user.role === 'student' && <RecentConversations />}
         <div className={styles.motto}>
           <Icon name="olive" className={styles.olive} />
           <p>
@@ -98,20 +126,50 @@ export function AppShell({ user }: { user: User }) {
               ‹ 返回
             </Button>
           )}
+          {handle?.links?.filter((l) => l.left).map(topLink)}
           <h1>{handle?.title}</h1>
+          {handle?.links?.filter((l) => !l.left).map(topLink)}
         </header>
-        <main className={styles.content}>
+        <main className={handle?.fill ? styles.fill : styles.content}>
           <Outlet context={user} />
         </main>
         <nav className={styles.tabs}>
           {nav.phone.map((n) => (
-            <NavLink key={n.to} to={n.to} end={n.to === home} className={navClass}>
+            <NavLink key={n.to} to={n.to} end={n.to === home} className={navClass(n.to)}>
               <Icon name={n.icon} />
               {n.label}
             </NavLink>
           ))}
         </nav>
       </div>
+    </div>
+  );
+}
+
+function topLink(l: TopLink) {
+  return (
+    <Link key={l.to} to={l.to} className={l.phoneOnly ? styles.phoneOnly : undefined}>
+      {l.label}
+    </Link>
+  );
+}
+
+function RecentConversations() {
+  const recent = useConversations('', 3);
+  if (!recent.data?.items.length) return null;
+  return (
+    <div className={styles.recent}>
+      <p>最近对话</p>
+      {recent.data.items.map((c) => (
+        <NavLink
+          key={c.id}
+          to={`/student/c/${c.id}`}
+          className={({ isActive }) => (isActive ? styles.on : undefined)}
+        >
+          {c.title}
+        </NavLink>
+      ))}
+      <Link to="/student/history">全部对话</Link>
     </div>
   );
 }

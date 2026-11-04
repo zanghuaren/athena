@@ -6,10 +6,13 @@ import { Button } from './components/Button';
 import { Notice } from './components/Notice';
 import { getToken } from './lib/session';
 import { Login } from './pages/common/Login';
+import { ChatHistory } from './pages/common/ChatHistory';
 import { Me } from './pages/common/Me';
 import { Pending } from './pages/common/Pending';
 import { Register } from './pages/common/Register';
 import { Settings } from './pages/common/Settings';
+import { Chat } from './pages/student/Chat';
+import { Assistant } from './pages/teacher/Assistant';
 
 /** 登录后才能进的页面：没登录去登录页，身份不对去自己的首页。 */
 function RequireRole({ role }: { role: User['role'] }) {
@@ -41,11 +44,28 @@ const page = (
   title: string,
   element = <Pending />,
   back = false,
+  extra: Omit<RouteHandle, 'title' | 'back'> = {},
 ): RouteObject => ({
   ...(path ? { path } : { index: true }),
   element,
-  handle: { title, back } satisfies RouteHandle,
+  handle: { title, back, ...extra } satisfies RouteHandle,
 });
+
+// S-01：手机顶栏左边“历史记录”、右边“新对话”；电脑上这两个入口在侧栏
+const studentChat: RouteHandle = {
+  title: '对话',
+  fill: true,
+  links: [
+    { to: '/student/history', label: '历史记录', left: true, phoneOnly: true },
+    { to: '/student', label: '新对话', phoneOnly: true },
+  ],
+};
+// T-21：原型没有历史入口，ASK-04 要求能回看会话，加在顶栏右边
+const teacherChat: RouteHandle = {
+  title: 'AI 助教',
+  fill: true,
+  links: [{ to: '/teacher/assistant/history', label: '历史记录' }],
+};
 
 export const router = createBrowserRouter([
   { path: '/login', element: <Login /> },
@@ -54,7 +74,10 @@ export const router = createBrowserRouter([
     path: '/student',
     element: <RequireRole role="student" />,
     children: [
-      page(undefined, '对话'),
+      page(undefined, '对话', <Chat />, false, studentChat),
+      page('c/:conversationId', '对话', <Chat />, false, studentChat),
+      page('history', '会话历史', <ChatHistory />, true),
+      page('scan', '拍照', <Pending />, true),
       page('today', '今日'),
       page('homework', '全部作业'),
       page('mistakes', '错题本'),
@@ -74,7 +97,9 @@ export const router = createBrowserRouter([
       page('prep', '备课'),
       page('papers', '组卷'),
       page('analytics', '学情'),
-      page('assistant', 'AI 助教'),
+      page('assistant', 'AI 助教', <Assistant />, false, teacherChat),
+      page('assistant/c/:conversationId', 'AI 助教', <Assistant />, false, teacherChat),
+      page('assistant/history', '会话历史', <ChatHistory />, true),
       page('me', '我的', <Me />),
       page('me/settings', '设置', <Settings />, true),
     ],

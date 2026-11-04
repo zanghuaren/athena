@@ -27,6 +27,11 @@ export function setUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler;
 }
 
+/** 不经过 api 客户端的请求（如答疑的流式接口）收到 401 时调用。 */
+export function notifyUnauthorized(): void {
+  if (getToken()) onUnauthorized();
+}
+
 export const api = createClient<paths>({
   baseUrl: import.meta.env.VITE_API_BASE ?? '',
   fetch: (request) =>
@@ -45,7 +50,7 @@ api.use({
     return request;
   },
   onResponse({ response }) {
-    if (response.status === 401 && getToken()) onUnauthorized();
+    if (response.status === 401) notifyUnauthorized();
     return response;
   },
 });

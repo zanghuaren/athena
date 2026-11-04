@@ -1,0 +1,57 @@
+.row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.row a {
+  flex: 1;
+  min-width: 0;
+  padding: 15px 0;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.row a:hover b {
+  color: var(--clay);
+}
+
+.row b {
+  display: block;
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.row span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.empty {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.dialog {
+  width: min(90vw, 480px);
+  padding: 8px 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.dialog::backdrop {
+  background: #0008;
+}
+
+.buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}

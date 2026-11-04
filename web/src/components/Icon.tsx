@@ -65,6 +65,16 @@ const ICONS = {
     <path d="M14 2H5a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8l-6-6ZM14 2v6h6M8 12h8M8 16h8" />,
   ],
   chart: ['0 0 24 24', <path d="M4 3v17h17M8 16v-4M12 16V8M16 16v-6M20 16V6" />],
+  camera: [
+    '0 0 24 24',
+    <>
+      <path d="M8 5 9.5 3h5L16 5h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4Z" />
+      <circle cx="12" cy="12.5" r="4" />
+    </>,
+  ],
+  send: ['0 0 24 24', <path d="m3 3 19 9-19 9 3-9-3-9ZM6 12h16" />],
+  // 原型里没有“停止生成”，用实心方块，和常见播放器的停止键一致
+  stop: ['0 0 24 24', <rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" />],
 } satisfies Record<string, [string, ReactNode]>;
 
 export type IconName = keyof typeof ICONS;
