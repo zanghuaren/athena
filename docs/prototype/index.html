@@ -3,137 +3,337 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>雅典娜 · 低保真原型</title>
+<title>雅典娜 · 可点击原型</title>
 <style>
-  * { box-sizing: border-box; }
-  body { margin: 0; font: 14px/1.5 -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif; color: #222; background: #e9e9e9; }
-  button { font: inherit; cursor: pointer; }
-  #app { display: grid; grid-template-columns: 230px 1fr 270px; height: 100vh; }
-  #index, #notes { background: #fff; overflow-y: auto; padding: 12px; border-right: 1px solid #ccc; }
-  #notes { border-right: 0; border-left: 1px solid #ccc; }
-  #index h1 { font-size: 16px; margin: 0 0 8px; }
-  .ends { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 8px; }
-  .ends button, .states button { border: 1px solid #999; background: #fff; padding: 4px; border-radius: 4px; font-size: 12px; }
-  .ends button.on, .states button.on { background: #333; color: #fff; border-color: #333; }
-  .exp { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-bottom: 8px; }
-  .group { font-size: 12px; color: #888; margin: 10px 0 2px; }
-  .pl { display: block; width: 100%; text-align: left; border: 0; background: none; padding: 3px 4px; border-radius: 3px; font-size: 13px; }
-  .pl:hover { background: #eee; }
-  .pl.on { background: #333; color: #fff; }
-  .pl .id { display: inline-block; width: 38px; color: #999; font-size: 11px; }
-  .pl.on .id { color: #ccc; }
-  #stage { overflow: auto; display: flex; justify-content: center; align-items: flex-start; padding: 24px; }
-  #notes h2 { font-size: 15px; margin: 0 0 4px; }
-  #notes .meta { font-size: 12px; color: #666; margin-bottom: 10px; }
-  #notes p { margin: 6px 0; font-size: 13px; }
-  .states { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 12px; }
-  .q { background: #fff6d6; border: 1px dashed #c9a300; padding: 6px 8px; font-size: 12px; margin: 8px 0; border-radius: 4px; }
+/* 视觉沿用旧项目雅典娜设计稿（reference/eduagent/指导/前端设计/雅典娜美化方案.html）的色彩变量与组件 */
+:root{--paper:#f6f2eb;--surface:#fdfbf5;--surface-alt:#eee8df;--ink:#26201a;--muted:#6e6459;--line:#ded6c9;--clay:#b35737;--clay-tint:#f2e2d7;--olive:#69725a;--olive-tint:#e8ebdf;--ochre:#9a6b1f;--canvas:#e9e4db;--soft:#a89b88;--focus:#8f442b;--serif:"Songti SC","STSong","Noto Serif CJK SC","SimSun",serif;--sans:"HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",sans-serif;--latin:"Baskerville","Palatino Linotype","Book Antiqua",serif;--shadow:0 16px 50px #4c382611;color-scheme:light}
+[data-theme="dark"]{--paper:#211d18;--surface:#2a251f;--surface-alt:#352e25;--ink:#eee7db;--muted:#b8ab98;--line:#4b4033;--clay:#e09a77;--clay-tint:#493127;--olive:#b1ba99;--olive-tint:#373d2c;--ochre:#d6a75a;--canvas:#181511;--soft:#92836e;--focus:#efb08f;--shadow:0 16px 50px #0002;color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--canvas);color:var(--ink)}
+body{font:14px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none;padding:0}
+button:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;pointer-events:none}
+.sprite{position:absolute;width:0;height:0;overflow:hidden}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
-  /* 设备外壳 */
-  .phone { width: 375px; height: 760px; background: #fff; border: 10px solid #333; border-radius: 32px; display: flex; flex-direction: column; overflow: hidden; flex: none; }
-  .web { width: 100%; min-width: 960px; max-width: 1280px; height: 760px; background: #fff; border: 1px solid #999; display: grid; grid-template-columns: 190px 1fr; overflow: hidden; }
-  .full { flex: 1; overflow-y: auto; padding: 16px; }
-  .topbar { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-bottom: 1px solid #ddd; min-height: 46px; }
-  .topbar .t { flex: 1; font-weight: 600; text-align: center; }
-  .web .topbar .t { text-align: left; }
-  .content { flex: 1; overflow-y: auto; padding: 12px; }
-  .main { display: flex; flex-direction: column; overflow: hidden; }
-  .tabs { display: flex; border-top: 1px solid #ccc; }
-  .tabs button { flex: 1; border: 0; background: #fff; padding: 8px 0 10px; font-size: 12px; color: #777; }
-  .tabs button.on { color: #000; font-weight: 700; background: #eee; }
-  .side { background: #f3f3f3; border-right: 1px solid #ccc; padding: 12px 8px; overflow-y: auto; }
-  .side .logo { font-weight: 700; font-size: 16px; padding: 4px 8px 10px; }
-  .side button.nav { display: flex; justify-content: space-between; width: 100%; border: 0; background: none; text-align: left; padding: 7px 8px; border-radius: 4px; }
-  .side button.nav.on { background: #333; color: #fff; }
-  .side .sub { font-size: 12px; color: #888; padding: 10px 8px 4px; }
-  .side .recent { font-size: 12px; padding: 4px 8px; color: #555; cursor: pointer; }
-  .expbar { background: #ffe9a8; font-size: 12px; padding: 4px 10px; display: flex; justify-content: space-between; align-items: center; }
-  .expbar button { border: 1px solid #a07c00; background: #fff; font-size: 12px; padding: 1px 6px; border-radius: 3px; }
+/* 评审外框：左目录 · 中舞台 · 右说明 */
+#app{display:grid;grid-template-columns:248px minmax(0,1fr) 282px;height:100vh}
+#index,#notes{background:var(--paper);overflow-y:auto;padding:22px 18px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+#index{border-right:1px solid var(--line)}
+#notes{border-left:1px solid var(--line)}
+.review-title{display:flex;align-items:center;gap:12px;margin-bottom:20px}
+.review-monogram{width:36px;height:36px;display:grid;place-items:center;border:1px solid var(--soft);font:24px var(--latin);color:var(--clay);flex:none}
+.review-title strong{display:block;font-size:14px;font-weight:600;letter-spacing:.04em}
+.review-title span{font-size:11px;color:var(--muted)}
+.ctl-label{font-size:11px;letter-spacing:.12em;color:var(--soft);margin:14px 0 6px}
+.ends{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.ends button,.states button{min-height:32px;padding:4px 8px;border:1px solid var(--line);border-radius:6px;background:var(--surface);font-size:12px;color:var(--muted)}
+.ends button.on,.states button.on{background:var(--clay-tint);border-color:color-mix(in srgb,var(--clay) 40%,transparent);color:var(--clay);font-weight:600}
+.exp{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted);margin-top:10px}
+.exp input{accent-color:var(--clay)}
+.group{font-size:11px;letter-spacing:.12em;color:var(--soft);margin:18px 0 4px;padding-left:8px}
+.pl{display:flex;width:100%;text-align:left;padding:5px 8px;border-radius:6px;font-size:13px;color:var(--muted);gap:8px}
+.pl:hover{color:var(--clay)}
+.pl.on{background:var(--clay-tint);color:var(--clay);font-weight:600}
+.pl .id{width:34px;flex:none;font:11px/21px var(--latin);color:var(--soft)}
+#stage{overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:28px}
+#notes h2{font:20px/1.5 var(--serif);font-weight:600;margin:0 0 2px}
+#notes .meta{font-size:12px;color:var(--muted);margin-bottom:16px}
+#notes p{margin:6px 0;font-size:13px;color:var(--muted);line-height:1.8}
+#notes .ico{display:block;padding:3px 0}
+.states{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 16px}
 
-  /* 通用线框组件 */
-  .btn { border: 1px solid #555; background: #fff; padding: 6px 12px; border-radius: 4px; }
-  .btn.pri { background: #333; color: #fff; border-color: #333; }
-  .btn.block { display: block; width: 100%; margin: 8px 0; padding: 10px; }
-  .btn.sm { padding: 2px 8px; font-size: 12px; }
-  .btn.ghost { border-style: dashed; }
-  .ico { border: 0; background: none; padding: 2px 6px; font-size: 13px; color: #333; text-decoration: underline; }
-  .box { border: 1px solid #bbb; border-radius: 6px; padding: 10px; margin: 8px 0; background: #fff; }
-  .box.gray { background: #f4f4f4; }
-  .box.err { border: 1px dashed #d9822b; background: #fff3e6; }
-  .ph { background: repeating-linear-gradient(45deg, #eee, #eee 8px, #e2e2e2 8px, #e2e2e2 16px); border: 1px solid #ccc; display: flex; align-items: center; justify-content: center; color: #888; font-size: 12px; border-radius: 4px; margin: 6px 0; }
-  .in { border: 1px solid #aaa; border-radius: 4px; padding: 7px 8px; color: #999; margin: 4px 0; background: #fff; }
-  .in.area { min-height: 70px; }
-  .lab { font-size: 12px; color: #666; margin-top: 8px; }
-  .row { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
-  .row.between { justify-content: space-between; }
-  .grow { flex: 1; }
-  .muted { color: #888; font-size: 12px; }
-  .h { font-weight: 700; margin: 12px 0 4px; }
-  .big { font-size: 22px; font-weight: 700; }
-  .chip { display: inline-block; border: 1px solid #999; border-radius: 12px; padding: 1px 9px; font-size: 12px; margin: 2px 2px 2px 0; background: #fff; }
-  .chip.on { background: #333; color: #fff; border-color: #333; }
-  .li { border-bottom: 1px solid #e5e5e5; padding: 9px 2px; cursor: pointer; }
-  .li:hover { background: #fafafa; }
-  .li .s { font-size: 12px; color: #888; }
-  .seg { display: flex; border: 1px solid #555; border-radius: 4px; overflow: hidden; margin: 6px 0; }
-  .seg button { flex: 1; border: 0; background: #fff; padding: 5px; font-size: 13px; }
-  .seg button.on { background: #333; color: #fff; }
-  .bubble { max-width: 82%; padding: 8px 10px; border-radius: 8px; margin: 6px 0; }
-  .bubble.me { margin-left: auto; background: #e6e6e6; }
-  .bubble.ai { border: 1px solid #ccc; }
-  .step { border-left: 3px solid #555; padding: 4px 8px; margin: 6px 0; background: #f7f7f7; }
-  .step.dim { border-left-color: #ccc; color: #aaa; }
-  .composer { border-top: 1px solid #ddd; padding: 8px 10px; }
-  .bar { height: 8px; background: #ddd; border-radius: 4px; overflow: hidden; }
-  .bar i { display: block; height: 100%; background: #555; }
-  .kp { display: grid; grid-template-columns: 1fr 90px 60px; gap: 6px; align-items: center; padding: 5px 0; border-bottom: 1px solid #eee; cursor: pointer; }
-  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-  .grid4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-  .stat { border: 1px solid #ccc; border-radius: 6px; padding: 8px; text-align: center; }
-  .stat b { display: block; font-size: 20px; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  th, td { border-bottom: 1px solid #e3e3e3; padding: 6px; text-align: left; }
-  th { color: #666; font-weight: 600; background: #f6f6f6; }
-  tr.click { cursor: pointer; }
-  tr.click:hover td { background: #fafafa; }
-  .heat { display: grid; grid-template-columns: 120px repeat(6, 1fr); gap: 3px; font-size: 12px; align-items: center; }
-  .heat i { display: block; height: 22px; border-radius: 2px; }
-  .cols { display: grid; gap: 10px; height: 100%; }
-  .mask { position: relative; }
-  .modal { border: 2px solid #333; border-radius: 8px; padding: 12px; background: #fff; margin: 10px 0; box-shadow: 0 4px 18px rgba(0,0,0,.2); }
-  .center { text-align: center; }
-  .tag { font-size: 11px; border: 1px solid #888; border-radius: 3px; padding: 0 4px; color: #555; margin-left: 4px; }
-  .ok { color: #2a7d2a; } .bad { color: #b33; } .warn { color: #b77900; }
+/* 设备 */
+.phone{width:390px;height:812px;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:28px;background:var(--paper);box-shadow:var(--shadow)}
+.web{width:100%;min-width:980px;max-width:1320px;height:812px;display:grid;grid-template-columns:218px minmax(0,1fr);overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--paper);box-shadow:var(--shadow)}
+.main{display:flex;flex-direction:column;min-width:0;overflow:hidden}
+.full{flex:1;overflow-y:auto;padding:24px 22px}
+.topbar{display:flex;align-items:center;gap:12px;min-height:58px;padding:0 18px;border-bottom:1px solid var(--line);flex:none}
+.web .topbar{padding:0 32px;min-height:63px}
+.topbar .t{flex:1;margin:0;font-size:16px;font-weight:600;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.content{flex:1;overflow-y:auto;padding:20px 20px 28px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.web .content{padding:28px 40px 36px}
+.web .content>.read{max-width:820px;margin:0 auto}
+.tabs{display:flex;border-top:1px solid var(--line);padding:4px 8px 8px;background:var(--paper);flex:none}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:54px;font-size:10px;color:var(--muted)}
+.tabs button.on{color:var(--clay)}
+.tabs button:hover{color:var(--clay)}
+.side{display:flex;flex-direction:column;border-right:1px solid var(--line);padding:28px 18px 16px;background:color-mix(in srgb,var(--paper) 86%,var(--surface-alt));overflow-y:auto}
+.brand{display:flex;align-items:center;gap:10px;margin:0 3px 26px;color:var(--clay)}
+.brand svg{width:30px;height:34px}
+.brand strong{display:block;font:19px/1.4 var(--serif);letter-spacing:.08em;color:var(--ink)}
+.brand span{font:9px var(--latin);letter-spacing:.25em;color:var(--muted)}
+.new-chat{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;min-height:42px;border:1px solid var(--line);border-radius:7px;margin-bottom:22px;font-size:13px;background:var(--surface)}
+.new-chat:hover{border-color:var(--clay);color:var(--clay)}
+.new-chat svg{width:16px;height:16px}
+.nav{display:flex;align-items:center;gap:12px;width:100%;min-height:42px;text-align:left;padding:8px 12px;border-radius:7px;color:var(--muted);font-size:13px;margin-bottom:4px}
+.nav svg{width:18px;height:18px}
+.nav:hover{color:var(--clay)}
+.nav.on{background:var(--clay-tint);color:var(--clay);font-weight:600}
+.nav .count{margin-left:auto;font-size:11px;font-weight:400;opacity:.65}
+.side .sub{color:var(--soft);font-size:11px;letter-spacing:.12em;padding:18px 12px 6px}
+.side .recent{display:block;width:100%;text-align:left;font-size:12px;padding:5px 12px;color:var(--muted)}
+.side .recent:hover{color:var(--clay)}
+.side-note{margin:auto 10px 14px;padding-top:24px}
+.side-note svg{width:64px;height:32px;fill:none;stroke:var(--olive);stroke-width:1.1;stroke-linecap:round}
+.side-note p{font:12px/1.85 var(--serif);letter-spacing:.1em;color:var(--muted);margin:4px 0}
+.side-foot{display:flex;align-items:center;gap:10px;border-top:1px solid var(--line);padding-top:12px;font-size:12px}
+.side-foot span{display:block;color:var(--muted);font-size:10px}
+.avatar{width:32px;height:32px;flex:none;border:1px solid var(--line);border-radius:50%;display:grid;place-items:center;font:14px var(--serif);color:var(--clay);background:var(--surface)}
+.avatar.lg{width:58px;height:58px;font-size:24px}
+.expbar{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:6px 18px;background:var(--olive-tint);color:var(--olive);font-size:12px;flex:none}
+.expbar button{border:1px solid color-mix(in srgb,var(--olive) 50%,transparent);border-radius:5px;padding:2px 10px;font-size:12px;color:var(--olive)}
+
+/* 页头：沿用旧稿 section-top（拉丁小标签 + 宋体标题） */
+.section-top{margin:2px 0 22px}
+.eyebrow{display:block;font:10px/14px var(--latin);letter-spacing:.17em;text-transform:uppercase;color:var(--clay);margin-bottom:10px}
+.section-top h2{font:500 25px/40px var(--serif);letter-spacing:.06em;margin:0}
+.section-top p{font-size:13px;color:var(--muted);margin:6px 0 0}
+.hero{position:relative;min-height:200px;display:flex;align-items:center;padding:10px 0 18px;overflow:hidden}
+.hero-copy{position:relative;z-index:1;max-width:66%}
+.hero h2{margin:0;font:500 28px/1.55 var(--serif);letter-spacing:.08em}
+.hero h2 span{display:block}
+.hero p{font-size:13px;color:var(--muted);margin:12px 0 0;line-height:1.85}
+.hero img{position:absolute;right:-40px;top:0;width:300px;height:200px;object-fit:cover;object-position:88% center;mix-blend-mode:multiply;mask-image:linear-gradient(to right,transparent 0%,#000 28%,#000 88%,transparent 100%);opacity:.88;pointer-events:none}
+.web .hero img{width:380px;height:240px;right:-20px}
+.web .hero{min-height:240px}
+[data-theme="dark"] .hero img{mix-blend-mode:screen;filter:grayscale(.6) sepia(.45) brightness(.74);opacity:.38}
+.meander{height:10px;width:100%;color:var(--line);display:block}
+.divider{display:flex;align-items:center;gap:12px;margin:18px 0 12px;color:var(--soft);font-size:11px;letter-spacing:.06em}
+.divider:before,.divider:after{content:"";height:1px;flex:1;background:var(--line)}
+
+/* 对话 */
+.me{display:flex;justify-content:flex-end;margin:0 0 20px}
+.me div{max-width:86%;padding:11px 16px;border-radius:12px 12px 3px 12px;background:var(--surface-alt)}
+.ai{margin:0 0 20px}
+.ai-head{display:flex;align-items:center;gap:8px;margin:0 0 12px;color:var(--clay)}
+.ai-head svg{width:19px;height:22px;stroke-width:1.2}
+.ai-head span{font:11px var(--latin);letter-spacing:.14em}
+.ai h3{margin:0 0 14px;font:600 20px/1.5 var(--serif)}
+.steps{display:grid;gap:14px}
+.step{display:grid;grid-template-columns:26px minmax(0,1fr);gap:10px;align-items:start}
+.step-number{color:var(--clay);font:13px/24px var(--latin);width:24px;height:24px;text-align:center;border:1px solid color-mix(in srgb,var(--clay) 40%,transparent);border-radius:50%;margin-top:1px}
+.step h4{font-size:14px;font-weight:600;margin:0 0 3px}
+.step p{font-size:14px;line-height:1.9;margin:0;color:var(--muted)}
+.step.dim .step-number{color:var(--soft);border-color:var(--line)}
+.step.dim h4,.step.dim p{color:var(--soft)}
+.math{font-family:var(--latin);font-style:italic;letter-spacing:.02em}
+.result{margin:12px 0 0;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:13px}
+.actions{display:flex;flex-wrap:wrap;gap:4px 14px;margin:14px 0 4px}
+.dock{border-top:1px solid var(--line);padding:10px 16px 8px;background:var(--paper);flex:none}
+.web .dock{padding:12px 40px 10px}
+.web .dock>div{max-width:820px;margin:0 auto}
+.tools{display:flex;align-items:center;gap:2px;flex-wrap:wrap;margin:0 -6px 8px}
+.tool{display:flex;align-items:center;gap:6px;min-height:34px;padding:3px 9px;color:var(--muted);font-size:12px;border-radius:5px}
+.tool:hover{background:var(--surface-alt);color:var(--clay)}
+.tool svg{width:15px;height:15px}
+.tools .note{font-size:11px;color:var(--soft);margin-left:auto}
+.composer{display:grid;grid-template-columns:minmax(0,1fr) 42px;gap:8px 12px;align-items:end;padding:12px 10px 10px 12px;border:1px solid var(--soft);border-radius:10px;background:var(--surface)}
+.composer .ph-text{grid-column:1/-1;color:var(--soft);font-size:15px;min-height:30px}
+.composer .attach{color:var(--muted);width:36px;height:36px;display:grid;place-items:center}
+.composer .send{width:42px;height:42px;display:grid;place-items:center;border-radius:7px;background:var(--clay);color:var(--surface)}
+.composer .send svg{width:18px;height:18px}
+.caption{font-size:10px;color:var(--soft);margin-top:4px}
+
+/* 通用组件 */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 15px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font-size:13px}
+.btn:hover{border-color:var(--clay);color:var(--clay)}
+.btn.pri{background:var(--clay);border-color:var(--clay);color:var(--surface)}
+.btn.pri:hover{background:color-mix(in srgb,var(--clay) 85%,var(--ink));color:var(--surface)}
+.btn.sm{min-height:32px;padding:3px 11px;font-size:12px}
+.btn.block{display:flex;width:100%;margin:10px 0;min-height:46px}
+.btn.ghost{border-style:dashed}
+.ico{color:var(--clay);font-size:13px;white-space:nowrap}
+.ico:hover{text-decoration:underline;text-underline-offset:4px}
+.box{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;background:var(--surface)}
+.box.gray{background:var(--surface-alt);border-color:transparent}
+.box.err{background:var(--clay-tint);border-color:color-mix(in srgb,var(--clay) 35%,transparent)}
+.box.err b{color:var(--clay);font-weight:600}
+.ph{display:flex;align-items:center;justify-content:center;text-align:center;color:var(--soft);font-size:12px;border-radius:8px;margin:8px 0;border:1px solid var(--line);background:repeating-linear-gradient(135deg,var(--surface-alt) 0 10px,color-mix(in srgb,var(--surface-alt) 60%,var(--paper)) 10px 20px)}
+.in{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;padding:8px 12px;min-height:40px;color:var(--soft);background:var(--surface);margin:4px 0}
+.in.area{min-height:80px;align-items:flex-start}
+.in.filled{color:var(--ink)}
+.lab{font-size:12px;color:var(--muted);margin:14px 0 4px}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.row.between{justify-content:space-between}
+.grow{flex:1}
+.muted{color:var(--muted);font-size:12px}
+.h{font:600 16px/1.6 var(--serif);margin:24px 0 8px;letter-spacing:.04em}
+.big{font:500 26px/1.5 var(--serif);letter-spacing:.04em}
+.num{font-family:var(--latin);font-variant-numeric:lining-nums}
+.chip{display:inline-flex;align-items:center;min-height:30px;padding:3px 13px;border-radius:5px;font-size:12px;color:var(--muted);margin:2px 4px 2px 0;border:1px solid var(--line);background:var(--surface)}
+.chip.on{background:var(--clay);border-color:var(--clay);color:var(--surface)}
+.filters{display:flex;flex-wrap:wrap;gap:2px;padding-bottom:14px;border-bottom:1px solid var(--line)}
+.filters .chip{border-color:transparent;background:none}
+.filters .chip.on{background:var(--clay);color:var(--surface)}
+.seg{display:flex;padding:3px;border:1px solid var(--line);border-radius:7px;gap:2px;margin:6px 0}
+.seg button{flex:1;min-height:34px;padding:3px 10px;font-size:12px;color:var(--muted);border-radius:4px}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px #3f2b1711;font-weight:600}
+.li{display:block;width:100%;text-align:left;padding:15px 0;border-bottom:1px solid var(--line)}
+.li[data-go]{cursor:pointer}
+.li[data-go]:hover .lt{color:var(--clay)}
+.li .lt{font-size:14px}
+.li .s{font-size:12px;color:var(--muted);margin-top:2px}
+.bar{height:4px;background:var(--surface-alt);border-radius:2px;overflow:hidden}
+.bar i{display:block;height:100%;background:var(--olive)}
+.bar.weak i{background:var(--clay)}
+.bar.mid i{background:var(--ochre)}
+.kp{display:grid;grid-template-columns:minmax(0,1fr) 110px 68px;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--line);cursor:pointer;font-size:13px}
+.kp:hover>span:first-child{color:var(--clay)}
+.kp .lv{font-size:12px;text-align:right}
+.lv.weak{color:var(--clay)}.lv.mid{color:var(--ochre)}.lv.good{color:var(--olive)}.lv.none{color:var(--soft)}
+.stats{display:grid;border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin:12px 0}
+.stats>div{padding:12px 10px;border-left:1px solid var(--line)}
+.stats>div:first-child{border-left:0;padding-left:0}
+.stats b{display:block;font:400 24px/1.3 var(--latin);color:var(--ink)}
+.stats span{font-size:11px;color:var(--muted)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.grid4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{border-bottom:1px solid var(--line);padding:11px 8px;text-align:left}
+th{color:var(--soft);font-weight:500;font-size:12px}
+th:first-child,td:first-child{padding-left:0}
+tr.click{cursor:pointer}
+tr.click:hover td{color:var(--clay)}
+.heat{display:grid;grid-template-columns:110px repeat(6,1fr);gap:4px;font-size:12px;align-items:center;margin:8px 0}
+.heat i{display:block;height:26px;border-radius:3px}
+.modal{border:1px solid var(--line);border-radius:12px;padding:18px;background:var(--surface);margin:12px 0;box-shadow:0 18px 50px #4c382626}
+.modal b{font:600 16px var(--serif)}
+.center{text-align:center}
+.tag{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--muted);margin-left:4px;font-weight:400}
+.q{margin:14px 0;padding:8px 12px;border:1px dashed color-mix(in srgb,var(--olive) 60%,transparent);border-radius:6px;background:var(--olive-tint);color:var(--olive);font-size:12px;line-height:1.7}
+.ok{color:var(--olive)}.bad{color:var(--clay)}.warn{color:var(--ochre)}
+.quote{font:13px/1.9 var(--serif);color:var(--muted);letter-spacing:.08em;text-align:center;margin:26px 0 6px}
+
+/* 今日：沿用旧“学习计划”页 */
+.plans-intro{display:flex;gap:15px;align-items:center;padding:14px 0 20px;border-bottom:1px solid var(--line)}
+.plan-date{width:54px;height:62px;flex:none;display:flex;flex-direction:column;align-items:center;justify-content:center;border:1px solid var(--line);color:var(--clay);font-family:var(--latin);background:var(--surface)}
+.plan-date strong{font-size:27px;line-height:1.2;font-weight:400}
+.plan-date span{font-size:9px;letter-spacing:.15em}
+.plans-intro h3{font-size:14px;font-weight:500;margin:0 0 3px}
+.plan{display:flex;align-items:center;gap:14px;padding:18px 0;border-bottom:1px solid var(--line)}
+.plan-icon{width:35px;height:35px;flex:none;display:grid;place-items:center;color:var(--olive);border:1px solid var(--line);border-radius:50%}
+.plan-icon svg{width:17px;height:17px}
+.plan.done{opacity:.55}
+.plan-copy{flex:1;min-width:0}
+.plan-copy strong{font-size:14px;font-weight:500}
+.plan-copy p{font-size:12px;color:var(--muted);margin:3px 0 0}
+
+/* 错题本：沿用旧 mistake-item */
+.mistake{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:18px;padding:20px 0;border-bottom:1px solid var(--line)}
+.subject{font-size:10px;color:var(--clay);margin:0 0 6px;letter-spacing:.06em}
+.mistake h3{font-size:15px;font-weight:500;margin:0 0 5px;line-height:1.85;cursor:pointer}
+.mistake h3:hover{color:var(--clay)}
+.mistake .exp-t{font-size:13px;color:var(--muted);margin:0;line-height:1.8}
+.status{font-size:11px;color:var(--muted);text-align:right}
+.status strong{display:block;font:400 22px/1.3 var(--latin);color:var(--olive)}
+.review-strip{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 16px;margin:0 0 16px;border-radius:10px;background:var(--olive-tint);color:var(--olive)}
+.review-strip b{font:400 22px var(--latin)}
+
+/* 复习：沿用旧翻卡 */
+.rv-progress{display:flex;justify-content:space-between;align-items:center;color:var(--muted);font-size:11px;margin-bottom:10px}
+.rv-progress strong{font:20px var(--latin);color:var(--ink);font-weight:400}
+.rv-line{height:3px;background:var(--surface-alt);margin-bottom:24px}
+.rv-line span{display:block;height:100%;background:var(--olive)}
+.rv-card{position:relative;min-height:300px;display:flex;flex-direction:column;justify-content:space-between;align-items:center;text-align:center;padding:28px 24px 22px;border:1px solid var(--line);border-radius:12px;background:var(--surface);cursor:pointer;width:100%}
+.rv-card.flipped{background:var(--olive-tint)}
+.rv-card .card-type{font:11px var(--latin);letter-spacing:.12em;color:var(--clay)}
+.rv-card .card-q{font:22px/1.8 var(--serif);letter-spacing:.04em}
+.rv-card .card-hint{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--muted)}
+.rv-card .card-hint svg{width:14px;height:14px}
+.rv-card .card-no{position:absolute;right:18px;top:18px;font:10px var(--latin);color:var(--soft)}
+.ratings{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:20px}
+.rating{display:flex;justify-content:center;align-items:center;gap:6px;min-height:46px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font-size:12px}
+.rating:hover{border-color:var(--clay);color:var(--clay)}
+.rating:last-child{border-color:var(--olive);color:var(--olive)}
+.rating svg{width:16px;height:16px}
+.hint-line{text-align:center;color:var(--soft);font-size:11px;margin:16px 0 0}
+
+/* 我的：沿用旧 profile */
+.profile-hero{display:flex;align-items:center;gap:16px;padding:6px 0 22px;border-bottom:1px solid var(--line)}
+.profile-hero b{display:block;font:500 20px var(--serif);letter-spacing:.06em}
+.group-t{font-size:11px;letter-spacing:.12em;color:var(--soft);margin:24px 0 0}
+.plink{display:flex;align-items:center;gap:14px;width:100%;text-align:left;padding:15px 0;border-bottom:1px solid var(--line)}
+.plink:hover .lt{color:var(--clay)}
+.plink .lt{font-size:14px}
+.plink .s{font-size:12px;color:var(--muted)}
+.plink>svg{margin-left:auto;width:14px;color:var(--soft)}
+.plink .pi{color:var(--olive);width:18px}
 </style>
 </head>
 <body>
+<svg class="sprite" xmlns="http://www.w3.org/2000/svg" aria-hidden="true"><defs>
+<symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+<symbol id="i-chat" viewBox="0 0 24 24"><path d="M20.5 11.3c0 4.4-3.9 7.7-8.7 7.7a10 10 0 0 1-3.3-.5L4 21l1.1-4.4a7.3 7.3 0 0 1-2-5.3c0-4.3 3.9-7.7 8.7-7.7s8.7 3.4 8.7 7.7Z"/></symbol>
+<symbol id="i-book" viewBox="0 0 24 24"><path d="M12 5.2C9.4 3.6 6.2 3 3 4v15c3.2-1 6.4-.4 9 1.2 2.6-1.6 5.8-2.2 9-1.2V4c-3.2-1-6.4-.4-9 1.2ZM12 5.2v15M6 8h3M15 8h3M6 11h3M15 11h3"/></symbol>
+<symbol id="i-cards" viewBox="0 0 24 24"><rect x="5" y="5" width="15" height="15" rx="2"/><path d="M16 2H4a2 2 0 0 0-2 2v12M9 10h7M9 14h5"/></symbol>
+<symbol id="i-plan" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="17" rx="2"/><path d="M8 2v4M16 2v4M4 9h16M8 13h3M8 17h7"/></symbol>
+<symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="7" r="4"/><path d="M4 21v-2a8 8 0 0 1 16 0v2H4Z"/></symbol>
+<symbol id="i-right" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+<symbol id="i-left" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+<symbol id="i-camera" viewBox="0 0 24 24"><path d="M8 5 9.5 3h5L16 5h4a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4Z"/><circle cx="12" cy="12.5" r="4"/></symbol>
+<symbol id="i-checklist" viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="19" rx="2"/><path d="m8 8 1 1 2-2M14 8h3M8 13h3M14 13h3M8 17h7"/></symbol>
+<symbol id="i-document" viewBox="0 0 24 24"><path d="M14 2H5a1 1 0 0 0-1 1v18a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8l-6-6ZM14 2v6h6M8 12h8M8 16h8"/></symbol>
+<symbol id="i-mic" viewBox="0 0 24 24"><rect x="8" y="2" width="8" height="13" rx="4"/><path d="M5 10v2a7 7 0 0 0 14 0v-2M12 19v4M8 23h8"/></symbol>
+<symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3"/><circle cx="15" cy="17" r="3"/></symbol>
+<symbol id="i-shield" viewBox="0 0 24 24"><path d="m12 3 8 3v6c0 4-4 7-8 9-4-2-8-5-8-9V6l8-3Z"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-send" viewBox="0 0 24 24"><path d="m3 3 19 9-19 9 3-9-3-9ZM6 12h16"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M6 18 18 6"/></symbol>
+<symbol id="i-help" viewBox="0 0 24 24"><path d="M8 7a4 4 0 0 1 8 0c0 3-4 3-4 6M12 18v1"/></symbol>
+<symbol id="i-flip" viewBox="0 0 24 24"><path d="M4 10a8 8 0 0 1 14-5l2 3M20 3v5h-5M20 14a8 8 0 0 1-14 5l-2-3M4 21v-5h5"/></symbol>
+<symbol id="i-pen" viewBox="0 0 24 24"><path d="m16 3 5 5L8 21H3v-5L16 3ZM13 6l5 5M3 21l5-5"/></symbol>
+<symbol id="i-temple" viewBox="0 0 32 36"><path d="M3 12 16 4l13 8M4 14h24M6 17v13M11 17v13M21 17v13M26 17v13M4 31h24M2 34h28M14 17v13M18 17v13"/><circle cx="16" cy="10" r="1.2"/></symbol>
+<symbol id="i-olive" viewBox="0 0 90 45"><path d="M5 38C25 35 48 23 75 7M20 33c-8-3-10-10-7-12 7 0 11 5 7 12ZM32 28c-5-6-4-12 0-13 5 3 6 8 0 13ZM45 22c-2-8 0-12 4-12 4 5 2 9-4 12ZM58 16c0-7 4-11 8-9 1 5-2 8-8 9ZM26 31c5 6 12 7 14 4-2-6-9-8-14-4ZM42 24c6 5 12 5 14 1-3-4-9-5-14-1ZM57 16c7 4 13 2 13-2-4-3-9-2-13 2Z"/></symbol>
+<symbol id="i-users" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20v-1a6.5 6.5 0 0 1 13 0v1M16 4.6a3.5 3.5 0 0 1 0 6.8M18 13.6a6.5 6.5 0 0 1 3.5 5.9V20"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 3v17h17M8 16v-4M12 16V8M16 16v-6M20 16V6"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4l2-2ZM10 21h4"/></symbol>
+<symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
+</defs></svg>
 <div id="app">
   <aside id="index"></aside>
   <main id="stage"></main>
   <aside id="notes"></aside>
 </div>
 <script>
+const HERO = 'data:image/webp;base64,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';
+const MEANDER = '<svg class="meander" viewBox="0 0 784 10" preserveAspectRatio="none" aria-hidden="true"><defs><pattern id="greek-key" width="36" height="10" patternUnits="userSpaceOnUse"><path d="M0 9H35V1H7v5h21V4H14" fill="none" stroke="currentColor" stroke-width=".65"/></pattern></defs><rect width="784" height="10" fill="url(#greek-key)"/></svg>';
+
 // ───────────── 组件 ─────────────
+const ic = n => `<svg class="icon"><use href="#i-${n}"/></svg>`;
 const go = (id, label, cls = '') => `<button class="btn ${cls}" data-go="${id}">${label}</button>`;
 const pri = (id, label, extra = '') => go(id, label, 'pri ' + extra);
 const ico = (id, label) => `<button class="ico" data-go="${id}">${label}</button>`;
 const ph = (label, h = 120) => `<div class="ph" style="height:${h}px">${label}</div>`;
-const inp = (t, area) => `<div class="in ${area ? 'area' : ''}">${t}</div>`;
+const inp = (t, area, filled) => `<div class="in ${area ? 'area' : ''} ${filled ? 'filled' : ''}">${t}</div>`;
+const val = (t, area) => inp(t, area, true);
 const lab = t => `<div class="lab">${t}</div>`;
 const chips = (arr, on = 0) => arr.map((a, i) => `<span class="chip ${i === on ? 'on' : ''}">${a}</span>`).join('');
+const filters = (arr, on = 0) => `<div class="filters">${chips(arr, on)}</div>`;
 const seg = (arr, on = 0, gos = []) => `<div class="seg">${arr.map((a, i) => `<button class="${i === on ? 'on' : ''}" ${gos[i] ? `data-go="${gos[i]}"` : ''}>${a}</button>`).join('')}</div>`;
-const li = (t, s, id) => `<div class="li" ${id ? `data-go="${id}"` : ''}><div>${t}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+const li = (t, s, id) => `<div class="li" ${id ? `data-go="${id}"` : ''}><div class="lt">${t}</div>${s ? `<div class="s">${s}</div>` : ''}</div>`;
+const plink = (icon, t, s, id) => `<button class="plink" data-go="${id}">${ic(icon).replace('class="icon"', 'class="icon pi"')}<span><span class="lt">${t}</span>${s ? `<br><span class="s">${s}</span>` : ''}</span>${ic('right')}</button>`;
 const box = (inner, cls = '') => `<div class="box ${cls}">${inner}</div>`;
-const err = inner => box('⚠ ' + inner, 'err');
+const err = inner => box(`<b>${inner}</b>`, 'err');
 const h = t => `<div class="h">${t}</div>`;
-const bar = v => `<div class="bar"><i style="width:${v}%"></i></div>`;
-const stat = (v, t) => `<div class="stat"><b>${v}</b><span class="muted">${t}</span></div>`;
-const kp = (name, v, id = 'S-24') => `<div class="kp" data-go="${id}"><span>${name}</span>${v == null ? '<span class="muted">·····</span>' : bar(v)}<span class="muted">${v == null ? '数据不足' : v + (v < 60 ? ' 薄弱' : v < 85 ? ' 一般' : ' 掌握')}</span></div>`;
-const heatRow = (name, vals) => `<span>${name}</span>` + vals.map(v => `<i title="${v}" style="background:hsl(0,0%,${95 - v * 0.7}%)"></i>`).join('');
-const steps = (arr, shown) => arr.map((s, i) => `<div class="step ${i >= shown ? 'dim' : ''}"><b>${i + 1} ${s[0]}</b><br>${i >= shown ? '（等待学生回应后展开）' : s[1]}</div>`).join('');
-const composer = (tools = true) => `<div class="composer">${tools ? `<div class="row" style="margin-bottom:6px">${go('S-03:拍照答疑', '拍照答疑', 'sm')}${go('S-03:作业批改', '作业批改', 'sm')}<span class="muted">加分项：作文批改 · 口语对练</span></div>` : ''}<div class="row">${go('S-03:拍照答疑', '相机', 'sm')}<div class="in grow">输入你的学习问题……</div>${go('S-01:引导式对话中', '发送', 'sm pri')}</div></div>`;
+const sectTop = (eb, title, sub) => `<div class="section-top">${eb ? `<span class="eyebrow">${eb}</span>` : ''}<h2>${title}</h2>${sub ? `<p>${sub}</p>` : ''}</div>`;
+const lv = v => v == null ? 'none' : v < 60 ? 'weak' : v < 85 ? 'mid' : 'good';
+const bar = (v, cls = '') => `<div class="bar ${cls}"><i style="width:${v}%"></i></div>`;
+const stats = arr => `<div class="stats" style="grid-template-columns:repeat(${arr.length},1fr)">${arr.map(([v, t]) => `<div><b>${v}</b><span>${t}</span></div>`).join('')}</div>`;
+const kp = (name, v, id = 'S-24') => `<div class="kp" data-go="${id}"><span>${name}</span>${v == null ? bar(0) : bar(v, lv(v))}<span class="lv ${lv(v)}">${v == null ? '数据不足' : `<span class="num">${v}</span> ` + ({ weak: '薄弱', mid: '一般', good: '掌握' })[lv(v)]}</span></div>`;
+const heatRow = (name, vals) => `<span>${name}</span>` + vals.map(v => `<i title="掌握度 ${v}" style="background:color-mix(in srgb,var(--clay) ${Math.round((100 - v) * 0.9)}%,var(--surface))"></i>`).join('');
+const steps = (arr, shown) => `<div class="steps">${arr.map((s, i) => `<div class="step ${i >= shown ? 'dim' : ''}"><span class="step-number">${i + 1}</span><div><h4>${s[0]}</h4><p>${i >= shown ? '等你回应后展开' : s[1]}</p></div></div>`).join('')}</div>`;
+const me = t => `<div class="me"><div>${t}</div></div>`;
+const ai = inner => `<div class="ai"><div class="ai-head">${ic('temple')}<span>ATHENA</span></div>${inner}</div>`;
 const tbl = (head, rows, gos = []) => `<table><tr>${head.map(x => `<th>${x}</th>`).join('')}</tr>${rows.map((r, i) => `<tr class="${gos[i] ? 'click' : ''}" ${gos[i] ? `data-go="${gos[i]}"` : ''}>${r.map(x => `<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
+function dock(kind) {
+  const send = kind === 't' ? 'T-21:对话中' : 'S-01:引导式对话中';
+  const tools = kind === 't' ? '' : `<div class="tools"><button class="tool" data-go="S-03:拍照答疑">${ic('camera')}拍照答疑</button><button class="tool" data-go="S-03:作业批改">${ic('checklist')}作业批改</button><span class="note">作文批改、口语对练为加分项</span></div>`;
+  const attach = kind === 't' ? `<button class="attach" data-go="T-21">${ic('image')}</button>` : `<button class="attach" data-go="S-03:拍照答疑">${ic('camera')}</button>`;
+  return `<div class="dock"><div>${tools}<div class="composer"><div class="ph-text">${kind === 't' ? '问问备课、讲法或解题思路' : '写下问题，一起想明白。'}</div>${attach}<button class="send" data-go="${send}">${ic('send')}</button></div><div class="caption">${kind === 't' ? 'Enter 发送 · Shift + Enter 换行' : '学贵有疑，问有所思。'}</div></div></div>`;
+}
 
 // ───────────── 页面 ─────────────
 // role: c 公共 / s 学生 / t 教师；tab: 所属一级导航；req: 对应需求；webOnly: 教师手机端只读提示
@@ -147,402 +347,424 @@ def('C-01', { role: 'c', title: '登录', bare: true, req: 'ACC-02, ACC-04', sta
   锁定: () => login(err('密码错误次数过多，请 10 分钟后再试')),
 }});
 function login(e) {
-  return `<div class="center" style="margin-top:40px"><div class="big">雅典娜</div><div class="muted">连接学生和老师的 AI 学习助手</div></div>
+  return `<div style="margin:40px 0 28px"><div class="brand" style="margin:0 0 18px">${ic('temple')}<div><strong>雅典娜</strong><span>ATHENA</span></div></div>
+  <div class="section-top"><h2>知其然，也知其所以然。</h2><p>连接学生和老师的 AI 学习助手</p></div></div>
   ${lab('用户名')}${inp('请输入用户名')}${lab('密码')}${inp('请输入密码')}${e}
-  <button class="btn pri block" data-login="s">登 录（原型：以学生登录）</button>
-  <button class="btn block" data-login="t">登 录（原型：以教师登录）</button>
+  <button class="btn pri block" data-login="s">登录（原型：以学生身份）</button>
+  <button class="btn block" data-login="t">登录（原型：以教师身份）</button>
   <div class="center muted">还没有账号？${ico('C-02', '去注册')}</div>
-  <div class="center muted" style="margin:24px 0 8px">──── 免注册体验 ────</div>
-  <div class="grid2"><button class="btn" data-exp="s">体验学生端</button><button class="btn" data-exp="t">体验教师端</button></div>`;
+  <div class="divider" style="margin-top:28px">免注册体验</div>
+  <div class="grid2"><button class="btn" data-exp="s">体验学生端</button><button class="btn" data-exp="t">体验教师端</button></div>
+  <p class="muted center" style="margin-top:10px">体验时可以在同一个班级的老师和学生之间切换</p>`;
 }
+const regBack = id => `<button class="ico" data-go="${id}">‹ 上一步</button>`;
 def('C-02', { role: 'c', title: '注册', bare: true, req: 'ACC-01', states: {
-  选身份: () => `${ico('C-01', '← 返回登录')}<div class="big" style="margin:16px 0">选择你的身份</div>
-    ${box('<b>我是学生</b><div class="muted">答疑、批改、错题复习、完成老师布置的作业</div>')}
-    ${box('<b>我是老师</b><div class="muted">备课、组卷、布置和批改作业、查看学情</div>')}
-    <div class="muted">身份注册后不能修改</div>${pri('C-02:填写账号', '下一步', 'block')}`,
-  填写账号: () => `${ico('C-02:选身份', '← 上一步')}<div class="big" style="margin:16px 0">设置账号</div>
+  选身份: () => `<button class="ico" data-go="C-01">‹ 返回登录</button><div style="margin-top:22px">${sectTop('', '你是学生，还是老师？', '身份注册后不能修改')}</div>
+    ${plink('book', '我是学生', '答疑、批改、错题复习，完成老师布置的作业', 'C-02:填写账号')}${plink('users', '我是老师', '备课、组卷、布置和批改作业、查看学情', 'C-02:填写账号')}`,
+  填写账号: () => `${regBack('C-02:选身份')}<div style="margin-top:22px">${sectTop('', '设置账号')}</div>
     ${lab('用户名（4～20 位字母、数字、下划线）')}${inp('')}${lab('密码（8～32 位，含字母和数字）')}${inp('')}${lab('确认密码')}${inp('')}
     ${pri('C-02:学生资料', '下一步（学生）', 'block')}${go('C-02:教师资料', '下一步（教师）', 'block')}`,
-  用户名已存在: () => `${ico('C-02:选身份', '← 上一步')}<div class="big" style="margin:16px 0">设置账号</div>
-    ${lab('用户名')}${inp('xiaoya2026')}${err('用户名已被使用')}${lab('密码')}${inp('••••••••')}${lab('确认密码')}${inp('••••••••')}${pri('C-02:学生资料', '下一步', 'block')}`,
-  学生资料: () => `${ico('C-02:填写账号', '← 上一步')}<div class="big" style="margin:16px 0">完善资料</div>
-    ${lab('昵称')}${inp('')}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}
-    <div class="muted" style="margin-top:8px">不需要手机号，也不收集真实姓名</div><button class="btn pri block" data-login="s">完成注册</button>`,
-  教师资料: () => `${ico('C-02:填写账号', '← 上一步')}<div class="big" style="margin:16px 0">完善资料</div>
+  用户名已存在: () => `${regBack('C-02:选身份')}<div style="margin-top:22px">${sectTop('', '设置账号')}</div>
+    ${lab('用户名')}${val('xiaoya2026')}${err('用户名已被使用，换一个试试')}${lab('密码')}${val('••••••••')}${lab('确认密码')}${val('••••••••')}${pri('C-02:学生资料', '下一步', 'block')}`,
+  学生资料: () => `${regBack('C-02:填写账号')}<div style="margin-top:22px">${sectTop('', '完善资料', '不需要手机号，也不收集真实姓名')}</div>
+    ${lab('昵称')}${inp('')}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}<button class="btn pri block" data-login="s">完成注册</button>`,
+  教师资料: () => `${regBack('C-02:填写账号')}<div style="margin-top:22px">${sectTop('', '完善资料')}</div>
     ${lab('姓名')}${inp('')}${lab('任教学科（可多选）')}${chips(['数学', '物理', '英语'], 0)}${lab('任教年级（可多选）')}${chips(['七年级', '八年级', '九年级'], 1)}
     <button class="btn pri block" data-login="t">完成注册</button>`,
 }});
 def('C-03', { role: 'c', title: '体验准备', bare: true, req: 'ACC-04', states: {
-  生成中: () => `<div class="center" style="margin-top:80px"><div class="big">正在准备体验环境</div><div class="muted">为你生成一个班级和演示数据，约 5 秒</div></div>
-    ${box(`<div class="ok">✓ 创建老师和学生账号</div><div class="ok">✓ 创建班级 八年级 3 班（30 名虚拟学生）</div><div>… 生成 3 次作业的提交与批改数据</div><div class="muted">○ 生成错题和学情数据</div>`)}
-    <div class="muted">体验账号保留 7 天；体验中可以随时切换老师 / 学生视角</div><button class="btn pri block" data-expdone="1">完成（原型）</button>`,
-  失败: () => `<div class="center" style="margin-top:80px"><div class="big">准备失败</div></div>${err('体验环境准备失败，请重试')}${go('C-03:生成中', '重试', 'pri block')}${go('C-01', '返回登录', 'block')}`,
+  生成中: () => `<div style="margin:80px 0 20px">${sectTop('', '正在准备体验环境', '为你生成一个班级和演示数据，大约 5 秒')}</div>
+    ${li('<span class="ok">✓</span> 创建老师和学生账号')}${li('<span class="ok">✓</span> 创建八年级 3 班，加入 30 名虚拟学生')}${li('<span class="warn">…</span> 生成 3 次作业的提交与批改数据')}${li('<span class="muted">○ 生成错题和学情数据</span>')}
+    <p class="muted">体验账号保留 7 天</p><button class="btn pri block" data-expdone="1">完成（原型）</button>`,
+  失败: () => `<div style="margin:80px 0 20px">${sectTop('', '体验环境没准备好')}</div>${err('生成演示数据失败，请重试')}${go('C-03:生成中', '重试', 'pri block')}${go('C-01', '返回登录', 'block')}`,
 }});
 def('C-04', { role: 'c', title: '我的', tab: 'me', req: 'ME', states: { 默认: () => S.role === 's' ? `
-  <div class="row"><div class="ph" style="width:56px;height:56px;border-radius:28px">头像</div><div class="grow"><b>小雅</b><div class="muted">八年级 · 已加入 2 个班级</div></div>${ico('C-05', '编辑')}</div>
-  ${h('学习')}${li('我的班级', '八年级 3 班 数学 · 八年级 3 班 物理', 'S-25')}${li('学情画像', '平均掌握度 71', 'S-23')}${li('批改记录', '拍照批改过的作业', 'S-07')}${li('练习记录', '', 'S-22')}
-  ${h('其他')}${li('设置', '主题、讲解方式、修改密码', 'C-06')}${li('帮助与反馈', '', 'C-07')}
-  <div class="q">Q3 / Q5：去掉了“历史记录”“我的收藏”，以及会员、教辅书架、隐私导出等旧入口</div>` : `
-  <div class="row"><div class="ph" style="width:56px;height:56px;border-radius:28px">头像</div><div class="grow"><b>李老师</b><div class="muted">数学 · 八年级 · 3 个班级</div></div>${ico('C-05', '编辑')}</div>
-  ${h('教学')}${li('我的班级', '', 'T-02')}${li('个人题库 <span class="tag">加分</span>', '', 'T-22')}
-  ${h('其他')}${li('设置', '主题、修改密码', 'C-06')}${li('帮助与反馈', '', 'C-07')}` }});
+  ${sectTop('MY ATHENAEUM', '我的学习空间')}
+  <div class="profile-hero"><div class="avatar lg">雅</div><div class="grow"><b>小雅</b><span class="muted">八年级 · 已加入 2 个班级</span></div>${ico('C-05', '编辑资料')}</div>
+  <div class="group-t">学习</div>${plink('users', '我的班级', '八年级 3 班 数学、八年级 3 班 物理', 'S-25')}${plink('chart', '学情画像', '平均掌握度 71', 'S-23')}${plink('checklist', '批改记录', '拍照批改过的作业', 'S-07')}${plink('pen', '练习记录', '', 'S-22')}
+  <div class="group-t">其他</div>${plink('settings', '设置', '主题、讲解方式、修改密码', 'C-06')}${plink('help', '帮助与反馈', '', 'C-07')}
+  <div class="q">Q3 / Q5：去掉了旧设计的“历史记录”“我的收藏”，以及会员、教辅书架、隐私导出等入口</div>` : `
+  ${sectTop('', '我的')}
+  <div class="profile-hero"><div class="avatar lg">李</div><div class="grow"><b>李老师</b><span class="muted">数学 · 八年级 · 3 个班级</span></div>${ico('C-05', '编辑资料')}</div>
+  <div class="group-t">教学</div>${plink('users', '我的班级', '', 'T-02')}${plink('document', '个人题库 <span class="tag">加分</span>', '', 'T-22')}
+  <div class="group-t">其他</div>${plink('settings', '设置', '主题、修改密码', 'C-06')}${plink('help', '帮助与反馈', '', 'C-07')}` }});
 def('C-05', { role: 'c', title: '编辑资料', back: true, req: 'ME-01', states: { 默认: () => `
-  ${lab('头像（从预置头像中选）')}<div class="row">${ph('A', 44)}${ph('B', 44)}${ph('C', 44)}${ph('D', 44)}</div>
-  ${S.role === 's' ? `${lab('昵称')}${inp('小雅')}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}<div class="q">Q6：学习阶段改为七 / 八 / 九年级</div>` : `${lab('姓名')}${inp('李明')}${lab('任教学科')}${chips(['数学', '物理', '英语'], 0)}${lab('任教年级')}${chips(['七年级', '八年级', '九年级'], 1)}`}
-  ${go('C-04', '保存', 'pri block')}` }});
+  ${lab('头像（从预置头像中选）')}<div class="row">${['雅', '典', '娜', '学'].map((x, i) => `<div class="avatar lg" style="${i ? '' : 'border-color:var(--clay)'}">${x}</div>`).join('')}</div>
+  ${S.role === 's' ? `${lab('昵称')}${val('小雅')}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}<div class="q">Q6：学习阶段改为七 / 八 / 九年级</div>` : `${lab('姓名')}${val('李明')}${lab('任教学科')}${chips(['数学', '物理', '英语'], 0)}${lab('任教年级')}${chips(['七年级', '八年级', '九年级'], 1)}`}
+  ${go('C-04', '保存资料', 'pri block')}` }});
 def('C-06', { role: 'c', title: '设置', back: true, req: 'ME-02～04', states: { 默认: () => `
-  ${h('外观')}${seg(['纸感书房', '夜间自习', '跟随系统'], 2)}<div class="row between"><span>减少动态效果</span><span class="chip">关</span></div>
+  ${h('阅读外观')}${seg(['纸感书房', '夜间自习', '跟随系统'], 2)}<div class="li row between"><span class="lt">减少动态效果</span><span class="chip">已关闭</span></div>
   ${S.role === 's' ? `${h('学习偏好')}${lab('讲解方式')}${seg(['引导式（默认）', '直接讲解'], 0)}<div class="q">Q2：旧设计有三种（循序引导 / 先看结论 / 举例理解），改为只保留两种</div>${lab('常用学科')}${chips(['数学', '物理', '英语'], 0)}` : ''}
-  ${h('账号')}${S.exp ? '<div class="muted">体验账号不能修改密码</div>' : li('修改密码', '需要输入原密码', '')}
+  ${h('账号')}${S.exp ? '<p class="muted">体验账号不能修改密码</p>' : li('修改密码', '需要输入原密码', '')}
   ${go('C-01', '退出登录', 'block')}` }});
 def('C-07', { role: 'c', title: '帮助与反馈', back: true, req: 'ME-05', states: { 默认: () => `
-  ${h('常见问题')}${li('▸ 引导式讲解和直接讲解有什么区别？')}${li('▸ 拍照批改识别不准怎么办？')}${li('▸ 错题什么时候会出现在复习里？')}
+  ${h('常见问题')}${li('引导式讲解和直接讲解有什么区别？', '引导式一次只给一步提示，等你回应再往下；直接讲解一次给出完整步骤。')}${li('拍照批改识别不准怎么办？')}${li('错题什么时候会出现在复习里？')}
   ${h('隐私说明')}${box('老师能看到：你的班级内姓名、作业作答和成绩。<br>老师看不到：你的答疑记录、自主练习、拍照批改和复习记录。', 'gray')}
-  ${h('意见反馈')}${inp('写下你的建议……', 1)}${go('C-07', '提交', 'sm')}
-  <div class="muted" style="margin-top:12px">雅典娜 v0.1 · 挑战杯参赛作品</div>` }});
+  ${h('意见反馈')}${inp('写下你的建议', 1)}${go('C-07', '提交反馈', 'sm')}
+  <p class="muted" style="margin-top:18px">雅典娜 v0.1 · 挑战杯参赛作品</p>` }});
 def('C-08', { role: 'c', title: '消息中心', back: true, bonus: true, req: 'MSG（加分）', states: { 默认: () => S.role === 's'
-  ? li('● 新作业：二次根式练习', '八年级 3 班 · 今晚 20:00 截止', 'S-10') + li('● 批改结果已发布：浮力小测', '得分 86', 'S-12') + li('作业即将截止：Unit 3 阅读', '还剩 12 小时', 'S-10')
-  : li('● 二次根式练习：AI 批改完成，35 份待复核', '', 'T-07') + li('浮力小测已截止：40/40 已交', '', 'T-07') }});
+  ? li('新作业：二次根式练习', '八年级 3 班 · 今晚 20:00 截止', 'S-10') + li('批改结果已发布：浮力小测', '得分 86', 'S-12') + li('作业即将截止：Unit 3 阅读', '还剩 12 小时', 'S-10')
+  : li('二次根式练习：AI 已批完，35 份待复核', '', 'T-07') + li('浮力小测已截止：40 / 40 已交', '', 'T-07') }});
 
 // ── 学生 ──
-const dialogHead = (t) => `<div class="row between" style="margin-bottom:6px"><b>${t}</b><span>${chips(['数学▾'])}${chips(['引导式▾'], 0)}</span></div>`;
-const tri = ['找直角', '这道题考查勾股定理。图里哪个角是直角？这决定了哪条边是斜边。'];
+const dialogHead = t => `<div class="row between" style="margin-bottom:16px"><span class="muted">${t}</span><span>${chips(['数学'], 0)}${chips(['引导式'], -1)}</span></div>`;
+const tri = ['找直角', '这道题考查勾股定理。图里哪个角是直角？它决定了哪条边是斜边。'];
 const st2 = ['列式子', '斜边是 AB。试着列出勾股定理的式子。'];
-const st3 = ['求结果', 'AB² = 3² + 4² = 25，所以 AB = 5。'];
-def('S-01', { role: 's', title: '对话', tab: 'chat', req: 'ASK-01～05', topL: ['S-02', '历史'], topR: ['S-01', '+ 新对话'], composer: true, states: {
-  空状态: () => `<div class="center" style="margin:50px 0 20px"><div class="big">知其然，也知其所以然。</div><div class="muted">让每一个问题，都有值得追寻的答案。</div></div>
-    <div class="muted">从一个问题开始</div>${go('S-01:引导式对话中', '这道一元二次方程怎么解？', 'block')}${go('S-01:直接讲解', '浮力和排开水的体积有什么关系？', 'block')}${go('S-01:直接讲解', '现在完成时什么时候用？', 'block')}`,
-  引导式对话中: () => `${dialogHead('勾股定理求边长')}<div class="bubble me">[图片] 求 AB 的长度</div>
-    <div class="bubble ai">${steps([tri, st2, st3], 1)}</div><div class="bubble me">角 C 是直角</div>
-    <div class="bubble ai">对！${steps([tri, st2, st3], 2).split('</div>').slice(1).join('</div>')}</div>
-    <div class="row">${go('S-01:引导式对话中', '再给点提示', 'sm')}${go('S-01:直接讲解', '看完整解答', 'sm')}</div>
-    <div class="q">引导式：分步讲解卡片一次只展开一步（沿用旧项目的步骤卡片样式）</div>`,
-  直接讲解: () => `${dialogHead('勾股定理求边长')}<div class="bubble me">[图片] 求 AB 的长度</div>
-    <div class="bubble ai">${steps([tri, st2, st3], 3)}<div class="box gray"><b>总结</b>：考查勾股定理；关键是先找直角确定斜边；易错点：开方后忘记取正值。</div></div>
-    <div class="row">${go('S-01:加入错题本弹窗', '加入错题本', 'sm')}${go('S-20:选择题', '练一道类似的', 'sm')}${go('S-01:直接讲解', '举个例子', 'sm')}${go('S-01', '复制', 'sm')}${go('S-01', '重新生成', 'sm')}</div>
-    <div class="q">Q2：“举个例子”作为追问按钮</div>`,
-  加入错题本弹窗: () => `${dialogHead('勾股定理求边长')}<div class="muted">（对话内容……）</div>
-    <div class="modal"><b>加入错题本</b>${lab('题目（AI 已提取，可修改）')}${inp('在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB。', 1)}${lab('正确答案')}${inp('5')}${lab('知识点')}${chips(['勾股定理'], 0)}<span class="chip">+ 添加</span>
-    <div class="row" style="margin-top:10px">${go('S-01:直接讲解', '取消')}${pri('S-13', '确认加入')}</div><div class="muted">加入后 1 天后进入复习</div></div>`,
-  生成中断: () => `${dialogHead('勾股定理求边长')}<div class="bubble me">求 AB 的长度</div><div class="bubble ai">${steps([tri, st2], 1)}<div class="muted">……</div></div>${err('生成中断（网络不稳定）')}<div class="row">${go('S-01:直接讲解', '继续生成', 'sm')}${go('S-01:直接讲解', '重新生成', 'sm')}</div>`,
-  与学习无关: () => `${dialogHead('新对话')}<div class="bubble me">推荐几个好玩的游戏</div><div class="bubble ai">我是你的学习助手，更擅长帮你解决学习上的问题哦。最近有没有哪道题让你卡住了？</div>`,
+const st3 = ['求结果', '<span class="math">AB² = 3² + 4² = 25</span>，所以 <span class="math">AB = 5</span>。'];
+def('S-01', { role: 's', title: '对话', tab: 'chat', req: 'ASK-01～05', topL: ['S-02', '历史记录'], topR: ['S-01:空状态', '新对话'], dock: 's', read: true, states: {
+  空状态: () => `<div class="hero"><div class="hero-copy"><span class="eyebrow">THE ATHENAEUM · 学思之间</span><h2><span>知其然，</span><span>也知其所以然。</span></h2><p>让每一个问题，都有值得追寻的答案。</p></div><img src="${HERO}" alt=""></div>${MEANDER}
+    <div class="divider">从一个问题开始</div>
+    ${li('这道一元二次方程怎么解？<span class="math"> x² − 5x + 6 = 0</span>', '', 'S-01:引导式对话中')}${li('浮力和排开水的体积有什么关系？', '', 'S-01:直接讲解')}${li('现在完成时什么时候用？', '', 'S-01:直接讲解')}`,
+  引导式对话中: () => `${dialogHead('勾股定理求边长')}${me('[图片] 求 AB 的长度')}
+    ${ai(`<h3>我们一步一步来。</h3>${steps([tri, st2, st3], 1)}`)}${me('角 C 是直角')}
+    ${ai(`<p style="margin:0 0 12px">对，那 AB 就是斜边。</p>${steps([st2, st3], 1).replace('>1<', '>2<').replace('>2</span><div><h4>求', '>3</span><div><h4>求')}`)}
+    <div class="actions">${go('S-01:引导式对话中', '再给点提示', 'sm')}${go('S-01:直接讲解', '看完整解答', 'sm')}</div>
+    <div class="q">引导式：沿用旧项目的分步讲解卡片，一次只展开一步</div>`,
+  直接讲解: () => `${dialogHead('勾股定理求边长')}${me('[图片] 求 AB 的长度')}
+    ${ai(`<h3>我们一步一步来。</h3>${steps([tri, st2, st3], 3)}<div class="result">考查勾股定理；关键是先找直角、确定斜边；易错点是开方后忘记化简。</div>`)}
+    <div class="actions">${ico('S-01:加入错题本弹窗', '加入错题本')}${ico('S-20:选择题', '练一道类似的')}${ico('S-01:直接讲解', '举个例子')}${ico('S-01', '复制')}${ico('S-01', '重新生成')}</div>
+    <div class="q">Q2：“举个例子”是回答下面的追问按钮</div>`,
+  加入错题本弹窗: () => `${dialogHead('勾股定理求边长')}<p class="muted">（对话内容）</p>
+    <div class="modal"><b>加入错题本</b>${lab('题目（已自动提取，可以修改）')}${val('在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。', 1)}${lab('正确答案')}${val('5')}${lab('知识点')}${chips(['勾股定理'], 0)}<span class="chip">添加</span>
+    <div class="row" style="margin-top:14px">${go('S-01:直接讲解', '取消')}${pri('S-13', '加入错题本')}</div><p class="muted">加入后，明天会出现在复习里</p></div>`,
+  生成中断: () => `${dialogHead('勾股定理求边长')}${me('求 AB 的长度')}${ai(steps([tri, st2], 1))}${err('网络中断，回答没有生成完')}<div class="actions">${go('S-01:直接讲解', '继续生成', 'sm')}${go('S-01:直接讲解', '重新生成', 'sm')}</div>`,
+  与学习无关: () => `${me('推荐几个好玩的游戏')}${ai('<p>我更擅长帮你解决学习上的问题。最近有没有哪道题让你卡住了？</p>')}`,
 }});
 def('S-02', { role: 's', title: '会话历史', back: true, req: 'ASK-04', states: {
-  默认: () => `${inp('搜索对话')}${li('勾股定理求边长', '数学 · 今天 10:32', 'S-01:引导式对话中')}${li('浮力的方向', '物理 · 昨天', 'S-01:直接讲解')}${li('现在完成时 vs 一般过去时', '英语 · 12 月 1 日', 'S-01:直接讲解')}<div class="muted">长按可重命名、删除</div><div class="q">Q3：只保留对话历史，错题本和复习不再单独做历史页</div>`,
-  搜索无结果: () => `${inp('牛顿')}<div class="center muted" style="margin-top:40px">没有找到相关对话</div>`,
+  默认: () => `${inp('搜索对话')}${li('勾股定理求边长', '数学 · 今天 10:32', 'S-01:引导式对话中')}${li('浮力的方向', '物理 · 昨天', 'S-01:直接讲解')}${li('现在完成时和一般过去时', '英语 · 12 月 1 日', 'S-01:直接讲解')}<p class="muted">长按可以重命名、删除</p><div class="q">Q3：只保留对话历史，错题本和复习不再单独做历史页</div>`,
+  搜索无结果: () => `${val('牛顿')}<p class="center muted" style="margin-top:40px">没有找到包含“牛顿”的对话</p>`,
 }});
-def('S-03', { role: 's', title: '拍照', back: true, dark: true, req: 'SCAN-01', states: {
+def('S-03', { role: 's', title: '拍照', back: true, req: 'SCAN-01', states: {
   拍照答疑: () => cam(0), 作业批改: () => cam(1),
-  格式不支持: () => cam(0) + err('不支持这种图片格式，请换一张 jpg / png 图片'),
+  格式不支持: () => cam(0) + err('不支持这种图片格式，请换一张 jpg 或 png 图片'),
 }});
 function cam(m) {
-  return `${seg(['拍照答疑', '作业批改'], m, ['S-03:拍照答疑', 'S-03:作业批改'])}${ph(m ? '取景框：把整页作业放平，对齐四角' : '取景框：对准一道题', 440)}
-  <div class="row between">${go(m ? 'S-05:进行中' : 'S-04:框选', '相册')}${pri(m ? 'S-05:进行中' : 'S-04:框选', '● 拍照')}<span class="muted">闪光灯</span></div>`;
+  return `${seg(['拍照答疑', '作业批改'], m, ['S-03:拍照答疑', 'S-03:作业批改'])}${ph(m ? '把整页作业放平，对齐四角' : '对准一道题', 470)}
+  <div class="row between">${go(m ? 'S-05:进行中' : 'S-04:框选', '相册')}<button class="btn pri" style="width:64px;height:64px;border-radius:50%" data-go="${m ? 'S-05:进行中' : 'S-04:框选'}">${ic('camera')}</button><span class="muted">闪光灯</span></div>`;
 }
-def('S-04', { role: 's', title: '框选与确认', back: true, req: 'SCAN-02', states: {
-  框选: () => `${ph('照片（可缩放）<br>┏━━━━ 拖动框选一道题 ━━━━┓', 400)}<div class="row between">${go('S-03:拍照答疑', '重拍')}${pri('S-04:确认', '识别')}</div>`,
-  确认: () => `${lab('识别结果（可编辑）')}${inp('如图，在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。', 1)}${ph('框选区域缩略图', 80)}${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${pri('S-01:引导式对话中', '开始讲解', 'block')}`,
-  识别失败: () => `${ph('照片', 300)}${err('没有识别到题目')}${go('S-03:拍照答疑', '重新拍照', 'block')}${go('S-01:空状态', '手动输入', 'block')}`,
-  多道题: () => `${ph('照片：框内有 2 道题', 300)}${err('请只框选一道题')}${go('S-04:框选', '重新框选', 'block')}`,
+def('S-04', { role: 's', title: '框选题目', back: true, req: 'SCAN-02', states: {
+  框选: () => `${ph('照片（可缩放）<br><br>拖动框选一道题', 430)}<div class="row between">${go('S-03:拍照答疑', '重拍')}${pri('S-04:确认', '识别')}</div>`,
+  确认: () => `${sectTop('', '确认题目', '识别结果可以直接修改')}${val('如图，在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。', 1)}${ph('框选区域', 80)}${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${pri('S-01:引导式对话中', '开始讲解', 'block')}`,
+  识别失败: () => `${ph('照片', 300)}${err('没有识别到题目')}${go('S-03:拍照答疑', '重新拍照', 'block')}${go('S-01:空状态', '手动输入题目', 'block')}`,
+  多道题: () => `${ph('框里有 2 道题', 300)}${err('请只框选一道题')}${go('S-04:框选', '重新框选', 'block')}`,
 }});
 def('S-05', { role: 's', title: '批改中', back: true, req: 'SCAN-03', states: {
-  进行中: () => `${ph('作业原图', 260)}${box(`<div class="ok">✓ 识别题目：共 10 题</div><div>… 识别手写作答（6/10）</div><div class="muted">○ 逐题批改</div>`)}<div class="muted">可以离开这个页面，批改会在后台继续，完成后在“我的 → 批改记录”查看</div>${pri('S-06', '完成（原型）', 'block')}`,
-  照片不清楚: () => `${ph('作业原图', 260)}${err('照片不清楚，没法识别')}<div class="muted">拍摄建议：光线充足、手机与纸面平行、把作业放平</div>${go('S-03:作业批改', '重新拍', 'pri block')}`,
-  不是作业: () => `${ph('一张风景照', 260)}${err('没有识别到题目')}${go('S-03:作业批改', '重新拍', 'pri block')}`,
-  超过20题: () => `${box('⚠ 这页超过 20 道题，只批改了前 20 道，剩下的请分开拍', 'err')}${pri('S-06', '查看结果', 'block')}`,
+  进行中: () => `${ph('作业原图', 250)}${li('<span class="ok">✓</span> 识别题目：共 10 题')}${li('<span class="warn">…</span> 识别手写作答 6 / 10')}${li('<span class="muted">○ 逐题批改</span>')}<p class="muted">可以离开这个页面，批改会在后台继续，完成后在“我的 › 批改记录”里查看</p>${pri('S-06', '完成（原型）', 'block')}`,
+  照片不清楚: () => `${ph('作业原图', 250)}${err('照片太模糊，没法识别')}<p class="muted">光线充足、手机和纸面平行、把作业放平，再拍一次</p>${go('S-03:作业批改', '重新拍', 'pri block')}`,
+  不是作业: () => `${ph('一张风景照', 250)}${err('没有识别到题目')}${go('S-03:作业批改', '重新拍', 'pri block')}`,
+  超过20题: () => `${err('这页超过 20 道题，只批改了前 20 道，剩下的请分开拍')}${pri('S-06', '查看结果', 'block')}`,
 }});
 def('S-06', { role: 's', title: '批改结果', back: true, req: 'SCAN-03', states: {
-  默认: () => `<div class="grid3">${stat(7, '对')}${stat(2, '错')}${stat(1, '待确认')}</div>${ph('原图，每题旁标注 ✓ ✗ ?', 170)}
-    ${box(`<b class="bad">✗ 第 3 题</b> <span class="chip">勾股定理</span><div>你的答案：5√2　正确答案：5</div><div class="muted">错因：计算失误</div>${go('S-01:引导式对话中', '讲解这道题', 'sm')}`)}
-    ${box(`<b class="warn">? 第 6 题</b> 没有看清你的作答<div class="row">${go('S-06', '修改识别结果', 'sm')}${go('S-06', '我做对了', 'sm')}${go('S-06', '我做错了', 'sm')}</div>`)}
-    ${box(`<b class="ok">✓ 第 1 题</b> ……`)}${pri('S-13', '把 2 道错题加入错题本', 'block')}`,
+  默认: () => `${stats([['7', '做对'], ['2', '做错'], ['1', '待确认']])}${ph('原图，每题旁标注 ✓ ✗ ?', 170)}
+    <div class="mistake"><div><p class="subject">第 3 题 · 勾股定理</p><h3>你的答案 <span class="math bad">5√2</span>，正确答案 <span class="math ok">5</span></h3><p class="exp-t">错因：计算失误</p><div class="actions">${ico('S-01:引导式对话中', '讲解这道题')}</div></div><div class="status bad"><strong style="color:var(--clay)">✗</strong>做错</div></div>
+    <div class="mistake"><div><p class="subject">第 6 题</p><h3>没有看清你的作答</h3><div class="actions">${ico('S-06', '修改识别结果')}${ico('S-06', '我做对了')}${ico('S-06', '我做错了')}</div></div><div class="status"><strong style="color:var(--ochre)">?</strong>待确认</div></div>
+    <div class="mistake"><div><p class="subject">第 1 题 · 二次根式</p><h3>化简 <span class="math">√12</span></h3></div><div class="status"><strong>✓</strong>做对</div></div>
+    ${pri('S-13', '把 2 道错题加入错题本', 'block')}`,
 }});
 def('S-07', { role: 's', title: '批改记录', back: true, req: 'SCAN-04', states: {
-  默认: () => li('12 月 3 日 · 数学', '10 题 · 对 7 · 错 2', 'S-06') + li('12 月 1 日 · 物理', '8 题 · 对 8', 'S-06'),
-  空: () => `<div class="center muted" style="margin-top:60px">还没有批改记录<br>${go('S-03:作业批改', '拍一份作业试试', 'sm')}</div>`,
+  默认: () => li('12 月 3 日 · 数学', '10 题 · 对 7 · 错 2', 'S-06') + li('12 月 1 日 · 物理', '8 题 · 全对', 'S-06'),
+  空: () => `<p class="center muted" style="margin-top:60px">还没有批改记录</p>${go('S-03:作业批改', '拍一份作业试试', 'block')}`,
 }});
+const planRow = (icon, t, s, act, id, done) => `<div class="plan ${done ? 'done' : ''}"><span class="plan-icon">${ic(icon)}</span><div class="plan-copy"><strong>${t}</strong><p>${s}</p></div>${act ? ico(id, act) : ''}</div>`;
 def('S-08', { role: 's', title: '今日', tab: 'today', req: 'HOME', states: {
-  有任务: () => `<div class="muted">12 月 3 日 星期三</div>${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}
-    ${h('今日任务 2/4')}${li('● 作业 · 二次根式练习', '<span class="bad">今晚 20:00 截止</span> · 八年级 3 班', 'S-10:未提交')}${li('● 复习 · 6 道题到期', '去复习', 'S-17:正面')}${li('○ 推荐 · 勾股定理（掌握度 48）', '去练习', 'S-19')}${li('✓ 作业 · Unit 3 阅读', '已提交', 'S-10:已提交')}
-    ${box(`<div class="row between"><b>本周学情</b>${ico('S-23', '查看')}</div><div>作答 86 题 · 正确率 74% · 连续 5 天</div><div class="muted">最弱：勾股定理 48 · 浮力 52 · 定语从句 55</div>`)}
-    <div class="center muted">“学习不是填满容器，而是让思考发生。”</div><div class="q">由旧“学习计划”页改造；Q7：作业并入本 Tab</div>`,
-  全部完成: () => `<div class="muted">12 月 3 日 星期三</div>${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}<div class="center" style="margin:40px 0"><div class="big">今日任务已完成</div><div class="muted">明天有 4 道题要复习</div></div>${go('S-19', '再练一组', 'block')}`,
+  有任务: () => `${sectTop('THOUGHT INTO PRACTICE', '循序，向前。', '让学习有方向，也给思考留余地。')}${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}
+    <div class="plans-intro"><div class="plan-date"><strong>03</strong><span>DEC</span></div><div><h3>今天的学习任务</h3><span class="muted">完成 1 / 4</span></div></div>
+    ${planRow('checklist', '二次根式练习', '<span class="bad">今晚 20:00 截止</span> · 八年级 3 班 数学', '去完成', 'S-10:未提交')}
+    ${planRow('cards', '复习 6 道错题', '勾股定理、浮力等', '去复习', 'S-17:正面')}
+    ${planRow('pen', '练一练勾股定理', '你在这个知识点上的掌握度是 48', '去练习', 'S-19')}
+    ${planRow('check', 'Unit 3 阅读', '已提交，等老师批改', '', '', true)}
+    <div class="h row between"><span>本周学情</span>${ico('S-23', '查看学情画像')}</div>${stats([['86', '作答题数'], ['74%', '正确率'], ['5', '连续学习天数']])}
+    <p class="muted">最弱：勾股定理 48 · 浮力 52 · 定语从句 55</p>
+    <p class="quote">学习不是填满容器，而是让思考发生。</p><div class="q">由旧“学习计划”页改造；Q7：作业并入本 Tab</div>`,
+  全部完成: () => `${sectTop('THOUGHT INTO PRACTICE', '循序，向前。')}${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}<div class="center" style="margin:50px 0 20px"><div class="big">今天的任务都完成了</div><p class="muted">明天有 4 道题要复习</p></div>${go('S-19', '再练一组', 'block')}`,
 }});
 def('S-09', { role: 's', title: '全部作业', tab: 'today', webTab: 'hw', req: 'HW-02', states: {
-  有作业: () => `${S.end === 'sw' ? '' : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}${seg(['待完成 1', '已提交 1', '已批改 5'], 0)}${chips(['全部班级▾'])}
-    ${li('二次根式练习', '八年级 3 班 · 数学 · 今晚 20:00 截止', 'S-10:未提交')}${li('Unit 3 阅读', '八年级 3 班 · 英语 · 已提交 待批改', 'S-10:已提交')}${li('浮力小测', '八年级 3 班 · 物理 · 已批改 86 分', 'S-10:已发布')}`,
-  未加入班级: () => `${S.end === 'sw' ? '' : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}<div class="center muted" style="margin-top:60px">你还没有加入班级<br>加入老师的班级后，作业会出现在这里</div>${pri('S-26:输入', '输入邀请码加入班级', 'block')}`,
+  有作业: () => `${S.end === 'sw' ? sectTop('', '作业') : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}${filters(['待完成 1', '已提交 1', '已批改 5'], 0)}
+    ${li('二次根式练习', '八年级 3 班 · 数学 · <span class="bad">今晚 20:00 截止</span>', 'S-10:未提交')}${li('Unit 3 阅读', '八年级 3 班 · 英语 · 已提交，等老师批改', 'S-10:已提交')}${li('浮力小测', '八年级 3 班 · 物理 · 已批改 86 分', 'S-10:已发布')}`,
+  未加入班级: () => `${S.end === 'sw' ? sectTop('', '作业') : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}<p class="center muted" style="margin-top:60px">加入老师的班级后，作业会出现在这里</p>${pri('S-26:输入', '输入邀请码加入班级', 'block')}`,
 }});
-const hwHead = `<b>二次根式练习</b><div class="muted">八年级 3 班 · 数学 · 李老师</div><div>截止：今晚 20:00（还剩 3 小时）</div><div class="muted">共 12 题 · 提交方式：在线或拍照 · 允许迟交</div>`;
+const hwHead = (dl = '今晚 20:00 截止，还剩 3 小时', late = '允许迟交') => `${sectTop('', '二次根式练习', '八年级 3 班 · 数学 · 李老师')}${stats([['12', '道题'], ['100', '总分'], ['20:00', '截止']])}<p class="muted">${dl} · 在线作答或拍照提交都可以 · ${late}</p>`;
 def('S-10', { role: 's', title: '作业详情', back: true, req: 'HW-03', states: {
-  未提交: () => box(hwHead) + `<div class="grid2">${pri('S-20:选择题', '在线作答')}${go('S-11:预检有问题', '拍照提交')}</div><div class="muted">有草稿时显示“继续作答”</div>`,
-  已提交: () => box(hwHead) + box('已提交 18:02 · 批改中<div class="muted">截止前可以重新提交，以最后一次为准</div>', 'gray') + go('S-11:预检有问题', '重新提交', 'block'),
-  复核中: () => box(hwHead) + box('老师正在复核，暂时不能重新提交', 'gray'),
-  已发布: () => box(hwHead) + box('<div class="big">86 / 100</div><div class="muted">老师已发布批改结果</div>') + pri('S-12', '查看批改结果', 'block'),
-  已截止: () => box(hwHead.replace('今晚 20:00（还剩 3 小时）', '已截止').replace('允许迟交', '不允许迟交')) + err('作业已截止，不能再提交'),
+  未提交: () => hwHead() + `<div class="grid2" style="margin-top:16px">${pri('S-20:选择题', '在线作答')}${go('S-11:预检有问题', '拍照提交')}</div><p class="muted">有草稿时这里显示“继续作答”</p>`,
+  已提交: () => hwHead() + box('18:02 已提交，正在批改<br><span class="muted">截止前可以重新提交，以最后一次为准</span>', 'gray') + go('S-11:预检有问题', '重新提交', 'block'),
+  复核中: () => hwHead() + box('老师正在复核，现在不能重新提交', 'gray'),
+  已发布: () => hwHead() + box('<div class="big num">86 <span class="muted">/ 100</span></div><span class="muted">老师已经发布批改结果</span>') + pri('S-12', '查看批改结果', 'block'),
+  已截止: () => hwHead('已截止', '不允许迟交') + err('作业已经截止，不能再提交'),
 }});
 def('S-11', { role: 's', title: '拍照提交', back: true, req: 'HW-03', states: {
-  预检有问题: () => `<div class="row">${ph('第 1 页', 90)}${ph('第 2 页', 90)}${go('S-03:作业批改', '+ 拍一页', 'ghost')}</div><div class="muted">可拖动排序，最多 10 页</div>
-    ${h('提交前检查')}<div class="ok">✓ 识别到第 1～12 题</div><div class="warn">! 第 9 题没有识别到作答</div>${go('S-11:预检通过', '重拍第 2 页', 'sm')}${pri('S-10:已提交', '仍然提交', 'block')}`,
-  预检通过: () => `<div class="row">${ph('第 1 页', 90)}${ph('第 2 页', 90)}</div>${h('提交前检查')}<div class="ok">✓ 识别到第 1～12 题，每题都有作答</div>${pri('S-10:已提交', '确认提交', 'block')}`,
-  上传失败: () => `<div class="row">${ph('第 1 页 ✓', 90)}${ph('第 2 页 ✗', 90)}</div>${err('第 2 页上传失败')}${go('S-11:预检通过', '重试第 2 页', 'block')}<div class="muted">已上传成功的页不需要重传</div>`,
+  预检有问题: () => `<div class="grid3">${ph('第 1 页', 110)}${ph('第 2 页', 110)}<button class="ph" style="height:110px" data-go="S-03:作业批改">+ 拍一页</button></div><p class="muted">拖动可以调整顺序，最多 10 页</p>
+    ${h('提交前检查')}${li('<span class="ok">✓</span> 识别到第 1～12 题')}${li('<span class="warn">!</span> 第 9 题没有识别到作答', '可能被手指挡住了', '')}${go('S-11:预检通过', '重拍第 2 页', 'block')}${pri('S-10:已提交', '仍然提交', 'block')}`,
+  预检通过: () => `<div class="grid3">${ph('第 1 页', 110)}${ph('第 2 页', 110)}</div>${h('提交前检查')}${li('<span class="ok">✓</span> 识别到第 1～12 题，每题都有作答')}${pri('S-10:已提交', '提交作业', 'block')}`,
+  上传失败: () => `<div class="grid3">${ph('第 1 页 ✓', 110)}${ph('第 2 页 ✗', 110)}</div>${err('第 2 页上传失败')}${go('S-11:预检通过', '重新上传第 2 页', 'block')}<p class="muted">已经上传成功的页不需要重传</p>`,
 }});
 def('S-12', { role: 's', title: '作业结果', back: true, req: 'GRD-03', states: { 默认: () => `
-  <div class="center"><div class="big">86 / 100</div><div class="muted">浮力小测 · 李老师已批改</div></div>${box('<b>老师评语</b>：整体不错，第 3 题注意受力分析的完整性。', 'gray')}
-  ${li('<span class="ok">✓</span> 第 1 题　5/5', '')}${li('<span class="bad">✗</span> 第 3 题　3/8', '扣分：漏画浮力方向　老师：受力图要完整', 'S-14')}${li('<span class="ok">✓</span> 第 4 题　5/5', '')}
-  <div class="muted">做错的 2 道题已自动加入错题本</div>` }});
-def('S-13', { role: 's', title: '错题本', tab: 'mis', topR: ['S-15', '+ 添加'], req: 'MIS-02', states: {
-  有错题: () => `<div class="center muted">温故，而知新。</div>${box(`<div class="row between"><span>今日待复习 <b>6</b> 道</span>${pri('S-17:正面', '开始复习', 'sm')}</div>`, 'gray')}
-    ${chips(['全部', '数学', '物理', '英语'], 0)} ${chips(['知识点▾', '来源▾', '状态▾'], -1)}
-    ${mcard('数学 · 勾股定理', '已知 Rt△ABC 中……求 AB 的长。', '留意：开方时别忘了化简。', '复习中 · 第 2 次 · 明天复习 · 错 2 次')}
-    ${mcard('物理 · 浮力', '一个木块漂浮在水面上，所受浮力……', '先画受力图再列平衡方程。', '待复习 · 3 天后 · 错 1 次')}
-    ${mcard('英语 · 现在完成时', '“I have lived here ___ three years.”', 'for + 时间段，since + 时间点。', '已掌握')}
-    <div class="q">Q1：错题卡片上去掉了单题掌握度 %，改为显示复习状态</div>`,
-  空: () => `<div class="center muted" style="margin-top:60px">错题本还是空的<br>拍照批改一份作业，做错的题可以一键加入</div>${go('S-03:作业批改', '拍照批改', 'pri block')}`,
+  ${sectTop('', '浮力小测', '李老师已批改')}${stats([['86', '得分'], ['10', '道题'], ['2', '做错']])}${box('<b style="font-family:var(--serif)">老师评语</b><br>整体不错，第 3 题注意受力分析的完整性。', 'gray')}
+  ${li('<span class="ok">✓</span> 第 1 题　<span class="num">5 / 5</span>')}${li('<span class="bad">✗</span> 第 3 题　<span class="num">3 / 8</span>', '扣分：漏画浮力方向。老师：受力图要完整', 'S-14')}${li('<span class="ok">✓</span> 第 4 题　<span class="num">5 / 5</span>')}
+  <p class="muted">做错的 2 道题已经加入错题本</p>` }});
+const mcard = (sub, q, tip, stN, stT) => `<div class="mistake"><div><p class="subject">${sub}</p><h3 data-go="S-14">${q}</h3><p class="exp-t">${tip}</p><div class="actions">${ico('S-01:引导式对话中', '讲解')}${ico('S-20:选择题', '变式练习')}</div></div><div class="status"><strong>${stN}</strong>${stT}</div></div>`;
+def('S-13', { role: 's', title: '错题本', tab: 'mis', topR: ['S-15', '添加'], req: 'MIS-02', states: {
+  有错题: () => `${sectTop('REVISIT & UNDERSTAND', '温故，而知新。', '把每一次未解，变成下一次理解。')}
+    <div class="review-strip"><span>今天有 <b>6</b> 道错题要复习</span>${pri('S-17:正面', '开始复习', 'sm')}</div>
+    ${filters(['全部', '数学', '物理', '英语'], 0)}<div class="row" style="margin-top:8px">${chips(['知识点', '来源', '状态'], -1)}</div>
+    ${mcard('数学 · 勾股定理', '已知 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。', '开方时别忘了化简。', '2', '第 2 次复习<br>明天')}
+    ${mcard('物理 · 浮力', '一个木块漂浮在水面上，它受到的浮力和重力有什么关系？', '先画受力图，再列平衡方程。', '1', '待复习<br>3 天后')}
+    ${mcard('英语 · 现在完成时', 'I have lived here ___ three years.', 'for 接时间段，since 接时间点。', '✓', '已掌握')}
+    <div class="q">Q1：错题右侧由旧设计的“掌握度 %”改为复习状态；掌握度只在学情画像里显示</div>`,
+  空: () => `${sectTop('REVISIT & UNDERSTAND', '温故，而知新。')}<p class="muted" style="margin:40px 0 10px">错题本还是空的。拍照批改一份作业，做错的题可以一键加进来。</p>${go('S-03:作业批改', '拍照批改', 'pri block')}`,
 }});
-const mcard = (t, q, tip, s) => box(`<div class="muted">${t}</div><div data-go="S-14" style="cursor:pointer">${q}</div><div class="muted">${tip}</div><div class="muted">${s}</div><div class="row" style="margin-top:4px">${go('S-01:引导式对话中', '讲解', 'sm')}${go('S-20:选择题', '变式练习', 'sm')}</div>`);
 def('S-14', { role: 's', title: '错题详情', back: true, req: 'MIS-03, MIS-04', states: { 默认: () => `
-  <div class="muted">数学 · 勾股定理 · 拍照批改 · 错 2 次</div>${box('在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。')}
-  <div>我的答案：<span class="bad">5√2</span></div><div>正确答案：<span class="ok">5</span></div>${box('<b>解析</b><br>① 确定斜边 AB ② AB² = 9 + 16 ③ AB = 5', 'gray')}
-  ${lab('错因')}${chips(['计算失误▾'], 0)}${lab('笔记')}${inp('写点什么……')}<div class="muted">复习：第 2 次 · 下次 12 月 5 日</div>
-  <div class="grid2">${go('S-01:引导式对话中', '讲解这道题')}${pri('S-20:选择题', '练变式题')}</div><div class="row" style="margin-top:6px">${go('S-13', '标记已掌握', 'sm')}${go('S-13', '移出错题本', 'sm')}</div>` }});
+  <p class="subject">数学 · 勾股定理 · 拍照批改 · 错过 2 次</p><div class="big" style="font-size:20px;line-height:1.8">在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。</div>
+  ${stats([['<span class="bad">5√2</span>', '我的答案'], ['<span class="ok">5</span>', '正确答案']])}
+  ${steps([['确定斜边', '∠C 是直角，所以 AB 是斜边。'], ['列式', '<span class="math">AB² = 3² + 4² = 25</span>'], ['开方', '<span class="math">AB = 5</span>']], 3)}
+  ${lab('错因')}${chips(['计算失误'], 0)}${lab('笔记')}${inp('写点什么')}<p class="muted">第 2 次复习 · 下次 12 月 5 日</p>
+  <div class="grid2">${go('S-01:引导式对话中', '讲解这道题')}${pri('S-20:选择题', '练变式题')}</div><div class="actions">${ico('S-13', '标记已掌握')}${ico('S-13', '移出错题本')}</div>` }});
 def('S-15', { role: 's', title: '添加错题', back: true, req: 'MIS-01', states: { 默认: () => `
-  ${seg(['拍照录入', '手动输入'], 0)}${ph('拍照框选题目', 120)}${lab('题目')}${inp('', 1)}${lab('我的答案')}${inp('')}${lab('正确答案')}${inp('')}${lab('学科 / 知识点')}${chips(['数学▾', '选择知识点▾'], -1)}${pri('S-14', '保存', 'block')}` }});
+  ${seg(['拍照录入', '手动输入'], 0)}${ph('拍照框选题目', 120)}${lab('题目')}${inp('', 1)}${lab('我的答案')}${inp('')}${lab('正确答案')}${inp('')}${lab('学科和知识点')}${chips(['数学', '选择知识点'], 0)}${pri('S-14', '保存错题', 'block')}` }});
 def('S-16', { role: 's', title: '复习', tab: 'rev', req: 'REV', states: {
-  有到期: () => `<div class="center muted">让知识，留下来。</div>${box(`<div class="big">10</div><div class="muted">今日到期：6 道错题 · 4 张卡片</div>${pri('S-17:正面', '开始复习', 'block')}`)}
-    <div class="grid2">${stat('32', '本周复习次数')}${stat('68%', '记得比例')}${stat('12', '已掌握')}${stat('27', '复习中')}</div>
-    ${h('我的卡片组 <span class="tag">加分</span>')}${li('数学 · 二次根式公式', '8 张', 'S-27')}${li('英语 · 现在完成时', '12 张', 'S-27')}${go('S-27', 'AI 生成卡片', 'sm')}
+  有到期: () => `${sectTop('A LITTLE, WELL REMEMBERED', '让知识，留下来。', '慢一点想起，记得更长久。')}
+    <div class="review-strip"><span>今天到期 <b>10</b>　6 道错题 · 4 张卡片</span>${pri('S-17:正面', '开始复习', 'sm')}</div>
+    ${stats([['32', '本周复习次数'], ['68%', '选“记得”'], ['12', '已掌握'], ['27', '复习中']])}
+    ${h('我的卡片组 <span class="tag">加分</span>')}${li('数学 · 二次根式公式', '8 张', 'S-27')}${li('英语 · 现在完成时', '12 张', 'S-27')}<div class="actions">${ico('S-27', 'AI 生成卡片')}</div>
     <div class="q">由旧“知识卡片”Tab 改造：错题和卡片在同一个复习队列</div>`,
-  无到期: () => `<div class="center" style="margin:50px 0"><div class="big">今天没有要复习的</div><div class="muted">明天有 4 道题到期</div></div>${go('S-19', '去做一组练习', 'block')}`,
+  无到期: () => `${sectTop('A LITTLE, WELL REMEMBERED', '让知识，留下来。')}<div class="center" style="margin:40px 0 16px"><div class="big">今天没有要复习的</div><p class="muted">明天有 4 道题到期</p></div>${go('S-19', '做一组练习', 'block')}`,
 }});
-def('S-17', { role: 's', title: '今日复习 2 / 10', back: true, req: 'REV-02', states: {
-  正面: () => `${box(`<div class="muted">错题 · 数学 · 勾股定理 · 第 2 次复习</div><div style="margin:30px 0">已知 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。</div><div class="center muted">轻点卡片，查看答案</div>`)}
-    <div class="muted center">不用急着翻面，先给自己一点思考的时间。</div>${inp('（可选）写下你的答案')}${pri('S-17:翻面', '翻面看答案', 'block')}`,
-  翻面: () => `${box(`<div class="muted">答案</div><div class="big">5</div><div>解析：① 确定斜边 ② AB² = 9 + 16 ③ 开方</div>`)}<div class="center">你掌握得怎么样？</div>
-    <div class="grid3">${go('S-17:正面', '忘记')}${go('S-17:正面', '模糊')}${pri('S-18', '记得')}</div><div class="muted center">忘记 → 1 天后 · 模糊 → 保持间隔 · 记得 → 进入下一档</div>`,
+const rvTop = n => `<div class="rv-progress"><span>今日复习</span><span><strong>${n}</strong> / 10</span></div><div class="rv-line"><span style="width:${n * 10}%"></span></div>`;
+def('S-17', { role: 's', title: '今日复习', back: true, req: 'REV-02', states: {
+  正面: () => `${rvTop(2)}<button class="rv-card" data-go="S-17:翻面"><span class="card-no">02</span><span class="card-type">错题 · 数学 · 勾股定理</span><span class="card-q">已知 Rt△ABC 中，∠C=90°，<br>AC=3，BC=4，求 AB 的长。</span><span class="card-hint">${ic('flip')}轻点卡片，查看答案</span></button>
+    <p class="hint-line">不用急着翻面，先给自己一点思考的时间。</p>`,
+  翻面: () => `${rvTop(2)}<div class="rv-card flipped"><span class="card-no">02</span><span class="card-type">答案</span><span class="card-q"><span class="math" style="font-size:34px">AB = 5</span></span><span class="muted">确定斜边 → 列式 → 开方</span></div>
+    <div class="ratings"><button class="rating" data-go="S-17:正面">${ic('x')}忘记</button><button class="rating" data-go="S-17:正面">${ic('help')}模糊</button><button class="rating" data-go="S-18">${ic('check')}记得</button></div>
+    <p class="hint-line">忘记：明天再复习　模糊：间隔不变　记得：间隔拉长</p>`,
 }});
 def('S-18', { role: 's', title: '复习完成', back: true, req: 'REV-03', states: { 默认: () => `
-  <div class="center" style="margin:40px 0"><div class="big">本轮复习完成</div><div class="muted">共复习 10 道</div></div><div class="grid3">${stat(6, '记得')}${stat(3, '模糊')}${stat(1, '忘记')}</div>
-  <div class="center muted" style="margin:12px">明天要复习 4 道</div>${go('S-17:正面', '再来一轮', 'block')}${pri('S-16:有到期', '完成', 'block')}` }});
+  <div class="center" style="margin:40px 0 10px"><div class="big">本轮复习完成</div><p class="muted">你复习了 10 道题</p></div>${stats([['6', '记得'], ['3', '模糊'], ['1', '忘记']])}
+  <p class="center muted">明天要复习 4 道</p>${go('S-17:正面', '再来一轮', 'block')}${pri('S-16:有到期', '完成', 'block')}` }});
 def('S-19', { role: 's', title: '练习设置', back: true, req: 'PRC-01', states: {
-  默认: () => `${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${lab('知识点（1～5 个）')}${chips(['勾股定理 ×', '+ 添加'], 0)}${lab('题量')}${seg(['5', '10', '15'], 1)}${lab('难度')}${seg(['基础', '提高', '挑战'], 0)}
-    <div class="muted">优先从题库选题，不够的部分由 AI 生成</div>${pri('S-20:选择题', '开始练习', 'block')}`,
-  生成失败: () => `${err('出题失败，请重试')}<div class="muted">你的设置已保留</div>${pri('S-20:选择题', '重试', 'block')}`,
+  默认: () => `${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${lab('知识点（1～5 个）')}${chips(['勾股定理 ×', '添加'], 0)}${lab('题量')}${seg(['5 道', '10 道', '15 道'], 1)}${lab('难度')}${seg(['基础', '提高', '挑战'], 0)}
+    <p class="muted">先从题库里选题，不够的部分由 AI 出题</p>${pri('S-20:选择题', '开始练习', 'block')}`,
+  生成失败: () => `${err('出题失败')}<p class="muted">你的设置已保留，可以直接重试</p>${pri('S-20:选择题', '重试', 'block')}`,
 }});
-const qhead = `<div class="row between"><span>× 勾股定理练习</span><span>3 / 10</span><span class="muted">05:12</span></div>${bar(30)}`;
+const qhead = `<div class="rv-progress"><span>勾股定理练习</span><span class="num">05:12</span><span><strong>3</strong> / 10</span></div><div class="rv-line"><span style="width:30%"></span></div>`;
 def('S-20', { role: 's', title: '作答', back: true, req: 'PRC-02, HW-03', states: {
-  选择题: () => `${qhead}<div style="margin:14px 0">【单选】直角三角形两直角边为 6 和 8，斜边长为（　）</div>${['A. 9', 'B. 10', 'C. 12', 'D. 14'].map(x => box('○ ' + x)).join('')}
-    <div class="row between" style="margin-top:12px">${go('S-20:选择题', '上一题')}${go('S-20:答题卡', '答题卡')}${go('S-20:解答题', '下一题')}</div>`,
-  解答题: () => `${qhead}<div style="margin:14px 0">【解答】一个梯子长 5 m，底端离墙 3 m，梯子顶端离地多高？写出过程。</div>${inp('输入作答过程……', 1)}${go('S-03:作业批改', '拍照上传手写过程', 'block')}
+  选择题: () => `${qhead}<p class="subject">单选题</p><div class="big" style="font-size:19px;line-height:1.8">直角三角形两直角边为 6 和 8，斜边长为（　）</div>${['A　9', 'B　10', 'C　12', 'D　14'].map((x, i) => `<div class="li"><span class="lt">${i === 1 ? '<span class="bad">●</span>' : '○'}　${x}</span></div>`).join('')}
+    <div class="row between" style="margin-top:16px">${go('S-20:选择题', '上一题')}${go('S-20:答题卡', '答题卡')}${go('S-20:解答题', '下一题')}</div>`,
+  解答题: () => `${qhead}<p class="subject">解答题</p><div class="big" style="font-size:19px;line-height:1.8">梯子长 5 m，底端离墙 3 m，梯子顶端离地多高？写出过程。</div>${inp('写下解题过程', 1)}${go('S-03:作业批改', '拍照上传手写过程', 'block')}
     <div class="row between">${go('S-20:选择题', '上一题')}${go('S-20:答题卡', '答题卡')}${pri('S-20:未答提示', '提交')}</div>`,
-  答题卡: () => `${qhead}${h('答题卡')}<div class="grid4">${[...Array(10)].map((_, i) => `<span class="chip ${i < 3 ? 'on' : ''}">${i + 1}</span>`).join('')}</div><div class="muted">已答 3 / 10</div>${pri('S-20:未答提示', '提交')}`,
-  未答提示: () => `${qhead}<div class="modal"><b>还有 7 题没有作答</b><div class="muted">确定现在提交吗？</div><div class="row" style="margin-top:8px">${go('S-20:选择题', '继续作答')}${pri('S-21:默认', '确认提交')}</div></div><div class="muted">在线作业提交后回到作业详情</div>`,
+  答题卡: () => `${qhead}${h('答题卡')}<div class="grid4">${[...Array(10)].map((_, i) => `<span class="chip ${i < 3 ? 'on' : ''}" style="justify-content:center">${i + 1}</span>`).join('')}</div><p class="muted">已答 3 / 10</p>${pri('S-20:未答提示', '提交', 'block')}`,
+  未答提示: () => `${qhead}<div class="modal"><b>还有 7 题没有作答</b><p class="muted">现在提交，没答的题按错误计算。</p><div class="row">${go('S-20:选择题', '继续作答')}${pri('S-21:默认', '确认提交')}</div></div><p class="muted">在线作业提交后会回到作业详情</p>`,
 }});
 def('S-21', { role: 's', title: '练习结果', back: true, req: 'PRC-03', states: {
-  默认: () => `<div class="center"><div class="big">8 / 10</div><div class="muted">正确率 80% · 用时 12 分钟</div></div>${box('勾股定理　掌握度 48 → <b>56</b> ↑', 'gray')}
-    ${li('<span class="ok">✓</span> 第 1 题', '')}${li('<span class="bad">✗</span> 第 4 题', '已加入错题本 · 查看解析', 'S-14')}${li('<span class="bad">✗</span> 第 7 题', '已加入错题本', 'S-14')}${go('S-19', '再练一组', 'block')}`,
-  待判分: () => `<div class="center"><div class="big">7 / 9</div><div class="muted">1 题待判分</div></div>${box('⏳ 第 10 题（解答题）正在判分，完成后自动更新', 'gray')}${li('<span class="ok">✓</span> 第 1 题', '')}`,
+  默认: () => `${stats([['8 / 10', '得分'], ['80%', '正确率'], ['12′', '用时']])}${box('勾股定理的掌握度　<span class="num">48</span> → <b class="num ok">56</b>', 'gray')}
+    ${li('<span class="ok">✓</span> 第 1 题')}${li('<span class="bad">✗</span> 第 4 题', '已加入错题本 · 查看解析', 'S-14')}${li('<span class="bad">✗</span> 第 7 题', '已加入错题本', 'S-14')}${go('S-19', '再练一组', 'block')}`,
+  待判分: () => `${stats([['7 / 9', '已判分'], ['1', '待判分']])}${box('第 10 题（解答题）还在判分，完成后自动更新', 'gray')}${li('<span class="ok">✓</span> 第 1 题')}`,
 }});
-def('S-22', { role: 's', title: '练习记录', back: true, req: 'PRC-04', states: { 默认: () => li('勾股定理 · 10 题', '12 月 3 日 · 8/10', 'S-21') + li('浮力 · 5 题', '12 月 2 日 · 3/5', 'S-21') }});
+def('S-22', { role: 's', title: '练习记录', back: true, req: 'PRC-04', states: { 默认: () => li('勾股定理 · 10 题', '12 月 3 日 · 8 / 10', 'S-21') + li('浮力 · 5 题', '12 月 2 日 · 3 / 5', 'S-21') }});
 def('S-23', { role: 's', title: '学情画像', back: true, webTab: 'pro', req: 'PRO-02', states: {
-  默认: () => `${chips(['数学', '物理', '英语'], 0)}<div class="row between"><span>平均掌握度 <b>71</b></span><span class="muted">近 4 周 ↑ 6</span></div>${ph('折线：近 4 周掌握度趋势', 80)}
+  默认: () => `${filters(['数学', '物理', '英语'], 0)}${stats([['71', '平均掌握度'], ['↑ 6', '近 4 周'], ['2', '薄弱知识点']])}${ph('近 4 周掌握度趋势', 90)}
     ${h('第十七章 勾股定理')}${kp('勾股定理', 48)}${kp('勾股定理的逆定理', 76)}${h('第十六章 二次根式')}${kp('二次根式的乘除', 90)}${kp('二次根式的加减', null)}
-    ${h('薄弱知识点')}<div class="row between"><span>勾股定理 48</span>${go('S-19', '去练习', 'sm')}</div><div class="row between"><span>浮力 52</span>${go('S-19', '去练习', 'sm')}</div>`,
-  数据不足: () => `${chips(['数学', '物理', '英语'], 1)}<div class="center muted" style="margin-top:50px">物理的作答还太少，暂时没法分析<br>每个知识点至少作答 3 次后显示掌握度</div>${go('S-19', '去做一组练习', 'pri block')}`,
+    ${h('薄弱知识点')}<div class="li row between"><span class="lt">勾股定理 <span class="num bad">48</span></span>${ico('S-19', '去练习')}</div><div class="li row between"><span class="lt">浮力 <span class="num bad">52</span></span>${ico('S-19', '去练习')}</div>`,
+  数据不足: () => `${filters(['数学', '物理', '英语'], 1)}<p class="muted" style="margin:40px 0 10px">物理的作答还太少。每个知识点至少作答 3 次，这里才会显示掌握度。</p>${go('S-19', '做一组物理练习', 'pri block')}`,
 }});
 def('S-24', { role: 's', title: '知识点详情', back: true, req: 'PRO-03', states: { 默认: () => `
-  <b>勾股定理</b><div class="muted">数学 · 八年级下 · 第十七章</div>${box('直角三角形两直角边的平方和等于斜边的平方：a² + b² = c²', 'gray')}
-  <div class="row between"><span>掌握度 48 · 薄弱</span><span class="muted">最近 10 次作答 对 4</span></div>${bar(48)}
-  ${h('最近作答')}<div class="muted">✗ ✓ ✗ ✗ ✓ ✓ ✗ ✗ ✓ ✗</div>${h('相关错题')}${li('已知 Rt△ABC 中……求 AB', '复习中', 'S-14')}
-  <div class="grid2">${pri('S-19', '去练习')}${go('S-01:直接讲解', '问 AI 讲讲')}</div>` }});
+  ${sectTop('', '勾股定理', '数学 · 八年级下 · 第十七章')}${box('直角三角形两直角边的平方和，等于斜边的平方：<span class="math">a² + b² = c²</span>', 'gray')}
+  <div class="row between"><span>掌握度 <b class="num bad">48</b> · 薄弱</span><span class="muted">最近 10 次作答对了 4 次</span></div>${bar(48, 'weak')}
+  ${h('最近作答')}<p class="num" style="letter-spacing:.3em"><span class="bad">✗</span><span class="ok">✓</span><span class="bad">✗✗</span><span class="ok">✓✓</span><span class="bad">✗✗</span><span class="ok">✓</span><span class="bad">✗</span></p>
+  ${h('相关错题')}${li('已知 Rt△ABC 中……求 AB 的长', '第 2 次复习', 'S-14')}
+  <div class="grid2" style="margin-top:16px">${pri('S-19', '去练习')}${go('S-01:直接讲解', '请 AI 讲讲')}</div>` }});
 def('S-25', { role: 's', title: '我的班级', back: true, req: 'CLS-04', states: {
-  有班级: () => box(`<b>八年级 3 班 · 数学</b><div class="muted">李老师 · 班级内姓名：张小雅</div><div class="row">${go('S-09', '查看作业', 'sm')}${go('S-25:空', '退出班级', 'sm')}</div>`) + box(`<b>八年级 3 班 · 物理</b><div class="muted">王老师</div>`) + go('S-26:输入', '+ 加入新班级', 'block'),
-  空: () => `<div class="center muted" style="margin-top:60px">还没有加入班级</div>${pri('S-26:输入', '输入邀请码加入', 'block')}`,
+  有班级: () => li('八年级 3 班 · 数学', '李老师 · 班级内姓名：张小雅', 'S-09') + li('八年级 3 班 · 物理', '王老师', 'S-09') + `<div class="actions">${ico('S-25:空', '退出班级')}</div>` + go('S-26:输入', '加入新班级', 'block'),
+  空: () => `<p class="center muted" style="margin-top:60px">还没有加入班级</p>${pri('S-26:输入', '输入邀请码加入', 'block')}`,
 }});
+const codeBoxes = code => `<div class="row" style="gap:6px">${[...code].map(c => `<div class="in num" style="width:44px;justify-content:center;font-size:20px;color:var(--ink)">${c}</div>`).join('')}</div>`;
 def('S-26', { role: 's', title: '加入班级', back: true, req: 'CLS-02', states: {
-  输入: () => `${lab('输入老师给你的 6 位邀请码')}<div class="row">${'□□□□□□'.split('').map(() => ph('', 44)).join('')}</div>${pri('S-26:确认班级', '下一步', 'block')}`,
-  确认班级: () => `${box('<b>八年级 3 班 · 数学</b><div class="muted">李老师 · 42 名同学</div>')}${lab('你在班里的名字（真实姓名，方便老师认出你）')}${inp('张小雅')}${pri('S-25:有班级', '确认加入', 'block')}`,
-  年级不一致: () => `${box('<b>九年级 1 班 · 数学</b><div class="muted">李老师</div>')}${box('这个班级是九年级，你填的是八年级，确定要加入吗？', 'err')}${lab('班级内姓名')}${inp('')}${pri('S-25:有班级', '仍然加入', 'block')}`,
-  邀请码无效: () => `${lab('邀请码')}${inp('AB12CD')}${err('邀请码无效，请向老师确认')}`,
-  已在班中: () => `${lab('邀请码')}${inp('K7M2Q9')}${err('你已经在这个班级中')}`,
+  输入: () => `${sectTop('', '输入邀请码', '向老师要 6 位邀请码')}${codeBoxes('      ')}${pri('S-26:确认班级', '下一步', 'block')}`,
+  确认班级: () => `${sectTop('', '八年级 3 班 · 数学', '李老师 · 42 名同学')}${lab('你在班里的名字（填真实姓名，方便老师认出你）')}${val('张小雅')}${pri('S-25:有班级', '加入班级', 'block')}`,
+  年级不一致: () => `${sectTop('', '九年级 1 班 · 数学', '李老师')}${err('这个班级是九年级，你的资料是八年级。确定要加入吗？')}${lab('班级内姓名')}${inp('')}${pri('S-25:有班级', '仍然加入', 'block')}`,
+  邀请码无效: () => `${sectTop('', '输入邀请码')}${codeBoxes('AB12CD')}${err('邀请码无效，请向老师确认')}`,
+  已在班中: () => `${sectTop('', '输入邀请码')}${codeBoxes('K7M2Q9')}${err('你已经在这个班级中')}`,
 }});
 def('S-27', { role: 's', title: '卡片组', back: true, bonus: true, req: 'PRC-06（加分）', states: { 默认: () => `
-  ${h('AI 生成卡片')}${inp('输入范围，例如：英语 现在完成时 概念与例句')}${pri('S-27', '生成', 'sm')}<div class="muted">每次生成保存为新卡组，不覆盖已有卡组</div>
-  <div class="q">Q4：旧设计生成后会替换卡组并重置进度，改为保存成新卡组</div>
-  ${h('我的卡片组')}${li('数学 · 二次根式公式', '8 张 · 3 张今日到期', 'S-17:正面')}${li('英语 · 现在完成时', '12 张', 'S-17:正面')}${go('S-27', '+ 手动建卡', 'block')}` }});
-def('S-28', { role: 's', title: '口语对练', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${chips(['自我介绍', '问路', '周末计划'], 0)}${ph('对话气泡', 300)}<div class="center">${pri('S-28', '按住说话')}</div>` }});
-def('S-29', { role: 's', title: '作文批改', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${seg(['拍照', '输入'], 0)}${ph('作文照片', 200)}${pri('S-29', '开始批改', 'block')}<div class="muted">结果：内容 / 结构 / 语言 / 书写 四项得分 + 修改建议 + 范文</div>` }});
+  ${h('AI 生成卡片')}${inp('输入范围，例如：英语 现在完成时 概念与例句')}${pri('S-27', '生成卡片', 'sm')}<p class="muted">每次生成都存成一个新卡组，不会覆盖已有卡组</p>
+  <div class="q">Q4：旧设计生成后会替换卡组并重置进度，改为存成新卡组</div>
+  ${h('我的卡片组')}${li('数学 · 二次根式公式', '8 张 · 今天到期 3 张', 'S-17:正面')}${li('英语 · 现在完成时', '12 张', 'S-17:正面')}${go('S-27', '手动建卡', 'block')}` }});
+def('S-28', { role: 's', title: '口语对练', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${filters(['自我介绍', '问路', '周末计划'], 0)}${ph('对话气泡', 330)}<div class="center"><button class="btn pri" style="width:72px;height:72px;border-radius:50%" data-go="S-28">${ic('mic')}</button><p class="muted">按住说话</p></div>` }});
+def('S-29', { role: 's', title: '作文批改', back: true, bonus: true, req: 'PRC-05（加分）', states: { 默认: () => `${seg(['拍照', '输入'], 0)}${ph('作文照片', 220)}${pri('S-29', '开始批改', 'block')}<p class="muted">结果包括内容、结构、语言、书写四项得分，以及修改建议和范文</p>` }});
 
 // ── 教师 ──
 def('T-01', { role: 't', title: '工作台', tab: 'tw', req: '—', states: { 默认: () => `
-  <div class="row between"><b>李老师，下午好</b>${ico('C-08', '铃铛 2')}</div>
-  <div class="row">${pri('T-06:选题', '+ 布置作业')}${go('T-11', '+ 写教案')}${go('T-16', '+ 组卷')}</div>
-  ${h('待复核')}${tbl(['作业', '班级', '已交', '待复核'], [['二次根式练习', '八(3)', '38/42', '35'], ['浮力小测', '八(5)', '40/40', '4']], ['T-07:批改复核', 'T-07:批改复核'])}
-  ${h('进行中的作业')}${tbl(['作业', '班级', '截止', '已交'], [['Unit 3 阅读', '八(3)', '12/5 20:00', '20/42']], ['T-07:提交情况'])}
-  ${h('班级学情速览')}${box(`<div class="row between"><span>八(3) 数学 · 平均掌握度 71 · 最弱：勾股定理</span>${ico('T-18:默认', '查看')}</div>`)}` }});
+  ${sectTop('', '李老师，下午好', '有 39 份作业等你复核')}
+  <div class="row">${pri('T-06:选题', '布置作业')}${go('T-11', '写教案')}${go('T-16', '组卷')}</div>
+  ${h('待复核')}${tbl(['作业', '班级', '已交', '待复核'], [['二次根式练习', '八(3)', '38 / 42', '35'], ['浮力小测', '八(5)', '40 / 40', '4']], ['T-07:批改复核', 'T-07:批改复核'])}
+  ${h('进行中的作业')}${tbl(['作业', '班级', '截止', '已交'], [['Unit 3 阅读', '八(3)', '12 月 5 日 20:00', '20 / 42']], ['T-07:提交情况'])}
+  ${h('班级学情')}<div class="li row between" data-go="T-18:默认"><span class="lt">八(3) 数学　平均掌握度 <span class="num">71</span>　最弱的是勾股定理</span>${ic('right')}</div>` }});
 def('T-02', { role: 't', title: '班级', tab: 'cls', req: 'CLS-03', states: {
-  默认: () => `<div class="row between"><span></span>${pri('T-03:填写', '+ 新建班级')}</div><div class="grid3">${['八年级 3 班 · 数学|42 人 · 邀请码 K7M2Q9', '八年级 5 班 · 数学|40 人 · 邀请码 P3X8RT', '七年级 2 班 · 数学|38 人 · 邀请码 H4N6WE'].map(x => box(`<b>${x.split('|')[0]}</b><div class="muted">${x.split('|')[1]}</div>${go('T-04', '进入', 'sm')}`)).join('')}</div><div class="muted">已归档 1 个班级 ▸</div>`,
-  空: () => `<div class="center muted" style="margin-top:80px">还没有班级<br>创建班级后，把邀请码发给学生即可加入</div><div class="center">${pri('T-03:填写', '+ 新建班级')}</div>`,
+  默认: () => `<div class="row between">${sectTop('', '我的班级')}${pri('T-03:填写', '新建班级')}</div><div class="grid3">${['八年级 3 班 · 数学|42 人 · 邀请码 K7M2Q9', '八年级 5 班 · 数学|40 人 · 邀请码 P3X8RT', '七年级 2 班 · 数学|38 人 · 邀请码 H4N6WE'].map(x => `<button class="box" style="text-align:left" data-go="T-04"><b style="font:600 16px var(--serif)">${x.split('|')[0]}</b><br><span class="muted">${x.split('|')[1]}</span></button>`).join('')}</div><p class="muted">已归档 1 个班级</p>`,
+  空: () => `${sectTop('', '我的班级')}<p class="muted" style="margin:40px 0 10px">还没有班级。创建班级后，把邀请码发给学生就能加入。</p>${pri('T-03:填写', '新建班级')}`,
 }});
 def('T-03', { role: 't', title: '新建班级', back: true, req: 'CLS-01', states: {
-  填写: () => `<div style="max-width:420px">${lab('班级名称')}${inp('例如：八年级 3 班')}${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}<div class="muted">一个班级只对应一个学科</div>${pri('T-03:创建成功', '创建', 'block')}</div>`,
-  创建成功: () => `<div class="center" style="margin-top:40px"><div class="muted">八年级 3 班 · 数学 创建成功</div><div class="big" style="font-size:40px;letter-spacing:8px">K7M2Q9</div><div class="muted">把邀请码发给学生，在 App“我的 → 我的班级”中输入即可加入</div><div class="row" style="justify-content:center;margin-top:10px">${go('T-03:创建成功', '复制邀请码')}${pri('T-04', '进入班级')}</div></div>`,
+  填写: () => `<div style="max-width:440px">${lab('班级名称')}${inp('例如：八年级 3 班')}${lab('学科')}${chips(['数学', '物理', '英语'], 0)}${lab('年级')}${chips(['七年级', '八年级', '九年级'], 1)}<p class="muted">一个班级只对应一个学科</p>${pri('T-03:创建成功', '创建班级', 'block')}</div>`,
+  创建成功: () => `<div class="center" style="margin-top:50px"><p class="muted">八年级 3 班 · 数学已创建</p><div class="num" style="font-size:46px;letter-spacing:.3em;color:var(--clay)">K7M2Q9</div><p class="muted">把邀请码发给学生，在 App 的“我的 › 我的班级”里输入就能加入</p><div class="row" style="justify-content:center;margin-top:14px">${go('T-03:创建成功', '复制邀请码')}${pri('T-04', '进入班级')}</div></div>`,
 }});
 def('T-04', { role: 't', title: '八年级 3 班 · 数学', back: true, req: 'CLS-03', states: { 默认: () => `
-  <div class="row between"><span>邀请码 <b>K7M2Q9</b> ${go('T-04', '复制', 'sm')}${go('T-04', '重置', 'sm')}</span><span>${go('T-18:默认', '班级学情', 'sm')}${go('T-04', '归档班级', 'sm')}</span></div>
-  ${h('学生 42 人')}${tbl(['班级内姓名', '加入时间', '作业完成率', '操作'], [['张小雅', '11/20', '100%', '改名 · 移出 · 重置密码'], ['王一', '11/20', '92%', '…'], ['张三', '11/21', '60%', '…']], ['T-19', 'T-19', 'T-19'])}
-  ${h('作业')}${tbl(['作业', '截止', '状态'], [['二次根式练习', '12/3', '待复核'], ['勾股定理小测', '11/28', '已发布']], ['T-07:提交情况', 'T-07:作业分析'])}` }});
+  <div class="row between"><span>邀请码 <b class="num" style="color:var(--clay);letter-spacing:.15em">K7M2Q9</b>　${ico('T-04', '复制')}　${ico('T-04', '重置')}</span><span class="row">${go('T-18:默认', '班级学情', 'sm')}${go('T-04', '归档班级', 'sm')}</span></div>
+  ${h('学生 42 人')}${tbl(['班级内姓名', '加入时间', '作业完成率', ''], [['张小雅', '11 月 20 日', '100%', '改名 · 移出 · 重置密码'], ['王一', '11 月 20 日', '92%', ''], ['张三', '11 月 21 日', '<span class="bad">60%</span>', '']], ['T-19', 'T-19', 'T-19'])}
+  ${h('作业')}${tbl(['作业', '截止', '状态'], [['二次根式练习', '12 月 3 日', '待复核'], ['勾股定理小测', '11 月 28 日', '已发布']], ['T-07:提交情况', 'T-07:作业分析'])}` }});
 def('T-05', { role: 't', title: '作业', tab: 'hw', req: 'HW-04', states: { 默认: () => `
-  <div class="row between"><span>${chips(['全部班级▾', '全部状态▾'], -1)}</span>${pri('T-06:选题', '+ 布置作业')}</div>
-  ${tbl(['作业', '班级', '截止', '已交', '状态', '平均分'], [['二次根式练习', '八(3)', '12/3 20:00', '38/42', '待复核', '—'], ['Unit 3 阅读', '八(3)', '12/5 20:00', '20/42', '进行中', '—'], ['勾股定理小测', '八(3) 八(5)', '11/28', '80/82', '已发布', '78']], ['T-07:批改复核', 'T-07:提交情况', 'T-07:作业分析'])}` }});
-const step3 = n => `<div class="row">${['① 选题', '② 设置', '③ 预览'].map((x, i) => `<span class="chip ${i === n ? 'on' : ''}">${x}</span>`).join('')}</div>`;
+  <div class="row between">${filters(['全部', '进行中', '待复核', '已发布'], 0)}${pri('T-06:选题', '布置作业')}</div>
+  ${tbl(['作业', '班级', '截止', '已交', '状态', '平均分'], [['二次根式练习', '八(3)', '12 月 3 日 20:00', '38 / 42', '<span class="warn">待复核</span>', '—'], ['Unit 3 阅读', '八(3)', '12 月 5 日 20:00', '20 / 42', '进行中', '—'], ['勾股定理小测', '八(3) 八(5)', '11 月 28 日', '80 / 82', '<span class="ok">已发布</span>', '78']], ['T-07:批改复核', 'T-07:提交情况', 'T-07:作业分析'])}` }});
+const step3 = n => `<div class="steps" style="grid-template-columns:repeat(3,auto);justify-content:start;gap:24px;margin-bottom:18px">${['选题', '设置', '预览'].map((x, i) => `<div class="step ${i > n ? 'dim' : ''}"><span class="step-number">${i + 1}</span><div><h4 style="line-height:26px">${x}</h4></div></div>`).join('')}</div>`;
 def('T-06', { role: 't', title: '布置作业', back: true, req: 'HW-01', states: {
-  选题: () => `${step3(0)}${h('题目来源')}${box('● 选一份试卷　' + chips(['二次根式单元卷▾']))}${box('○ 从题库挑题')}${box('○ AI 按知识点出题')}<div class="muted">最多 30 道题</div>${pri('T-06:设置', '下一步')}`,
-  设置: () => `${step3(1)}<div style="max-width:520px">${lab('标题')}${inp('二次根式练习')}${lab('布置给（同一学科，可多选）')}${chips(['☑ 八(3)', '☐ 八(5)'], 0)}${lab('截止时间（至少 1 小时后）')}${inp('2026-12-05 20:00')}${lab('提交方式')}${seg(['在线作答', '拍照上传', '两者都可以'], 2)}${lab('允许迟交')}${chips(['是', '否'], 0)}${lab('答案和解析何时可见')}${seg(['发布批改结果后', '截止后'], 0)}</div><div class="row">${go('T-06:选题', '上一步')}${pri('T-06:预览', '下一步')}</div>`,
-  预览: () => `${step3(2)}${box('<b>二次根式练习</b> · 八(3) · 截止 12/5 20:00 · 两者都可以 · 允许迟交<div class="muted">共 12 题 · 100 分</div>')}${ph('题目预览（学生看到的样子）', 220)}<div class="muted">发布后不能修改题目，只能改截止时间或撤回（有人提交后不能撤回）</div><div class="row">${go('T-06:设置', '上一步')}${pri('T-07:提交情况', '发布')}</div>`,
+  选题: () => `${step3(0)}<div style="max-width:620px">${h('题目从哪里来')}${li('<span class="bad">●</span>　选一份试卷　' + chips(['二次根式单元卷'], 0))}${li('○　从题库挑题')}${li('○　让 AI 按知识点出题')}<p class="muted">最多 30 道题</p>${pri('T-06:设置', '下一步')}</div>`,
+  设置: () => `${step3(1)}<div style="max-width:560px">${lab('标题')}${val('二次根式练习')}${lab('布置给（同一学科，可以多选）')}${chips(['八(3) ✓', '八(5)'], 0)}${lab('截止时间（至少在 1 小时后）')}${val('2026-12-05 20:00')}${lab('提交方式')}${seg(['在线作答', '拍照上传', '两种都可以'], 2)}${lab('允许迟交')}${chips(['允许', '不允许'], 0)}${lab('答案和解析什么时候给学生看')}${seg(['发布批改结果后', '截止后'], 0)}</div><div class="row" style="margin-top:18px">${go('T-06:选题', '上一步')}${pri('T-06:预览', '下一步')}</div>`,
+  预览: () => `${step3(2)}${sectTop('', '二次根式练习', '八(3) · 12 月 5 日 20:00 截止 · 两种提交方式都可以 · 允许迟交')}${ph('学生看到的题目', 220)}<p class="muted">发布后不能修改题目，只能改截止时间或撤回；有学生提交后不能撤回</p><div class="row">${go('T-06:设置', '上一步')}${pri('T-07:提交情况', '发布作业')}</div>`,
 }});
-const hwTabs = n => `<div class="muted">二次根式练习 · 八(3) · 截止 12/5 20:00</div>${seg(['提交情况', '批改复核', '作业分析'], n, ['T-07:提交情况', 'T-07:批改复核', 'T-07:作业分析'])}`;
+const hwTabs = n => `${sectTop('', '二次根式练习', '八(3) · 12 月 5 日 20:00 截止')}${seg(['提交情况', '批改复核', '作业分析'], n, ['T-07:提交情况', 'T-07:批改复核', 'T-07:作业分析'])}`;
 def('T-07', { role: 't', title: '作业详情', back: true, req: 'GRD-02, ANA-03', states: {
-  提交情况: () => `${hwTabs(0)}<div class="grid4">${stat(38, '已交')}${stat(2, '迟交')}${stat(2, '未交')}${stat('—', '平均分')}</div>${h('未交')}<div>张三、王五 ${go('T-07', '复制名单', 'sm')}</div>${h('已交')}${tbl(['姓名', '提交时间', '方式', '状态'], [['张小雅', '12/3 18:02', '拍照', '待复核'], ['王一', '12/3 17:40', '在线', '待复核'], ['李二', '12/4 09:10', '拍照', '迟交 · 待复核']], ['T-08', 'T-08', 'T-08'])}`,
-  批改复核: () => `${hwTabs(1)}${box('AI 已批改 38 份 · <b class="warn">有疑问 11 题次</b> · 需人工批改 1 题次')}<div class="row">${pri('T-09', '先看有疑问的题')}${go('T-08', '逐个学生复核')}${go('T-07:批改复核', '全部发布')}</div>
-    ${tbl(['姓名', 'AI 得分', '有疑问', '状态'], [['张小雅', '86', '1', '待复核'], ['王一', '92', '0', '已复核'], ['李二', '64', '3', '待复核']], ['T-08', 'T-08', 'T-08'])}`,
-  作业分析: () => `${hwTabs(2)}<div class="grid2">${ph('每题正确率柱状图', 180)}${ph('得分分布', 180)}</div>${h('常见错误答案')}${tbl(['题号', '正确率', '常见错误'], [['第 3 题', '38%', '5√2（14 人）· 7（5 人）'], ['第 7 题', '55%', '漏写 ±（9 人）']])}`,
+  提交情况: () => `${hwTabs(0)}${stats([['38', '已交'], ['2', '迟交'], ['2', '未交'], ['—', '平均分']])}${h('未交')}<p>张三、王五　${ico('T-07', '复制名单')}</p>${h('已交')}${tbl(['姓名', '提交时间', '方式', '状态'], [['张小雅', '12 月 3 日 18:02', '拍照', '待复核'], ['王一', '12 月 3 日 17:40', '在线', '待复核'], ['李二', '12 月 4 日 09:10', '拍照', '<span class="warn">迟交</span> · 待复核']], ['T-08', 'T-08', 'T-08'])}`,
+  批改复核: () => `${hwTabs(1)}<div class="review-strip"><span>AI 已批完 38 份，有 <b>11</b> 处拿不准，1 处需要你来批</span>${pri('T-09', '先看拿不准的', 'sm')}</div><div class="row">${go('T-08', '逐个学生复核')}${go('T-07:批改复核', '全部发布')}</div>
+    ${tbl(['姓名', 'AI 得分', '拿不准', '状态'], [['张小雅', '86', '1', '待复核'], ['王一', '92', '0', '<span class="ok">已复核</span>'], ['李二', '64', '3', '待复核']], ['T-08', 'T-08', 'T-08'])}`,
+  作业分析: () => `${hwTabs(2)}<div class="grid2">${ph('每题正确率', 180)}${ph('得分分布', 180)}</div>${h('常见错误答案')}${tbl(['题号', '正确率', '常见错误'], [['第 3 题', '<span class="bad">38%</span>', '5√2（14 人）、7（5 人）'], ['第 7 题', '55%', '漏写 ±（9 人）']])}`,
 }});
 def('T-08', { role: 't', title: '逐生复核', back: true, req: 'GRD-02', states: { 默认: () => `
-  <div style="display:grid;grid-template-columns:140px 1fr 300px;gap:10px;height:620px">
-  <div style="border-right:1px solid #ddd">${['✓ 王一', '● 张小雅', '○ 李二', '○ 赵四', '○ ……'].map(x => `<div class="li">${x}</div>`).join('')}</div>
-  <div><div class="muted">张小雅 · 第 2 / 38 个 · 拍照提交</div>${ph('作答原图（可缩放、翻页）', 560)}</div>
-  <div style="overflow:auto">${h('AI 判分')}<div>第 1 题 <span class="ok">✓</span> 5/5</div><div>第 2 题 <span class="bad">✗</span> 0/5</div>
-  ${box(`<b class="warn">第 3 题 ! 3/8 置信度低</b><div class="muted">扣分：第二步漏开方</div>${lab('得分')}${inp('3')}${lab('评语')}${inp('')}`, 'err')}
-  <div>……</div>${lab('总分')}<b>86</b>${lab('整体评语')}${inp('', 1)}<div class="row">${go('T-08', '上一个')}${pri('T-08', '确认并下一个')}</div>${go('T-07:批改复核', '发布该生结果', 'sm')}</div></div>` }});
-def('T-09', { role: 't', title: '按题复核 · 第 3 题', back: true, req: 'GRD-02', states: { 默认: () => `
-  ${box('第 3 题：在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB。（8 分）　标准答案：5', 'gray')}<div class="muted">全班 AI 拿不准的作答 6 份</div>
-  <div class="grid3">${['张小雅 · AI 3 分', '李二 · AI 4 分', '赵四 · AI 0 分', '钱五 · AI 6 分', '孙六 · 需人工批改', '周七 · AI 2 分'].map(x => box(`${ph('作答截图', 80)}<div>${x}</div><div class="row">${inp('得分')}${go('T-09', '确认', 'sm')}</div>`)).join('')}</div>
+  <div style="display:grid;grid-template-columns:140px minmax(0,1fr) 300px;gap:20px;min-height:640px">
+  <div>${['<span class="ok">✓</span> 王一', '<span class="bad">●</span> 张小雅', '○ 李二', '○ 赵四', '○ ……'].map(x => li(x)).join('')}</div>
+  <div><p class="muted">张小雅 · 第 2 / 38 个 · 拍照提交</p>${ph('作答原图（可以缩放、翻页）', 580)}</div>
+  <div>${h('AI 判分')}${li('第 1 题 <span class="ok">✓</span>　<span class="num">5 / 5</span>')}${li('第 2 题 <span class="bad">✗</span>　<span class="num">0 / 5</span>')}
+  ${box(`<b>第 3 题　AI 拿不准　<span class="num">3 / 8</span></b><br><span class="muted">扣分：第二步漏开方</span>${lab('得分')}${val('3')}${lab('评语')}${inp('')}`, 'err')}
+  ${lab('总分')}<div class="big num">86</div>${lab('整体评语')}${inp('', 1)}<div class="row" style="margin-top:10px">${go('T-08', '上一个')}${pri('T-08', '确认，下一个')}</div><div class="actions">${ico('T-07:批改复核', '发布这名学生的结果')}</div></div></div>` }});
+def('T-09', { role: 't', title: '按题复核', back: true, req: 'GRD-02', states: { 默认: () => `
+  ${sectTop('', '第 3 题', '在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB。8 分，标准答案 5')}<p class="muted">全班有 6 份作答 AI 拿不准</p>
+  <div class="grid3">${['张小雅　AI 3 分', '李二　AI 4 分', '赵四　AI 0 分', '钱五　AI 6 分', '孙六　需要你来批', '周七　AI 2 分'].map(x => box(`${ph('作答截图', 84)}<div class="row between"><span>${x}</span><span class="row">${inp('得分')}${go('T-09', '确认', 'sm')}</span></div>`)).join('')}</div>
   <div class="row">${pri('T-09', '全部按 AI 分确认')}${go('T-07:批改复核', '下一题')}</div>` }});
 def('T-10', { role: 't', title: '备课', tab: 'prep', req: 'PREP-05', states: {
-  教案: () => `${seg(['教案', 'PPT'], 0, ['', 'T-10:PPT'])}<div class="row between">${inp('搜索课题')}${pri('T-11', '+ 新建教案')}</div>${tbl(['课题', '学科年级', '课时', '更新'], [['17.1 勾股定理（第 1 课时）', '数学 八下', '1', '今天'], ['16.2 二次根式的乘除', '数学 八下', '2', '11/28']], ['T-12:编辑', 'T-12:编辑'])}`,
-  PPT: () => `${seg(['教案', 'PPT'], 1, ['T-10:教案', ''])}<div class="row between">${inp('搜索课题')}${pri('T-13', '+ 新建 PPT')}</div><div class="grid4">${['勾股定理 · 15 页', '二次根式 · 12 页'].map(x => box(ph('封面', 80) + `<div data-go="T-14:完成" style="cursor:pointer">${x}</div>`)).join('')}</div>`,
+  教案: () => `${seg(['教案', 'PPT'], 0, ['', 'T-10:PPT'])}<div class="row between">${inp('搜索课题')}${pri('T-11', '新建教案')}</div>${tbl(['课题', '学科年级', '课时', '更新'], [['17.1 勾股定理（第 1 课时）', '数学 · 八年级下', '1', '今天'], ['16.2 二次根式的乘除', '数学 · 八年级下', '2', '11 月 28 日']], ['T-12:编辑', 'T-12:编辑'])}`,
+  PPT: () => `${seg(['教案', 'PPT'], 1, ['T-10:教案', ''])}<div class="row between">${inp('搜索课题')}${pri('T-13', '新建 PPT')}</div><div class="grid4">${['勾股定理 · 15 页', '二次根式 · 12 页'].map(x => `<button class="box" style="text-align:left" data-go="T-14:完成">${ph('封面', 90)}<span>${x}</span></button>`).join('')}</div>`,
 }});
-def('T-11', { role: 't', title: '新建教案', back: true, webOnly: true, req: 'PREP-01', states: { 默认: () => `<div style="max-width:560px">
-  ${lab('学科 / 年级')}${chips(['数学▾', '八年级下▾'], -1)}${lab('课题（从知识点体系选，或手动输入）')}${inp('第十七章 › 17.1 勾股定理')}${lab('课时数')}${seg(['1', '2', '3'], 0)}${lab('课型')}${seg(['新授', '复习', '习题', '实验'], 0)}
-  ${lab('关联班级（可选，AI 会参考该班学情）')}${chips(['八(3)▾'])}${lab('补充要求（≤ 300 字）')}${inp('例如：多用生活中的例子引入', 1)}${pri('T-12:生成中', '生成教案', 'block')}</div>` }});
-const planBody = `<b>一、教学目标</b><div>1. 理解勾股定理的内容……</div><b>二、重点难点</b><div>重点：勾股定理的应用（参考八(3)学情：勾股定理掌握度 48）</div><b>三、教学过程</b><div>环节 1 情境导入（5 分钟）……</div>`;
-def('T-12', { role: 't', title: '17.1 勾股定理（第 1 课时）', back: true, webOnly: 'edit', req: 'PREP-02, PREP-03', states: {
-  生成中: () => `<div class="muted">正在生成……（流式展示，约 1 分钟）</div>${box(planBody + '<div class="muted">▍</div>')}`,
-  编辑: () => `<div class="row between"><span class="muted">已自动保存</span><span>${go('T-12:编辑', '导出 Word')}${pri('T-13', '生成 PPT')}${go('T-12:编辑', '另存一份')}</span></div>${box(planBody + `<div class="modal" style="width:320px">选中文字后浮出：${go('T-12:编辑', 'AI 扩写', 'sm')}${go('T-12:编辑', 'AI 精简', 'sm')}${go('T-12:编辑', '换一种讲法', 'sm')}</div><b>四、板书设计</b><div>……</div>`)}`,
-  生成中断: () => `${box(planBody)}${err('生成中断，已保留生成的部分')}<div class="row">${go('T-12:编辑', '继续生成')}${go('T-12:生成中', '重新生成')}</div>`,
+def('T-11', { role: 't', title: '新建教案', back: true, webOnly: true, req: 'PREP-01', states: { 默认: () => `<div style="max-width:580px">
+  ${lab('学科和年级')}${chips(['数学', '八年级下'], 0)}${lab('课题（从知识点体系里选，或者直接输入）')}${val('第十七章 › 17.1 勾股定理')}${lab('课时数')}${seg(['1', '2', '3'], 0)}${lab('课型')}${seg(['新授', '复习', '习题', '实验'], 0)}
+  ${lab('参考哪个班的学情（可选）')}${chips(['八(3)'], 0)}${lab('补充要求（300 字以内）')}${inp('例如：多用生活中的例子引入', 1)}${pri('T-12:生成中', '生成教案', 'block')}</div>` }});
+const planBody = `<div class="h" style="margin-top:0">一、教学目标</div><p>1. 理解勾股定理的内容，会用它求直角三角形的边长。</p><div class="h">二、重点难点</div><p>重点是勾股定理的应用。八(3) 班在这个知识点上的掌握度是 48，建议多留练习时间。</p><div class="h">三、教学过程</div><p>环节 1　情境导入（5 分钟）……</p>`;
+def('T-12', { role: 't', title: '17.1 勾股定理（第 1 课时）', back: true, webOnly: 'edit', req: 'PREP-02, PREP-03', read: true, states: {
+  生成中: () => `<p class="muted">正在生成，大约 1 分钟</p>${box(planBody + '<span class="bad">▍</span>')}`,
+  编辑: () => `<div class="row between"><span class="muted">已自动保存</span><span class="row">${go('T-12:编辑', '导出 Word')}${pri('T-13', '生成 PPT')}${go('T-12:编辑', '另存一份')}</span></div>${box(planBody + `<div class="modal" style="max-width:360px">选中文字后出现：<div class="actions">${ico('T-12:编辑', 'AI 扩写')}${ico('T-12:编辑', 'AI 精简')}${ico('T-12:编辑', '换一种讲法')}</div></div><div class="h">四、板书设计</div><p>……</p>`)}`,
+  生成中断: () => `${box(planBody)}${err('生成中断，已经生成的部分保留了')}<div class="row">${go('T-12:编辑', '继续生成')}${go('T-12:生成中', '重新生成')}</div>`,
 }});
-def('T-13', { role: 't', title: '新建 PPT', back: true, webOnly: true, req: 'PREP-04', states: { 默认: () => `<div style="max-width:560px">
-  ${lab('来源')}${seg(['从教案生成', '按课题生成'], 0)}${chips(['17.1 勾股定理（第 1 课时）▾'])}${lab('页数（10～25）')}${inp('15')}${lab('模板')}<div class="grid3">${ph('模板 1', 70)}${ph('模板 2', 70)}${ph('模板 3', 70)}</div>${pri('T-14:生成中', '生成 PPT', 'block')}</div>` }});
+def('T-13', { role: 't', title: '新建 PPT', back: true, webOnly: true, req: 'PREP-04', states: { 默认: () => `<div style="max-width:580px">
+  ${lab('内容来源')}${seg(['从教案生成', '按课题生成'], 0)}${chips(['17.1 勾股定理（第 1 课时）'], 0)}${lab('页数（10～25）')}${val('15')}${lab('模板')}<div class="grid3">${ph('模板 1', 80)}${ph('模板 2', 80)}${ph('模板 3', 80)}</div>${pri('T-14:生成中', '生成 PPT', 'block')}</div>` }});
 def('T-14', { role: 't', title: '勾股定理 PPT', back: true, webOnly: 'edit', req: 'PREP-04', states: {
-  生成中: () => `${box('正在生成第 8 / 15 页（约 2 分钟），可以离开页面' + bar(53))}<div style="display:grid;grid-template-columns:110px 1fr;gap:10px">${'<div>' + [1, 2, 3, 4, 5, 6, 7].map(i => ph(i, 56)).join('') + '</div>'}${ph('已生成的页可以先看', 400)}</div>`,
-  完成: () => `<div class="row between"><span></span>${pri('T-14:完成', '导出 pptx')}</div><div style="display:grid;grid-template-columns:110px 1fr;gap:10px"><div>${[1, 2, '▶3', 4, 5].map(i => ph(i, 56)).join('')}${go('T-14:完成', '+ 页', 'sm')}</div><div>${ph('第 3 页：勾股定理的发现<br>· 毕达哥拉斯的故事 · ……', 380)}<div class="row">${go('T-14:完成', '编辑文字')}${go('T-14:完成', 'AI 重写本页')}${go('T-14:完成', '删除本页')}</div><div class="muted">缩略图可以拖动排序</div></div></div>`,
-  失败: () => `${err('PPT 生成失败')}<div class="muted">你填写的参数已保留</div>${pri('T-14:生成中', '重试')}`,
+  生成中: () => `<div class="rv-progress"><span>正在生成，大约 2 分钟，可以先离开</span><span><strong>8</strong> / 15 页</span></div><div class="rv-line"><span style="width:53%"></span></div><div style="display:grid;grid-template-columns:120px 1fr;gap:16px"><div>${[1, 2, 3, 4, 5, 6, 7].map(i => ph(i, 60)).join('')}</div>${ph('已经生成的页可以先看', 420)}</div>`,
+  完成: () => `<div class="row between"><span class="muted">拖动左侧缩略图可以调整顺序</span>${pri('T-14:完成', '导出 pptx')}</div><div style="display:grid;grid-template-columns:120px 1fr;gap:16px"><div>${[1, 2, 3, 4, 5].map(i => `<div class="ph" style="height:60px;${i === 3 ? 'border-color:var(--clay);color:var(--clay)' : ''}">${i}</div>`).join('')}${go('T-14:完成', '加一页', 'sm ghost')}</div><div>${ph('第 3 页　勾股定理的发现', 400)}<div class="actions">${ico('T-14:完成', '编辑文字')}${ico('T-14:完成', 'AI 重写这一页')}${ico('T-14:完成', '删除这一页')}</div></div></div>`,
+  失败: () => `${err('PPT 生成失败')}<p class="muted">你填的内容已保留</p>${pri('T-14:生成中', '重试')}`,
 }});
 def('T-15', { role: 't', title: '组卷', tab: 'paper', req: 'PAPER-02', states: { 默认: () => `
-  <div class="row between"><span>${go('T-22', '个人题库', 'sm')}<span class="tag">加分</span></span>${pri('T-16', '+ 新建试卷')}</div>
-  ${tbl(['试卷', '学科年级', '题数', '总分', '更新'], [['二次根式单元卷', '数学 八下', '18', '100', '今天'], ['勾股定理小测', '数学 八下', '10', '50', '11/27']], ['T-17:默认', 'T-17:默认'])}` }});
+  <div class="row between">${sectTop('', '我的试卷')}<span class="row">${go('T-22', '个人题库', 'sm')}${pri('T-16', '新建试卷')}</span></div>
+  ${tbl(['试卷', '学科年级', '题数', '总分', '更新'], [['二次根式单元卷', '数学 · 八年级下', '18', '100', '今天'], ['勾股定理小测', '数学 · 八年级下', '10', '50', '11 月 27 日']], ['T-17:默认', 'T-17:默认'])}` }});
 def('T-16', { role: 't', title: '组卷设置', back: true, webOnly: true, req: 'PAPER-01', states: {
-  默认: () => `<div style="max-width:620px">${lab('学科 / 年级')}${chips(['数学▾', '八年级下▾'], -1)}${lab('知识点范围')}${chips(['二次根式 ×', '二次根式的乘除 ×', '二次根式的加减 ×', '+ 添加'], -1)}
-    ${lab('题型和题量')}${tbl(['题型', '题量', '每题分值'], [['单选', '10', '3'], ['填空', '5', '4'], ['解答', '3', '—']])}${lab('难度分布')}${inp('基础 60% · 提高 30% · 挑战 10%')}${lab('总分')}${inp('100')}${pri('T-17:默认', '生成试卷（约 1 分钟）', 'block')}</div>`,
-  部分失败: () => `${err('“二次根式的加减”题目不足，AI 生成失败 2 题；已生成其余部分')}${pri('T-17:检查提示', '进入试卷，手动补题')}`,
+  默认: () => `<div style="max-width:640px">${lab('学科和年级')}${chips(['数学', '八年级下'], 0)}${lab('知识点范围')}${chips(['二次根式 ×', '二次根式的乘除 ×', '二次根式的加减 ×', '添加'], -1)}
+    ${lab('题型和题量')}${tbl(['题型', '题量', '每题分值'], [['单选', '10', '3'], ['填空', '5', '4'], ['解答', '3', '按小问']])}${lab('难度分布')}${val('基础 60% · 提高 30% · 挑战 10%')}${lab('总分')}${val('100')}${pri('T-17:默认', '生成试卷（大约 1 分钟）', 'block')}</div>`,
+  部分失败: () => `${err('“二次根式的加减”题目不够，有 2 道题没生成出来；其余部分已生成')}${pri('T-17:检查提示', '进入试卷，手动补题')}`,
 }});
 def('T-17', { role: 't', title: '二次根式单元卷', back: true, webOnly: 'edit', req: 'PAPER-01, PAPER-02', states: {
-  默认: () => paper('<span class="ok">总分 100 ✓　知识点覆盖 3/3 ✓</span>'),
-  检查提示: () => paper('<span class="warn">总分 92，与设置的 100 不符　·　“二次根式的加减”未覆盖</span>'),
+  默认: () => paper('<span class="ok">总分 100　知识点覆盖 3 / 3</span>'),
+  检查提示: () => paper('<span class="warn">总分 92，和设置的 100 不一致；“二次根式的加减”还没有覆盖</span>'),
 }});
 function paper(check) {
-  return `<div class="row between">${check}<span>${go('T-17', '导出学生版')}${go('T-17', '导出教师版')}${pri('T-06:设置', '布置为作业')}</span></div>
-  ${h('一、单选题（每题 3 分，共 30 分）')}${[1, 2].map(i => box(`<div class="row between"><span>${i}. …… ${i === 1 ? '<span class="tag">AI 生成</span>' : ''}</span><span>${go('T-17', '换一题', 'sm')}${go('T-17', '编辑', 'sm')} 分值 3</span></div>`)).join('')}
-  ${h('二、填空题 ……')}${h('三、解答题 ……')}${go('T-17', '+ 添加题目', 'ghost')}<span class="muted">　拖动可排序</span>`;
+  return `<div class="row between">${check}<span class="row">${go('T-17', '导出学生版')}${go('T-17', '导出教师版')}${pri('T-06:设置', '布置为作业')}</span></div>
+  ${h('一、单选题（每题 3 分，共 30 分）')}${[1, 2].map(i => `<div class="li row between"><span class="lt">${i}. ${i === 1 ? '下列二次根式中，最简二次根式是（　）<span class="tag">AI 生成</span>' : '化简 <span class="math">√12 + √27</span> 的结果是（　）'}</span><span class="actions" style="margin:0">${ico('T-17', '换一题')}${ico('T-17', '编辑')}<span class="muted">3 分</span></span></div>`).join('')}
+  ${h('二、填空题')}<p class="muted">……</p>${h('三、解答题')}<p class="muted">……</p>${go('T-17', '添加题目', 'ghost')}<span class="muted">　拖动可以调整顺序</span>`;
 }
 def('T-18', { role: 't', title: '学情', tab: 'ana', req: 'ANA-01', states: {
-  默认: () => `<div class="row between"><span>${chips(['八(3) 数学▾', '最近一个月▾'], -1)}</span>${pri('T-20:生成中', '生成学情报告')}</div>
-    <div class="grid3">${stat('95%', '作业完成率')}${stat(78, '平均分')}${stat('74%', '正确率')}</div>
-    ${h('知识点热力图')}<div class="heat">${heatRow('二次根式', [92, 88, 85, 70, 60, 75])}${heatRow('勾股定理', [48, 30, 55, 62, 80, 41])}${heatRow('平行四边形', [70, 66, 90, 84, 77, 58])}</div><div class="muted">颜色越深掌握度越低 · 点击格子查看知识点</div>
-    <div class="grid2"><div>${h('高频错题 TOP10')}${tbl(['题目', '错误率'], [['第 3 题 勾股定理求边长', '62%'], ['第 7 题 二次根式化简', '45%']], ['T-07:作业分析', 'T-07:作业分析'])}</div><div>${h('需要关注的学生')}${tbl(['姓名', '掌握度', '最弱'], [['张三', '45', '勾股定理'], ['王五', '51', '二次根式']], ['T-19', 'T-19'])}</div></div>
-    <div class="q">只统计本班作业数据；学生的自主学习对老师不可见</div>`,
-  数据不足: () => `${chips(['七(2) 数学▾'], -1)}<div class="center muted" style="margin-top:80px">这个班级还没有作业数据<br>布置并批改一次作业后，这里会显示学情</div><div class="center">${pri('T-06:选题', '去布置作业')}</div>`,
+  默认: () => `<div class="row between"><span>${chips(['八(3) 数学', '最近一个月'], -1)}</span>${pri('T-20:生成中', '生成学情报告')}</div>
+    ${stats([['95%', '作业完成率'], ['78', '平均分'], ['74%', '正确率']])}
+    ${h('知识点热力图')}<div class="heat">${heatRow('二次根式', [92, 88, 85, 70, 60, 75])}${heatRow('勾股定理', [48, 30, 55, 62, 80, 41])}${heatRow('平行四边形', [70, 66, 90, 84, 77, 58])}</div><p class="muted">颜色越深，全班掌握得越差。点击格子查看这个知识点</p>
+    <div class="grid2" style="gap:32px"><div>${h('错得最多的题')}${tbl(['题目', '错误率'], [['第 3 题　勾股定理求边长', '<span class="bad">62%</span>'], ['第 7 题　二次根式化简', '45%']], ['T-07:作业分析', 'T-07:作业分析'])}</div><div>${h('需要关注的学生')}${tbl(['姓名', '掌握度', '最弱的知识点'], [['张三', '<span class="bad">45</span>', '勾股定理'], ['王五', '<span class="bad">51</span>', '二次根式']], ['T-19', 'T-19'])}</div></div>
+    <div class="q">只统计本班作业；学生的自主学习老师看不到</div>`,
+  数据不足: () => `${chips(['七(2) 数学'], -1)}<p class="muted" style="margin:40px 0 10px">这个班级还没有作业数据。布置并批改一次作业后，这里会显示学情。</p>${pri('T-06:选题', '布置作业')}`,
 }});
 def('T-19', { role: 't', title: '张小雅 · 八(3) 数学', back: true, req: 'ANA-02', states: { 默认: () => `
-  <div class="grid3">${stat(82, '平均分')}${stat('100%', '完成率')}${stat(71, '平均掌握度')}</div><div class="grid2">${ph('成绩趋势（每次作业）', 160)}${ph('错因分布：计算失误 45% · 概念不清 30% · …', 160)}</div>
-  ${h('知识点掌握度（基于本班作业）')}${kp('勾股定理', 48, 'T-19')}${kp('二次根式的乘除', 90, 'T-19')}${go('T-20:生成中', '生成该生学情报告')}` }});
-def('T-20', { role: 't', title: '学情报告 · 八(3) 数学', back: true, req: 'ANA-04', states: {
-  生成中: () => `${box('① 统计数据 ✓<br>② AI 解读与建议 … 生成中')}`,
-  编辑: () => `<div class="row between"><span class="muted">报告中的数字来自统计数据，AI 只做解读</span><span>${go('T-20:编辑', '导出 Word')}${go('T-20:编辑', '导出 PDF')}</span></div>
-    ${box('<b>一、整体情况</b><div>完成率 95%，平均分 78……</div><b>二、主要问题</b><div>勾股定理平均掌握度 48，62% 的学生在第 3 题出错……</div><b>三、教学建议</b><div>下节课用 10 分钟复习勾股定理的斜边判断；张三、王五建议个别辅导……</div>')}${go('T-11', '根据报告写下节课教案')}`,
-  解读失败: () => `${box('<b>统计数据</b><div>完成率 95% · 平均分 78 · ……</div>')}${err('AI 解读生成失败，统计部分已保留')}${pri('T-20:生成中', '重试解读')}`,
+  ${stats([['82', '平均分'], ['100%', '完成率'], ['71', '平均掌握度']])}<div class="grid2">${ph('每次作业的成绩', 160)}${ph('错因分布：计算失误 45%，概念不清 30%', 160)}</div>
+  ${h('知识点掌握度（只统计本班作业）')}${kp('勾股定理', 48, 'T-19')}${kp('二次根式的乘除', 90, 'T-19')}<div class="actions">${ico('T-20:生成中', '生成这名学生的学情报告')}</div>` }});
+def('T-20', { role: 't', title: '学情报告 · 八(3) 数学', back: true, req: 'ANA-04', read: true, states: {
+  生成中: () => `${li('<span class="ok">✓</span> 统计数据')}${li('<span class="warn">…</span> AI 解读和教学建议')}`,
+  编辑: () => `<div class="row between"><span class="muted">报告里的数字都来自统计，AI 只负责解读</span><span class="row">${go('T-20:编辑', '导出 Word')}${go('T-20:编辑', '导出 PDF')}</span></div>
+    ${box('<div class="h" style="margin-top:0">一、整体情况</div><p>作业完成率 95%，平均分 78……</p><div class="h">二、主要问题</div><p>勾股定理的平均掌握度只有 48，62% 的学生在第 3 题出错……</p><div class="h">三、教学建议</div><p>下节课先用 10 分钟复习怎样判断斜边；张三、王五建议个别辅导……</p>')}${go('T-11', '按这份报告写下节课的教案')}`,
+  解读失败: () => `${box('<div class="h" style="margin-top:0">统计数据</div><p>完成率 95% · 平均分 78 · ……</p>')}${err('AI 解读没有生成出来，统计部分已保留')}${pri('T-20:生成中', '重新生成解读')}`,
 }});
-def('T-21', { role: 't', title: 'AI 助教', tab: 'ai', req: 'ASK-07', composer: 't', states: {
-  空状态: () => `<div class="center" style="margin:60px 0 20px"><div class="big">今天想准备什么？</div></div>${go('T-21:对话中', '勾股定理有哪几种证明方法适合初二学生？', 'block')}${go('T-21:对话中', '学生总把斜边找错，怎么讲？', 'block')}`,
-  对话中: () => `<div class="bubble me">学生总把斜边找错，怎么讲？</div><div class="bubble ai">${steps([['常见原因', '学生习惯把最长的边当斜边，忽略直角位置……'], ['讲法建议', '先让学生标出直角，再指出直角对边……'], ['课堂练习', '给出 3 道直角位置变化的题……']], 3)}</div><div class="q">和学生端同一个对话引擎；没有引导式和“加入错题本”</div>`,
+def('T-21', { role: 't', title: 'AI 助教', tab: 'ai', req: 'ASK-07', dock: 't', read: true, states: {
+  空状态: () => `${sectTop('', '今天想准备什么？', '解题思路、讲法、学生常见错误，都可以问')}${li('勾股定理有哪几种证明方法适合初二学生？', '', 'T-21:对话中')}${li('学生总把斜边找错，怎么讲？', '', 'T-21:对话中')}`,
+  对话中: () => `${me('学生总把斜边找错，怎么讲？')}${ai(`<h3>可以从三个方面入手。</h3>${steps([['找原因', '学生习惯把最长的边当斜边，忽略了直角的位置。'], ['调整讲法', '先让学生标出直角，再指出直角的对边就是斜边。'], ['课堂练习', '准备 3 道直角位置不同的题，让学生先标直角再计算。']], 3)}`)}<div class="q">和学生端是同一个对话引擎；没有引导式，也没有“加入错题本”</div>`,
 }});
-def('T-22', { role: 't', title: '个人题库', back: true, bonus: true, req: 'PAPER-03（加分）', states: { 默认: () => `${chips(['数学▾', '知识点▾', '题型▾'], -1)}${go('T-22', '+ 录入题目')}${go('T-22', '拍照录入')}${tbl(['题目', '知识点', '题型', '难度'], [['直角三角形两直角边为 6 和 8……', '勾股定理', '单选', '2'], ['化简 √12 + √27', '二次根式的加减', '填空', '3']])}` }});
+def('T-22', { role: 't', title: '个人题库', back: true, bonus: true, req: 'PAPER-03（加分）', states: { 默认: () => `<div class="row between">${chips(['数学', '知识点', '题型'], 0)}<span class="row">${go('T-22', '录入题目', 'sm')}${go('T-22', '拍照录入', 'sm')}</span></div>${tbl(['题目', '知识点', '题型', '难度'], [['直角三角形两直角边为 6 和 8……', '勾股定理', '单选', '2'], ['化简 √12 + √27', '二次根式的加减', '填空', '3']])}` }});
 
 // ───────────── 外壳与导航 ─────────────
 const NAV = {
-  sp: [['chat', '对话', 'S-01'], ['today', '今日', 'S-08'], ['mis', '错题本', 'S-13'], ['rev', '复习', 'S-16'], ['me', '我的', 'C-04']],
-  sw: [['chat', '对话', 'S-01'], ['today', '今日任务', 'S-08'], ['hw', '作业', 'S-09'], ['mis', '错题本', 'S-13'], ['rev', '复习', 'S-16'], ['pro', '学情', 'S-23'], ['me', '我的', 'C-04']],
-  tw: [['tw', '工作台', 'T-01'], ['cls', '班级', 'T-02'], ['hw', '作业', 'T-05'], ['prep', '备课', 'T-10'], ['paper', '组卷', 'T-15'], ['ana', '学情', 'T-18'], ['ai', 'AI 助教', 'T-21'], ['me', '我的', 'C-04']],
-  tp: [['tw', '工作台', 'T-01'], ['hw', '作业', 'T-05'], ['ana', '学情', 'T-18'], ['me', '我的', 'C-04']],
+  sp: [['chat', '对话', 'S-01', 'chat'], ['today', '今日', 'S-08', 'plan'], ['mis', '错题本', 'S-13', 'book'], ['rev', '复习', 'S-16', 'cards'], ['me', '我的', 'C-04', 'user']],
+  sw: [['chat', '对话', 'S-01', 'chat'], ['today', '今日任务', 'S-08', 'plan'], ['hw', '作业', 'S-09', 'checklist'], ['mis', '错题本', 'S-13', 'book'], ['rev', '复习', 'S-16', 'cards'], ['pro', '学情', 'S-23', 'chart'], ['me', '我的', 'C-04', 'user']],
+  tw: [['tw', '工作台', 'T-01', 'temple'], ['cls', '班级', 'T-02', 'users'], ['hw', '作业', 'T-05', 'checklist'], ['prep', '备课', 'T-10', 'pen'], ['paper', '组卷', 'T-15', 'document'], ['ana', '学情', 'T-18', 'chart'], ['ai', 'AI 助教', 'T-21', 'chat'], ['me', '我的', 'C-04', 'user']],
+  tp: [['tw', '工作台', 'T-01', 'temple'], ['hw', '作业', 'T-05', 'checklist'], ['ana', '学情', 'T-18', 'chart'], ['me', '我的', 'C-04', 'user']],
 };
 const ENDS = { sp: '学生 · 手机', sw: '学生 · Web', tw: '教师 · Web', tp: '教师 · 手机' };
 const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's' };
 const isPhone = () => S.end === 'sp' || S.end === 'tp';
+const tabOf = p => S.end === 'sw' && p.webTab ? p.webTab : p.tab;
 
-function tabOf(p) {
-  if (S.end === 'sw' && p.webTab) return p.webTab;
-  return p.tab;
-}
 function body(p) {
   const st = S.state && p.states[S.state] ? S.state : Object.keys(p.states)[0];
   S.state = st;
-  if (S.end === 'tp' && p.webOnly === true) return `<div class="center" style="margin-top:80px"><div class="big">请在电脑上打开</div><div class="muted">新建备课和组卷请使用雅典娜 Web 端</div></div>${go('T-01', '返回工作台', 'block')}`;
-  const ro = S.end === 'tp' && p.webOnly === 'edit' ? box('手机上只能查看和导出，编辑请使用 Web 端', 'gray') : '';
-  return ro + p.states[st]();
+  if (S.end === 'tp' && p.webOnly === true) return `${sectTop('', '请在电脑上打开', '新建备课和组卷请使用雅典娜 Web 端')}${go('T-01', '返回工作台', 'block')}`;
+  const ro = S.end === 'tp' && p.webOnly === 'edit' ? box('手机上只能查看和导出，编辑请在电脑上打开', 'gray') : '';
+  const html = ro + p.states[st]();
+  return p.read && !isPhone() ? `<div class="read">${html}</div>` : html;
 }
 function render() {
   const p = P[S.page];
-  const stage = document.getElementById('stage');
   const expbar = S.exp && !p.bare ? `<div class="expbar"><span>体验模式</span><button data-switch="1">切换到${S.role === 's' ? '老师' : '学生'}视角</button></div>` : '';
-  const top = p.bare ? '' : `<div class="topbar">${p.back ? '<button class="ico" data-back="1">← 返回</button>' : p.topL ? ico(...p.topL) : ''}<span class="t">${p.title}</span>${p.topR ? ico(...p.topR) : ''}${!p.back && isPhone() ? ico('C-08', '铃铛') : ''}</div>`;
-  const comp = p.composer === true ? composer() : p.composer === 't' ? composer(false).replace(/S-01:引导式对话中/g, 'T-21:对话中').replace(/S-03:拍照答疑/g, 'T-21') : '';
+  const left = p.back ? '<button class="ico" data-back="1">‹ 返回</button>' : p.topL && isPhone() ? ico(...p.topL) : '';
+  const right = (p.topR ? `<button class="ico" data-go="${p.topR[0]}">${p.topR[1]}</button>` : '') + (!p.back ? `<button class="ico" data-go="C-08" aria-label="消息">${ic('bell')}</button>` : '');
+  const topbar = p.bare ? '' : `<div class="topbar">${left}<h1 class="t">${p.title}</h1>${right}</div>`;
+  const dk = p.dock ? dock(p.dock) : '';
   const cur = tabOf(p);
+  const stage = document.getElementById('stage');
   if (isPhone() || p.bare) {
-    const tabs = !p.bare && cur && isPhone() ? `<div class="tabs">${NAV[S.end].map(n => `<button class="${n[0] === cur ? 'on' : ''}" data-go="${n[2]}">${n[1]}</button>`).join('')}</div>` : '';
-    const cls = isPhone() ? 'phone' : 'phone';
-    stage.innerHTML = `<div class="${cls}">${expbar}${top}<div class="${p.bare ? 'full' : 'content'}">${body(p)}</div>${comp}${tabs}</div>`;
+    const tabs = !p.bare && cur ? `<nav class="tabs">${NAV[S.end].map(n => `<button class="${n[0] === cur ? 'on' : ''}" data-go="${n[2]}">${ic(n[3])}${n[1]}</button>`).join('')}</nav>` : '';
+    stage.innerHTML = `<div class="phone">${expbar}${topbar}<div class="${p.bare ? 'full' : 'content'}">${body(p)}</div>${dk}${tabs}</div>`;
   } else {
-    const recent = S.end === 'sw' ? `<div class="sub">最近对话</div><div class="recent" data-go="S-01:引导式对话中">勾股定理求边长</div><div class="recent" data-go="S-01:直接讲解">浮力的方向</div>` : '';
-    const newChat = S.end === 'sw' ? go('S-01:空状态', '+ 开启新对话', 'block') : '';
-    const badges = { today: 2, hw: 1, mis: 6, rev: 10 };
-    stage.innerHTML = `<div class="web"><div class="side"><div class="logo">雅典娜</div>${newChat}${NAV[S.end].map(n => `<button class="nav ${n[0] === cur ? 'on' : ''}" data-go="${n[2]}"><span>${n[1]}</span><span>${S.end === 'sw' && badges[n[0]] || ''}</span></button>`).join('')}${recent}</div>
-      <div class="main">${expbar}${top}<div class="content">${body(p)}</div>${comp}</div></div>`;
+    const isS = S.end === 'sw';
+    const badges = { today: 2, hw: 1, mis: 6, rev: 10, cls: 3, ana: '' };
+    const recent = isS ? `<div class="sub">最近对话</div><button class="recent" data-go="S-01:引导式对话中">勾股定理求边长</button><button class="recent" data-go="S-01:直接讲解">浮力的方向</button>` : '';
+    const who = isS ? ['雅', '小雅', '八年级 · 2 个班级'] : ['李', '李老师', '数学 · 3 个班级'];
+    stage.innerHTML = `<div class="web"><aside class="side"><div class="brand">${ic('temple')}<div><strong>雅典娜</strong><span>ATHENA</span></div></div>
+      ${isS ? `<button class="new-chat" data-go="S-01:空状态">${ic('plus')}开启新对话</button>` : `<button class="new-chat" data-go="T-06:选题">${ic('plus')}布置作业</button>`}
+      ${NAV[S.end].map(n => `<button class="nav ${n[0] === cur ? 'on' : ''}" data-go="${n[2]}">${ic(n[3])}<span>${n[1]}</span><span class="count">${isS && badges[n[0]] || ''}</span></button>`).join('')}${recent}
+      <div class="side-note">${ic('olive')}<p>${isS ? '每一次追问，<br>都向智慧更近一步。' : '教学相长，<br>学然后知不足。'}</p></div>
+      <button class="side-foot" data-go="C-04"><span class="avatar">${who[0]}</span><span style="text-align:left">${who[1]}<span>${who[2]}</span></span></button></aside>
+      <div class="main">${expbar}${topbar}<div class="content">${body(p)}</div>${dk}</div></div>`;
   }
   renderIndex(); renderNotes();
 }
 function renderIndex() {
   const groups = [['公共', 'c'], ['学生', 's'], ['教师', 't']];
-  document.getElementById('index').innerHTML = `<h1>雅典娜 · 低保真原型</h1>
-    <div class="ends">${Object.keys(ENDS).map(k => `<button class="${S.end === k ? 'on' : ''}" data-end="${k}">${ENDS[k]}</button>`).join('')}</div>
+  const theme = document.documentElement.dataset.theme === 'dark' ? 1 : 0;
+  document.getElementById('index').innerHTML = `<div class="review-title"><span class="review-monogram">A</span><div><strong>雅典娜 · 可点击原型</strong><span>示例数据 · 未连接模型</span></div></div>
+    <div class="ctl-label">终端</div><div class="ends">${Object.keys(ENDS).map(k => `<button class="${S.end === k ? 'on' : ''}" data-end="${k}">${ENDS[k]}</button>`).join('')}</div>
+    <div class="ctl-label">阅读外观</div><div class="ends"><button class="${theme ? '' : 'on'}" data-theme-set="light">纸感书房</button><button class="${theme ? 'on' : ''}" data-theme-set="dark">夜间自习</button></div>
     <label class="exp"><input type="checkbox" id="expck" ${S.exp ? 'checked' : ''}> 体验模式（显示视角切换条）</label>
-    ${groups.filter(g => g[1] === 'c' || g[1] === S.role).map(g => `<div class="group">${g[0]}</div>` + Object.values(P).filter(p => p.role === g[1]).map(p => `<button class="pl ${p.id === S.page ? 'on' : ''}" data-go="${p.id}"><span class="id">${p.id}</span>${p.title}${p.bonus ? ' <span class="tag">加分</span>' : ''}</button>`).join('')).join('')}`;
+    ${groups.filter(g => g[1] === 'c' || g[1] === S.role).map(g => `<div class="group">${g[0]}</div>` + Object.values(P).filter(p => p.role === g[1]).map(p => `<button class="pl ${p.id === S.page ? 'on' : ''}" data-go="${p.id}"><span class="id">${p.id}</span><span>${p.title}${p.bonus ? '<span class="tag">加分</span>' : ''}</span></button>`).join('')).join('')}`;
 }
 function renderNotes() {
   const p = P[S.page];
   const outs = [...new Set([...document.querySelectorAll('#stage [data-go]')].map(e => e.dataset.go.split(':')[0]).filter(x => x !== p.id && P[x]))];
-  document.getElementById('notes').innerHTML = `<h2>${p.id} ${p.title}</h2><div class="meta">对应需求：${p.req}${p.bonus ? ' · 加分项' : ''}</div>
-    <div class="muted">页面状态 / 异常</div><div class="states">${Object.keys(p.states).map(k => `<button class="${k === S.state ? 'on' : ''}" data-state="${k}">${k}</button>`).join('')}</div>
-    <div class="muted">本页可跳转到</div><p>${outs.map(x => `<button class="ico" data-go="${x}">${x} ${P[x].title}</button>`).join('<br>') || '—'}</p>
-    <div class="muted" style="margin-top:16px">说明</div><p>灰色线框只表达结构和跳转，不代表视觉。黄色虚线框是设计备注，<b>Q1～Q7</b> 指 03 文档 0.3 节中对旧设计的调整，均已确认。</p>
-    <p>流程与需求详见 <code>docs/02-功能需求.md</code>、<code>docs/03-流程与原型.md</code>。</p>`;
+  document.getElementById('notes').innerHTML = `<h2>${p.title}</h2><div class="meta">${p.id} · 对应需求 ${p.req}${p.bonus ? ' · 加分项' : ''}</div>
+    <div class="ctl-label">页面状态与异常</div><div class="states">${Object.keys(p.states).map(k => `<button class="${k === S.state ? 'on' : ''}" data-state="${k}">${k}</button>`).join('')}</div>
+    <div class="ctl-label">本页可以去</div><p>${outs.map(x => `<button class="ico" data-go="${x}">${x}　${P[x].title}</button>`).join('') || '—'}</p>
+    <div class="ctl-label" style="margin-top:20px">说明</div><p>视觉沿用旧项目的雅典娜设计稿。绿色虚线框是设计备注，Q1～Q7 指 03 文档 0.3 节中对旧设计的调整，均已确认。</p>
+    <p>需求和流程见 docs/02-功能需求.md、docs/03-流程与原型.md。</p>`;
 }
 function nav(target, push = true) {
   const [id, st] = target.split(':');
   if (!P[id]) return;
-  const p = P[id];
   if (push && S.page !== id) S.stack.push(S.page + ':' + S.state);
-  if (p.role !== 'c' && p.role !== S.role) setRole(p.role);
+  if (P[id].role !== 'c' && P[id].role !== S.role) setRole(P[id].role);
   S.page = id; S.state = st || null;
   render();
 }
@@ -552,13 +774,14 @@ function setRole(r) {
   if (r === 't' && !S.end.startsWith('t')) S.end = isPhone() ? 'tp' : 'tw';
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch]');
+  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch],[data-theme-set]');
   if (!t) return;
   const d = t.dataset;
   if (d.go) nav(d.go);
   else if (d.back) { const prev = S.stack.pop(); if (prev) nav(prev, false); }
   else if (d.state) { S.state = d.state; render(); }
   else if (d.end) { S.end = d.end; const r = d.end[0]; if (r !== S.role) { S.role = r; S.page = r === 's' ? 'S-01' : 'T-01'; S.state = null; } render(); }
+  else if (d.themeSet) { document.documentElement.dataset.theme = d.themeSet; render(); }
   else if (d.login) { S.exp = false; setRole(d.login); S.stack = []; nav(d.login === 's' ? 'S-01' : 'T-01', false); }
   else if (d.exp) { S.pendingRole = d.exp; nav('C-03:生成中'); }
   else if (d.expdone) { S.exp = true; setRole(S.pendingRole); S.stack = []; nav(S.pendingRole === 's' ? 'S-01:空状态' : 'T-01', false); }
