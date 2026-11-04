@@ -51,15 +51,23 @@
   margin: 0 0 20px;
 }
 
-.me div {
+.me > div {
   max-width: 86%;
   padding: 11px 16px;
+  overflow-x: auto;
   border-radius: 12px 12px 3px 12px;
   background: var(--surface-alt);
   font-size: 15px;
   line-height: 1.7;
-  white-space: pre-wrap;
   overflow-wrap: anywhere;
+}
+
+.photo {
+  display: block;
+  max-width: 100%;
+  max-height: 200px;
+  margin-bottom: 8px;
+  border-radius: 6px;
 }
 
 .ai {

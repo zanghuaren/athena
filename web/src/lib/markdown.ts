@@ -4,6 +4,8 @@ import MarkdownIt, { type StateInline } from 'markdown-it';
 
 // 内容来自模型和用户输入，不允许原始 HTML
 const md = new MarkdownIt({ html: false, breaks: true, linkify: false });
+// 单独一行的填空 `____` 会被当成分隔线
+md.disable('hr');
 
 md.inline.ruler.before('escape', 'math', math);
 md.inline.ruler.before('escape', 'math_paren', mathParen);

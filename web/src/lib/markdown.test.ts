@@ -22,11 +22,12 @@ describe('renderMarkdown', () => {
     expect(renderInline('$\\frac{1$')).toBe('<code class="math-raw">$\\frac{1$</code>');
   });
 
-  it('空位不会被当成加粗', () => {
+  it('空位不会被当成加粗或分隔线', () => {
     expect(renderInline('I __1__ a student.')).toBe(
       'I <span class="blank" aria-label="第 1 空">1</span> a student.',
     );
     expect(renderInline('$1+2=$____')).toContain('<span class="blank" aria-label="空"></span>');
+    expect(renderMarkdown('结论是：\n____')).toContain('<span class="blank" aria-label="空">');
     expect(renderInline('**重点**')).toBe('<strong>重点</strong>');
   });
 

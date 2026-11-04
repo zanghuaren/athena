@@ -1,6 +1,14 @@
 // S-01 对话 / T-21 AI 助教共用的对话区：消息流、讲解方式切换、回答后的操作、输入框
-import { useLayoutEffect, useMemo, useRef, useState, type ComponentType } from 'react';
-import { Link, useNavigate } from 'react-router';
+import {
+  useEffect,
+  useEffectEvent,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from 'react';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { ApiError, type User } from '../api/client';
 import {
   MAX_TURNS,
@@ -13,6 +21,7 @@ import {
   type MessageBody,
   type StreamEvent,
 } from '../api/conversations';
+import { fileUrl, type FileOut } from '../api/files';
 import { SUBJECT_OPTIONS } from '../lib/labels';
 import { Button } from './Button';
 import { Icon } from './Icon';
@@ -29,6 +38,9 @@ const ACTION_LABELS: Record<NonNullable<Message['action']>, string> = {
   example: '举个例子',
 };
 
+/** S-04 确认后带回对话页的题目，进入页面后自动发出（SCAN-02）。 */
+export type ScannedQuestion = { content: string; image: FileOut; subject: NonNullable<Subject> };
+
 /** 正在生成或刚停止的消息先放在本地；正常结束后以服务端为准。 */
 type Local = { conversationId: number; messages: Message[] };
 
@@ -44,6 +56,7 @@ type Props = {
 export function ChatView({ user, base, conversationId, Empty }: Props) {
   const isStudent = user.role === 'student';
   const navigate = useNavigate();
+  const location = useLocation();
   const detail = useConversation(conversationId);
   const create = useCreateConversation();
   const patch = usePatchConversation();
@@ -85,7 +98,25 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
     else patch.mutate({ id: conversationId, ...change });
   }
 
-  async function send(body: MessageBody) {
+  // 拍照答疑：等会话详情加载好再发，否则本地消息列表里没有之前的消息
+  const scanned = (location.state as { ask?: ScannedQuestion } | null)?.ask;
+  const ready = conversationId === null || conversation !== undefined;
+  const scannedSent = useRef(false);
+  const sendScanned = useEffectEvent(async (q: ScannedQuestion) => {
+    // 清掉页面状态，刷新或返回时不会再发一次
+    navigate(location.pathname, { replace: true, state: null });
+    if (conversation && conversation.subject !== q.subject) {
+      await patch.mutateAsync({ id: conversation.id, subject: q.subject });
+    }
+    await send({ content: q.content, image_file_id: q.image.id }, q);
+  });
+  useEffect(() => {
+    if (!scanned || !ready || scannedSent.current) return;
+    scannedSent.current = true;
+    void sendScanned(scanned);
+  }, [scanned, ready]);
+
+  async function send(body: MessageBody, scan?: ScannedQuestion) {
     setError(null);
     stickRef.current = true;
     const controller = new AbortController();
@@ -95,10 +126,11 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
     let id = conversationId;
     try {
       if (id === null) {
-        id = (await create.mutateAsync(newSettings)).id;
+        const settings = scan ? { ...newSettings, subject: scan.subject } : newSettings;
+        id = (await create.mutateAsync(settings)).id;
         navigate(`${base}/c/${id}`, { replace: true });
       }
-      await streamReply(id, body, controller.signal);
+      await streamReply(id, body, controller.signal, scan?.image ?? null);
       if (controller.signal.aborted) {
         // 服务端这时可能还没存完，先保留本地内容，只刷新列表
         void refresh(id, false);
@@ -116,7 +148,12 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
     }
   }
 
-  async function streamReply(id: number, body: MessageBody, signal: AbortSignal) {
+  async function streamReply(
+    id: number,
+    body: MessageBody,
+    signal: AbortSignal,
+    image: FileOut | null,
+  ) {
     let current = [...messages];
     const show = (next: Message[]) => {
       current = next;
@@ -124,7 +161,7 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
     };
     if (body.action === 'regenerate') show(current.slice(0, -1));
     else if (body.action !== 'continue') {
-      show([...current, localMessage(-1, 'user', body.content, body.action ?? null)]);
+      show([...current, localMessage(-1, 'user', body.content, body.action ?? null, image)]);
     }
 
     let replyId = 0;
@@ -168,6 +205,10 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
     setCopied(message.id);
     setTimeout(() => setCopied(null), 2000);
   }
+
+  // 拍照答疑识别出的题目回到当前会话里发（SCAN-02）
+  const scanPath = (mode: 'ask' | 'grade') =>
+    `/student/scan?mode=${mode}${conversationId ? `&c=${conversationId}` : ''}`;
 
   const lastReply = !streaming && last?.role === 'assistant' ? last : null;
   // 已经看过完整解答，就不再给“再给点提示”“看完整解答”
@@ -221,7 +262,12 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
               {messages.map((m) =>
                 m.role === 'user' ? (
                   <div key={m.id} className={styles.me}>
-                    <div>{m.action ? ACTION_LABELS[m.action] : m.content}</div>
+                    <div>
+                      {m.image && (
+                        <img className={styles.photo} src={fileUrl(m.image)} alt="题目图片" />
+                      )}
+                      {m.action ? ACTION_LABELS[m.action] : <Markdown text={m.content} />}
+                    </div>
                   </div>
                 ) : (
                   <div key={m.id} className={styles.ai}>
@@ -296,11 +342,11 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
         <div className={styles.read}>
           {isStudent && (
             <div className={styles.tools}>
-              <Link to="/student/scan">
+              <Link to={scanPath('ask')}>
                 <Icon name="camera" />
                 拍照答疑
               </Link>
-              <Link to="/student/scan">
+              <Link to={scanPath('grade')}>
                 <Icon name="checklist" />
                 作业批改
               </Link>
@@ -308,7 +354,7 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
           )}
           <div className={styles.composer}>
             {isStudent ? (
-              <Link to="/student/scan" className={styles.attach} aria-label="拍照添加题目">
+              <Link to={scanPath('ask')} className={styles.attach} aria-label="拍照添加题目">
                 <Icon name="camera" />
               </Link>
             ) : (
@@ -368,6 +414,8 @@ function localMessage(
   role: Message['role'],
   content: string,
   action: Message['action'],
+  image: FileOut | null = null,
 ): Message {
-  return { id, role, action, content, status: 'done', created_at: new Date().toISOString() };
+  const created_at = new Date().toISOString();
+  return { id, role, action, content, status: 'done', image, created_at };
 }

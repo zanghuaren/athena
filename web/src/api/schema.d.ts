@@ -214,6 +214,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/recognize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Recognize */
+        post: operations["recognize_api_v1_recognize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/health": {
         parameters: {
             query?: never;
@@ -537,6 +554,24 @@ export interface components {
             analysis: components["schemas"]["AnalysisStep"][] | null;
             /** Scoring Points */
             scoring_points: components["schemas"]["ScoringPoint"][] | null;
+        };
+        /** RecognizeIn */
+        RecognizeIn: {
+            /** Image File Id */
+            image_file_id: number;
+        };
+        /**
+         * RecognizeOut
+         * @description text 是题干和选项的 Markdown，学生核对修改后作为提问发出。
+         */
+        RecognizeOut: {
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /** Text */
+            text: string;
         };
         /** ScoringPoint */
         ScoringPoint: {
@@ -1121,6 +1156,39 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recognize_api_v1_recognize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecognizeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecognizeOut"];
+                };
             };
             /** @description Validation Error */
             422: {

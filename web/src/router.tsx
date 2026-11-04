@@ -12,6 +12,8 @@ import { Pending } from './pages/common/Pending';
 import { Register } from './pages/common/Register';
 import { Settings } from './pages/common/Settings';
 import { Chat } from './pages/student/Chat';
+import { Scan } from './pages/student/Scan';
+import { ScanCrop } from './pages/student/ScanCrop';
 import { Assistant } from './pages/teacher/Assistant';
 
 /** 登录后才能进的页面：没登录去登录页，身份不对去自己的首页。 */
@@ -77,7 +79,8 @@ export const router = createBrowserRouter([
       page(undefined, '对话', <Chat />, false, studentChat),
       page('c/:conversationId', '对话', <Chat />, false, studentChat),
       page('history', '会话历史', <ChatHistory />, true),
-      page('scan', '拍照', <Pending />, true),
+      page('scan', '拍照', <Scan />, true),
+      page('scan/crop', '框选题目', <ScanCrop />, true),
       page('today', '今日'),
       page('homework', '全部作业'),
       page('mistakes', '错题本'),

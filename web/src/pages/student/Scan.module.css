@@ -1,0 +1,97 @@
+.seg {
+  display: flex;
+  gap: 2px;
+  margin: 6px 0;
+  padding: 3px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+}
+
+.seg button {
+  flex: 1;
+  min-height: 34px;
+  padding: 3px 10px;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.seg button[aria-pressed='true'] {
+  background: var(--surface);
+  box-shadow: 0 1px 3px #3f2b1711;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.view {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: min(470px, 56vh);
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: repeating-linear-gradient(
+    135deg,
+    var(--surface-alt) 0 10px,
+    color-mix(in srgb, var(--surface-alt) 60%, var(--paper)) 10px 20px
+  );
+  font-size: 12px;
+  color: var(--soft);
+}
+
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.bar label {
+  position: relative;
+}
+
+/* 不用 display: none，键盘还要能聚焦到选图 */
+.bar input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+}
+
+.album {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 64px;
+  min-height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  background: var(--surface);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+span.album {
+  visibility: hidden;
+}
+
+.shutter {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: var(--clay);
+  color: var(--surface);
+  cursor: pointer;
+}
+
+.album:focus-within,
+.shutter:focus-within {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}

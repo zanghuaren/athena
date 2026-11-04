@@ -1,0 +1,50 @@
+.stage {
+  height: min(430px, 56vh);
+  margin: 8px 0;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+/* Cropper.js 要求图片是块级、宽度不超过容器 */
+.stage img {
+  display: block;
+  max-width: 100%;
+}
+
+.hint {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.bar {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 12px;
+}
+
+.text {
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.thumb {
+  display: block;
+  max-width: 100%;
+  max-height: 120px;
+  margin: 8px 0;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+/* Cropper.js 默认是蓝色，换成主色 */
+.stage :global(.cropper-view-box) {
+  outline-color: var(--clay);
+}
+
+.stage :global(.cropper-line),
+.stage :global(.cropper-point) {
+  background-color: var(--clay);
+}
