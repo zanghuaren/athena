@@ -18,7 +18,9 @@ class Base(DeclarativeBase):
 
 
 class IdMixin:
-    id: Mapped[int] = mapped_column(BigInteger, Identity(always=True), primary_key=True)
+    id: Mapped[int] = mapped_column(
+        BigInteger, Identity(always=True), primary_key=True, sort_order=-1
+    )
 
 
 class CreatedAtMixin:
@@ -27,5 +29,5 @@ class CreatedAtMixin:
 
 class TimestampMixin(CreatedAtMixin):
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now(), sort_order=100
     )
