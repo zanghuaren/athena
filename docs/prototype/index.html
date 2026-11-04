@@ -6,8 +6,8 @@
 <title>雅典娜 · 可点击原型</title>
 <style>
 /* 视觉沿用旧项目雅典娜设计稿（reference/eduagent/指导/前端设计/雅典娜美化方案.html）的色彩变量与组件 */
-:root{--paper:#f6f2eb;--surface:#fdfbf5;--surface-alt:#eee8df;--ink:#26201a;--muted:#6e6459;--line:#ded6c9;--clay:#b35737;--clay-tint:#f2e2d7;--olive:#69725a;--olive-tint:#e8ebdf;--ochre:#9a6b1f;--canvas:#e9e4db;--soft:#a89b88;--focus:#8f442b;--serif:"Songti SC","STSong","Noto Serif CJK SC","SimSun",serif;--sans:"HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",sans-serif;--latin:"Baskerville","Palatino Linotype","Book Antiqua",serif;--shadow:0 16px 50px #4c382611;color-scheme:light}
-[data-theme="dark"]{--paper:#211d18;--surface:#2a251f;--surface-alt:#352e25;--ink:#eee7db;--muted:#b8ab98;--line:#4b4033;--clay:#e09a77;--clay-tint:#493127;--olive:#b1ba99;--olive-tint:#373d2c;--ochre:#d6a75a;--canvas:#181511;--soft:#92836e;--focus:#efb08f;--shadow:0 16px 50px #0002;color-scheme:dark}
+:root{--paper:#f6f2eb;--surface:#fdfbf5;--surface-alt:#eee8df;--ink:#26201a;--muted:#6e6459;--line:#ded6c9;--clay:#a84d30;--clay-tint:#f2e2d7;--olive:#606a4e;--olive-tint:#e8ebdf;--ochre:#9a6b1f;--canvas:#e9e4db;--soft:#786a5a;--danger:#a33332;--danger-tint:#f5e6e3;--focus:#8f442b;--serif:"Songti SC","STSong","Noto Serif CJK SC","SimSun",serif;--sans:"HarmonyOS Sans SC","PingFang SC","Microsoft YaHei",sans-serif;--latin:"Baskerville","Palatino Linotype","Book Antiqua",serif;--shadow:0 16px 50px #4c382611;color-scheme:light}
+[data-theme="dark"]{--paper:#211d18;--surface:#2a251f;--surface-alt:#352e25;--ink:#eee7db;--muted:#b8ab98;--line:#4b4033;--clay:#e09a77;--clay-tint:#493127;--olive:#b1ba99;--olive-tint:#373d2c;--ochre:#d6a75a;--canvas:#181511;--soft:#b0a18b;--danger:#f0a09a;--danger-tint:#482b29;--focus:#efb08f;--shadow:0 16px 50px #0002;color-scheme:dark}
 *{box-sizing:border-box}
 html,body{margin:0;height:100%;background:var(--canvas);color:var(--ink)}
 body{font:14px/1.65 var(--sans);-webkit-font-smoothing:antialiased}
@@ -18,7 +18,12 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* 评审外框：左目录 · 中舞台 · 右说明 */
-#app{display:grid;grid-template-columns:248px minmax(0,1fr) 282px;height:100vh}
+#app{--index-width:220px;--notes-width:260px;display:grid;grid-template-columns:var(--index-width) minmax(0,1fr) var(--notes-width);grid-template-rows:52px minmax(0,1fr);height:100dvh}
+#app.index-hidden{--index-width:0px}#app.notes-hidden{--notes-width:0px}
+#index{grid-column:1;grid-row:2}#stage{grid-column:2;grid-row:2}#notes{grid-column:3;grid-row:2}
+#app.index-hidden #index,#app.notes-hidden #notes{display:none}
+#review-toolbar{grid-column:1/-1;display:flex;align-items:center;gap:8px;padding:6px 16px;border-bottom:1px solid var(--line);background:var(--paper);z-index:11}
+#review-toolbar .muted{margin-right:auto}#review-toolbar button{padding:6px 12px;min-height:36px;border:1px solid var(--line);border-radius:6px;font-size:12px}
 #index,#notes{background:var(--paper);overflow-y:auto;padding:22px 18px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
 #index{border-right:1px solid var(--line)}
 #notes{border-left:1px solid var(--line)}
@@ -33,7 +38,8 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 .pl:hover{color:var(--clay)}
 .pl.on{background:var(--clay-tint);color:var(--clay);font-weight:600}
 .pl .id{width:34px;flex:none;font:11px/21px var(--latin);color:var(--soft)}
-#stage{overflow:auto;display:flex;justify-content:center;align-items:flex-start;padding:28px}
+#stage{overflow:auto;display:flex;align-items:flex-start;padding:20px;min-width:0}
+#stage>.phone,#stage>.web{margin:0 auto}
 #notes h2{font:20px/1.5 var(--serif);font-weight:600;margin:0 0 2px}
 #notes .meta{font-size:12px;color:var(--muted);margin-bottom:16px}
 #notes p{margin:6px 0;font-size:13px;color:var(--muted);line-height:1.8}
@@ -41,18 +47,18 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 .states{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 16px}
 
 /* 设备 */
-.phone{width:390px;height:812px;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:28px;background:var(--paper);box-shadow:var(--shadow)}
-.web{width:100%;min-width:980px;max-width:1320px;height:812px;display:grid;grid-template-columns:218px minmax(0,1fr);overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--paper);box-shadow:var(--shadow)}
+.phone{width:390px;max-width:100%;height:812px;flex:none;display:flex;flex-direction:column;overflow:hidden;border:1px solid var(--line);border-radius:28px;background:var(--paper);box-shadow:var(--shadow)}
+.web{container:workspace / inline-size;width:100%;min-width:0;max-width:1320px;height:812px;display:grid;grid-template-columns:184px minmax(0,1fr);overflow:hidden;border:1px solid var(--line);border-radius:12px;background:var(--paper);box-shadow:var(--shadow)}
 .main{display:flex;flex-direction:column;min-width:0;overflow:hidden}
 .full{flex:1;overflow-y:auto;padding:24px 22px}
 .topbar{display:flex;align-items:center;gap:12px;min-height:58px;padding:0 18px;border-bottom:1px solid var(--line);flex:none}
 .web .topbar{padding:0 32px;min-height:63px}
 .topbar .t{flex:1;margin:0;font-size:16px;font-weight:600;letter-spacing:.08em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .content{flex:1;overflow-y:auto;padding:20px 20px 28px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
-.web .content{padding:28px 40px 36px}
+.web .content{padding:24px 28px 32px}
 .web .content>.read{max-width:820px;margin:0 auto}
 .tabs{display:flex;border-top:1px solid var(--line);padding:4px 8px 8px;background:var(--paper);flex:none}
-.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:54px;font-size:10px;color:var(--muted)}
+.tabs button{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-height:54px;font-size:11px;color:var(--muted)}
 .tabs button.on{color:var(--clay)}
 .tabs button:hover{color:var(--clay)}
 .side{display:flex;flex-direction:column;border-right:1px solid var(--line);padding:28px 18px 16px;background:color-mix(in srgb,var(--paper) 86%,var(--surface-alt));overflow-y:auto}
@@ -82,7 +88,7 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 .expbar button{border:1px solid color-mix(in srgb,var(--olive) 50%,transparent);border-radius:5px;padding:2px 10px;font-size:12px;color:var(--olive)}
 
 /* 页头：沿用旧稿 section-top（拉丁小标签 + 宋体标题） */
-.section-top{margin:2px 0 22px}
+.section-top{margin:0 0 16px}
 .eyebrow{display:block;font:10px/14px var(--latin);letter-spacing:.17em;text-transform:uppercase;color:var(--clay);margin-bottom:10px}
 .section-top h2{font:500 25px/40px var(--serif);letter-spacing:.06em;margin:0}
 .section-top p{font-size:13px;color:var(--muted);margin:6px 0 0}
@@ -118,7 +124,7 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 .result{margin:12px 0 0;padding:12px 16px;background:var(--surface);border:1px solid var(--line);border-radius:8px;font-size:13px}
 .actions{display:flex;flex-wrap:wrap;gap:4px 14px;margin:14px 0 4px}
 .dock{border-top:1px solid var(--line);padding:10px 16px 8px;background:var(--paper);flex:none}
-.web .dock{padding:12px 40px 10px}
+.web .dock{padding:10px 28px}
 .web .dock>div{max-width:820px;margin:0 auto}
 .tools{display:flex;align-items:center;gap:2px;flex-wrap:wrap;margin:0 -6px 8px}
 .tool{display:flex;align-items:center;gap:6px;min-height:34px;padding:3px 9px;color:var(--muted);font-size:12px;border-radius:5px}
@@ -130,7 +136,7 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 .composer .attach{color:var(--muted);width:36px;height:36px;display:grid;place-items:center}
 .composer .send{width:42px;height:42px;display:grid;place-items:center;border-radius:7px;background:var(--clay);color:var(--surface)}
 .composer .send svg{width:18px;height:18px}
-.caption{font-size:10px;color:var(--soft);margin-top:4px}
+.caption{font-size:12px;color:var(--soft);margin-top:4px}
 
 /* 通用组件 */
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:40px;padding:6px 15px;border:1px solid var(--line);border-radius:7px;background:var(--surface);font-size:13px}
@@ -144,13 +150,13 @@ svg.icon{display:block;flex:none;width:20px;height:20px;fill:none;stroke:current
 .ico:hover{text-decoration:underline;text-underline-offset:4px}
 .box{border:1px solid var(--line);border-radius:10px;padding:14px 16px;margin:10px 0;background:var(--surface)}
 .box.gray{background:var(--surface-alt);border-color:transparent}
-.box.err{background:var(--clay-tint);border-color:color-mix(in srgb,var(--clay) 35%,transparent)}
-.box.err b{color:var(--clay);font-weight:600}
+.box.err{background:var(--danger-tint);border-color:color-mix(in srgb,var(--danger) 35%,transparent)}
+.box.err b{color:var(--danger);font-weight:600}
 .ph{display:flex;align-items:center;justify-content:center;text-align:center;color:var(--soft);font-size:12px;border-radius:8px;margin:8px 0;border:1px solid var(--line);background:repeating-linear-gradient(135deg,var(--surface-alt) 0 10px,color-mix(in srgb,var(--surface-alt) 60%,var(--paper)) 10px 20px)}
 .in{display:flex;align-items:center;border:1px solid var(--line);border-radius:7px;padding:8px 12px;min-height:40px;color:var(--soft);background:var(--surface);margin:4px 0}
 .in.area{min-height:80px;align-items:flex-start}
 .in.filled{color:var(--ink)}
-.lab{font-size:12px;color:var(--muted);margin:14px 0 4px}
+.lab{display:block;font-size:13px;color:var(--muted);margin:14px 0 4px}
 .row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .row.between{justify-content:space-between}
 .grow{flex:1}
@@ -200,7 +206,7 @@ tr.click:hover td{color:var(--clay)}
 .center{text-align:center}
 .tag{font-size:11px;border:1px solid var(--line);border-radius:4px;padding:0 5px;color:var(--muted);margin-left:4px;font-weight:400}
 .q{margin:14px 0;padding:8px 12px;border:1px dashed color-mix(in srgb,var(--olive) 60%,transparent);border-radius:6px;background:var(--olive-tint);color:var(--olive);font-size:12px;line-height:1.7}
-.ok{color:var(--olive)}.bad{color:var(--clay)}.warn{color:var(--ochre)}
+.ok{color:var(--olive)}.bad{color:var(--danger)}.warn{color:var(--ochre)}
 .quote{font:13px/1.9 var(--serif);color:var(--muted);letter-spacing:.08em;text-align:center;margin:26px 0 6px}
 
 /* 今日：沿用旧“学习计划”页 */
@@ -219,7 +225,7 @@ tr.click:hover td{color:var(--clay)}
 
 /* 错题本：沿用旧 mistake-item */
 .mistake{display:grid;grid-template-columns:minmax(0,1fr) 96px;gap:18px;padding:20px 0;border-bottom:1px solid var(--line)}
-.subject{font-size:10px;color:var(--clay);margin:0 0 6px;letter-spacing:.06em}
+.subject{font-size:12px;color:var(--clay);margin:0 0 6px;letter-spacing:.06em}
 .mistake h3{font-size:15px;font-weight:500;margin:0 0 5px;line-height:1.85;cursor:pointer}
 .mistake h3:hover{color:var(--clay)}
 .mistake .exp-t{font-size:13px;color:var(--muted);margin:0;line-height:1.8}
@@ -245,7 +251,7 @@ tr.click:hover td{color:var(--clay)}
 .rating:hover{border-color:var(--clay);color:var(--clay)}
 .rating:last-child{border-color:var(--olive);color:var(--olive)}
 .rating svg{width:16px;height:16px}
-.hint-line{text-align:center;color:var(--soft);font-size:11px;margin:16px 0 0}
+.hint-line{text-align:center;color:var(--muted);font-size:12px;margin:16px 0 0}
 
 /* 我的：沿用旧 profile */
 .profile-hero{display:flex;align-items:center;gap:16px;padding:6px 0 22px;border-bottom:1px solid var(--line)}
@@ -278,6 +284,37 @@ tr.click:hover td{color:var(--clay)}
 .knowledge-row{display:grid;width:100%;grid-template-columns:minmax(160px,1fr) minmax(80px,180px) 100px 20px;align-items:center;gap:16px;text-align:left;padding:18px 0;border-bottom:1px solid var(--line)}
 .knowledge-row small{display:block;color:var(--muted);margin-top:4px}.phone .knowledge-row{grid-template-columns:minmax(0,1fr) 80px 20px;gap:10px}.phone .knowledge-row .bar{display:none}
 .answer-dialog{width:min(90vw,700px);max-height:90vh;overflow:auto;border:1px solid var(--line);border-radius:12px;background:var(--paper);color:var(--ink)}.answer-dialog::backdrop{background:#0008}
+
+.study-card{display:block;padding:18px 0}.study-card h3{font-size:16px}.study-card .status{margin-top:10px;font-size:12px;text-align:left;color:var(--muted)}
+.study-card .actions{margin:10px 0}.study-card .status:before{content:"复习状态："}
+.phone .review-layout .answer-sheet{min-height:0;padding:16px}.phone .review-layout .triangle{height:135px}
+@container workspace (max-width:1100px){
+  .review-layout{grid-template-columns:minmax(0,1fr) 260px;gap:16px}
+  .review-students{grid-column:1/-1;display:flex;gap:8px;overflow:auto}
+  .review-students .li{width:auto;flex:none;padding:8px 12px;border:1px solid var(--line);border-radius:6px}
+  .review-by-question{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container workspace (max-width:740px){
+  .review-layout{grid-template-columns:minmax(0,1fr)}
+  .review-by-question{grid-template-columns:minmax(0,1fr)}
+  .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.table-wrap{width:100%;overflow-x:auto}table th,table td{overflow-wrap:anywhere}
+.phone .grid3:not(.review-by-question){grid-template-columns:repeat(2,minmax(0,1fr))}
+.phone .grid4{grid-template-columns:repeat(2,minmax(0,1fr))}
+.phone .review-by-question{grid-template-columns:minmax(0,1fr)}
+button,input,textarea,select,summary,[tabindex]{touch-action:manipulation}
+input:focus-visible,textarea:focus-visible,select:focus-visible,summary:focus-visible,[tabindex]:focus-visible{outline:2px solid var(--focus);outline-offset:3px}
+@media(max-width:760px){
+  #app{grid-template-columns:0 minmax(0,1fr) 0}
+  #index,#notes{position:fixed;top:52px;bottom:0;width:min(280px,85vw);z-index:10;box-shadow:var(--shadow)}
+  #index{left:0}#notes{right:0}
+  #stage{padding:0}
+  #review-toolbar{padding:6px 8px;gap:4px}#review-toolbar .muted{display:none}#review-toolbar button{flex:1;padding:6px}
+  .phone{width:100%;max-width:430px;height:calc(100dvh - 52px);border-radius:0;border:0;box-shadow:none}
+  .web{height:calc(100dvh - 52px);border-radius:0;grid-template-columns:120px minmax(0,1fr)}
+  .web .side{padding:16px 8px}.web .nav{padding:8px;gap:6px}.web .nav svg{display:none}.web .content{padding:16px}
+}
 </style>
 </head>
 <body>
@@ -310,6 +347,7 @@ tr.click:hover td{color:var(--clay)}
 <symbol id="i-image" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><path d="m21 16-5-5-9 9"/></symbol>
 </defs></svg>
 <div id="app">
+  <div id="review-toolbar" aria-label="原型评审工具"></div>
   <aside id="index"></aside>
   <main id="stage"></main>
   <aside id="notes"></aside>
@@ -345,10 +383,10 @@ const heatRow = (name, vals) => `<span>${name}</span>` + vals.map(v => `<i title
 const steps = (arr, shown) => `<div class="steps">${arr.map((s, i) => `<div class="step ${i >= shown ? 'dim' : ''}"><span class="step-number">${i + 1}</span><div><h4>${s[0]}</h4><p>${i >= shown ? '等你回应后展开' : s[1]}</p></div></div>`).join('')}</div>`;
 const me = t => `<div class="me"><div>${t}</div></div>`;
 const ai = inner => `<div class="ai"><div class="ai-head">${ic('temple')}<span>ATHENA</span></div>${inner}</div>`;
-const tbl = (head, rows, gos = []) => `<table><tr>${head.map(x => `<th>${x}</th>`).join('')}</tr>${rows.map((r, i) => `<tr class="${gos[i] ? 'click' : ''}" ${gos[i] ? `data-go="${gos[i]}"` : ''}>${r.map(x => `<td>${x}</td>`).join('')}</tr>`).join('')}</table>`;
+const tbl = (head, rows, gos = []) => `<div class="table-wrap"><table><tr>${head.map(x => `<th>${x}</th>`).join('')}</tr>${rows.map((r, i) => `<tr class="${gos[i] ? 'click' : ''}" ${gos[i] ? `data-go="${gos[i]}"` : ''}>${r.map(x => `<td>${x}</td>`).join('')}</tr>`).join('')}</table></div>`;
 function dock(kind) {
   const send = kind === 't' ? 'T-21:对话中' : 'S-01:引导式对话中';
-  const tools = kind === 't' ? '' : `<div class="tools"><button class="tool" data-go="S-03:拍照答疑">${ic('camera')}拍照答疑</button><button class="tool" data-go="S-03:作业批改">${ic('checklist')}作业批改</button><span class="note">作文批改、口语对练为加分项</span></div>`;
+  const tools = kind === 't' ? '' : `<div class="tools"><button class="tool" data-go="S-03:拍照答疑">${ic('camera')}拍照答疑</button><button class="tool" data-go="S-03:作业批改">${ic('checklist')}作业批改</button></div>`;
   const attach = kind === 't' ? `<button class="attach" data-go="T-21">${ic('image')}</button>` : `<button class="attach" data-go="S-03:拍照答疑">${ic('camera')}</button>`;
   return `<div class="dock"><div>${tools}<div class="composer"><div class="ph-text">${kind === 't' ? '问问备课、讲法或解题思路' : '写下问题，一起想明白。'}</div>${attach}<button class="send" data-go="${send}">${ic('send')}</button></div><div class="caption">${kind === 't' ? 'Enter 发送 · Shift + Enter 换行' : '学贵有疑，问有所思。'}</div></div></div>`;
 }
@@ -384,8 +422,8 @@ function login(e) {
   return `<div style="margin:40px 0 28px"><div class="brand" style="margin:0 0 18px">${ic('temple')}<div><strong>雅典娜</strong><span>ATHENA</span></div></div>
   <div class="section-top"><h2>知其然，也知其所以然。</h2><p>连接学生和老师的 AI 学习助手</p></div></div>
   ${lab('用户名')}${inp('请输入用户名')}${lab('密码')}${inp('请输入密码')}${e}
-  <button class="btn pri block" data-login="s">登录（原型：以学生身份）</button>
-  <button class="btn block" data-login="t">登录（原型：以教师身份）</button>
+  <button class="btn pri block" data-login="s">以学生身份登录</button>
+  <button class="btn block" data-login="t">以教师身份登录</button>
   <div class="center muted">还没有账号？${ico('C-02', '去注册')}</div>
   <div class="divider" style="margin-top:28px">免注册体验</div>
   <div class="grid2"><button class="btn" data-exp="s">体验学生端</button><button class="btn" data-exp="t">体验教师端</button></div>
@@ -409,11 +447,11 @@ def('C-02', { role: 'c', title: '注册', bare: true, req: 'ACC-01', states: {
 def('C-03', { role: 'c', title: '体验准备', bare: true, req: 'ACC-04', states: {
   生成中: () => `<div style="margin:80px 0 20px">${sectTop('', '正在准备体验环境', '为你生成一个班级和演示数据，大约 5 秒')}</div>
     ${li('<span class="ok">✓</span> 创建老师和学生账号')}${li('<span class="ok">✓</span> 创建八年级 3 班，加入 30 名虚拟学生')}${li('<span class="warn">…</span> 生成 3 次作业的提交与批改数据')}${li('<span class="muted">○ 生成错题和学情数据</span>')}
-    <p class="muted">体验账号保留 7 天</p><button class="btn pri block" data-expdone="1">完成（原型）</button>`,
+    <p class="muted">体验账号保留 7 天</p><button class="btn pri block" data-expdone="1">查看准备结果</button>`,
   失败: () => `<div style="margin:80px 0 20px">${sectTop('', '体验环境没准备好')}</div>${err('生成演示数据失败，请重试')}${go('C-03:生成中', '重试', 'pri block')}${go('C-01', '返回登录', 'block')}`,
 }});
 def('C-04', { role: 'c', title: '我的', tab: 'me', req: 'ME', states: { 默认: () => S.role === 's' ? `
-  ${sectTop('MY ATHENAEUM', '我的学习空间')}
+  ${sectTop('', '我的学习空间')}
   <div class="profile-hero"><div class="avatar lg">雅</div><div class="grow"><b>小雅</b><span class="muted">八年级 · 已加入 2 个班级</span></div>${ico('C-05', '编辑资料')}</div>
   <div class="group-t">学习</div>${plink('users', '我的班级', '八年级 3 班 数学、八年级 3 班 物理', 'S-25')}${plink('chart', '学情画像', '平均掌握度 71', 'S-23')}${plink('checklist', '批改记录', '拍照批改过的作业', 'S-07')}${plink('pen', '练习记录', '', 'S-22')}
   <div class="group-t">其他</div>${plink('settings', '设置', '主题、讲解方式、修改密码', 'C-06')}${plink('help', '帮助与反馈', '', 'C-07')}
@@ -490,7 +528,7 @@ def('S-04', { role: 's', title: '框选题目', back: true, req: 'SCAN-02', stat
   多道题: () => `${ph('框里有 2 道题', 300)}${err('请只框选一道题')}${go('S-04:框选', '重新框选', 'block')}`,
 }});
 def('S-05', { role: 's', title: '批改中', back: true, req: 'SCAN-03', states: {
-  进行中: () => `${ph('作业原图', 250)}${li('<span class="ok">✓</span> 识别题目：共 10 题')}${li('<span class="warn">…</span> 识别手写作答 6 / 10')}${li('<span class="muted">○ 逐题批改</span>')}<p class="muted">可以离开这个页面，批改会在后台继续，完成后在“我的 › 批改记录”里查看</p>${pri('S-06', '完成（原型）', 'block')}`,
+  进行中: () => `${ph('作业原图', 250)}${li('<span class="ok">✓</span> 识别题目：共 10 题')}${li('<span class="warn">…</span> 识别手写作答 6 / 10')}${li('<span class="muted">○ 逐题批改</span>')}<p class="muted">可以离开这个页面，批改会在后台继续，完成后在“我的 › 批改记录”里查看</p>${pri('S-06', '查看准备结果', 'block')}`,
   照片不清楚: () => `${ph('作业原图', 250)}${err('照片太模糊，没法识别')}<p class="muted">光线充足、手机和纸面平行、把作业放平，再拍一次</p>${go('S-03:作业批改', '重新拍', 'pri block')}`,
   不是作业: () => `${ph('一张风景照', 250)}${err('没有识别到题目')}${go('S-03:作业批改', '重新拍', 'pri block')}`,
   超过20题: () => `${err('这页超过 20 道题，只批改了前 20 道，剩下的请分开拍')}${pri('S-06', '查看结果', 'block')}`,
@@ -508,7 +546,7 @@ def('S-07', { role: 's', title: '批改记录', back: true, req: 'SCAN-04', stat
 }});
 const planRow = (icon, t, s, act, id, done) => `<div class="plan ${done ? 'done' : ''}"><span class="plan-icon">${ic(icon)}</span><div class="plan-copy"><strong>${t}</strong><p>${s}</p></div>${act ? ico(id, act) : ''}</div>`;
 def('S-08', { role: 's', title: '今日', tab: 'today', req: 'HOME', states: {
-  有任务: () => `${sectTop('THOUGHT INTO PRACTICE', '循序，向前。', '让学习有方向，也给思考留余地。')}${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}
+  有任务: () => `${sectTop('', '今天要完成什么', '1 份作业待交 · 6 道错题待复习')}${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}
     <div class="plans-intro"><div class="plan-date"><strong>03</strong><span>DEC</span></div><div><h3>今天的学习任务</h3><span class="muted">完成 1 / 4</span></div></div>
     ${planRow('checklist', '勾股定理练习', '<span class="bad">今晚 20:00 截止</span> · 八年级 3 班 数学', '去完成', 'S-10:未提交')}
     ${planRow('cards', '复习 6 道错题', '勾股定理、浮力等', '去复习', 'S-17:正面')}
@@ -516,8 +554,8 @@ def('S-08', { role: 's', title: '今日', tab: 'today', req: 'HOME', states: {
     ${planRow('check', '二次根式练习', '已提交，等老师批改', '', '', true)}
     <div class="h row between"><span>本周学情</span>${ico('S-23', '查看学情画像')}</div>${stats([['86', '作答题数'], ['74%', '正确率'], ['5', '连续学习天数']])}
     <p class="muted">最弱：勾股定理 48 · 浮力 52 · 定语从句 55</p>
-    <p class="quote">学习不是填满容器，而是让思考发生。</p><div class="q">由旧“学习计划”页改造；Q7：作业并入本 Tab</div>`,
-  全部完成: () => `${sectTop('THOUGHT INTO PRACTICE', '循序，向前。')}${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}<div class="center" style="margin:50px 0 20px"><div class="big">今天的任务都完成了</div><p class="muted">明天有 4 道题要复习</p></div>${go('S-19', '再练一组', 'block')}`,
+    <div class="q">由旧“学习计划”页改造；Q7：作业并入本 Tab</div>`,
+  全部完成: () => `${sectTop('', '今日任务')}${seg(['今日任务', '全部作业'], 0, ['', 'S-09'])}<div class="center" style="margin:50px 0 20px"><div class="big">今天的任务都完成了</div><p class="muted">明天有 4 道题要复习</p></div>${go('S-19', '再练一组', 'block')}`,
 }});
 def('S-09', { role: 's', title: '全部作业', tab: 'today', webTab: 'hw', req: 'HW-02', states: {
   有作业: () => `${S.end === 'sw' ? sectTop('', '作业') : seg(['今日任务', '全部作业'], 1, ['S-08', ''])}
@@ -543,16 +581,16 @@ def('S-12', { role: 's', title: '作业结果', back: true, req: 'GRD-03', state
   ${sectTop('', activeHomework().title, activeHomework().teacher+'已复核发布')}${stats([[S.homework==='main'?REVIEW[0].base+REVIEW[0].score:activeHomework().score, '得分 / 100'], [activeHomework().count, '道题'], ['2', '做错']])}${box('<b>老师评语</b><br>'+(REVIEW[0].comment || '第 3 题先确定斜边，再检查最后一步开方。'), 'gray')}
   ${li('<span class="ok">✓</span> 第 1 题　5 / 5')}${li('<span class="bad">✗</span> 第 3 题　'+(S.homework==='main'?REVIEW[0].score:3)+' / 8', '勾股定理：开方错误 · 查看解析', 'S-14')}${li('<span class="ok">✓</span> 第 4 题　5 / 5')}
   <p class="muted">做错的 2 道题已加入错题本，来源：作业。</p>` }});
-const mcard = (sub, q, tip, stN, stT) => `<div class="mistake"><div><p class="subject">${sub}</p><h3 data-go="S-14">${q}</h3><p class="exp-t">${tip}</p><div class="actions">${ico('S-01:引导式对话中', '讲解')}${ico('S-20:选择题', '变式练习')}</div></div><div class="status"><strong>${stN}</strong>${stT}</div></div>`;
+const mcard = (sub, q, tip, stN, stT) => `<div class="mistake study-card"><div><p class="subject">${sub}</p><h3 data-go="S-14">${q}</h3><p class="exp-t">${tip}</p><div class="actions">${ico('S-01:引导式对话中', '讲解')}${ico('S-20:选择题', '变式练习')}</div></div><div class="status">${stT.replaceAll('<br>',' · ')}</div></div>`;
 def('S-13', { role: 's', title: '错题本', tab: 'mis', topR: ['S-15', '添加'], req: 'MIS-02', states: {
-  有错题: () => `${sectTop('REVISIT & UNDERSTAND', '温故，而知新。', '把每一次未解，变成下一次理解。')}
+  有错题: () => `${sectTop('', '我的错题', '查看题目、复习状态和下次复习时间')}
     <div class="review-strip"><span>今天有 <b>6</b> 道错题要复习</span>${pri('S-17:正面', '开始复习', 'sm')}</div>
     ${filters(['全部', '数学', '物理', '英语'], 0)}<div class="row" style="margin-top:8px">${chips(['知识点', '来源', '状态'], -1)}</div>
     ${mcard('数学 · 勾股定理', '已知 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。', '开方时别忘了化简。', '2', '第 2 次复习<br>明天')}
     ${mcard('物理 · 浮力', '一个木块漂浮在水面上，它受到的浮力和重力有什么关系？', '先画受力图，再列平衡方程。', '1', '待复习<br>3 天后')}
     ${mcard('英语 · 现在完成时', 'I have lived here ___ three years.', 'for 接时间段，since 接时间点。', '✓', '已掌握')}
     <div class="q">Q1：错题右侧由旧设计的“掌握度 %”改为复习状态；掌握度只在学情画像里显示</div>`,
-  空: () => `${sectTop('REVISIT & UNDERSTAND', '温故，而知新。')}<p class="muted" style="margin:40px 0 10px">错题本还是空的。拍照批改一份作业，做错的题可以一键加进来。</p>${go('S-03:作业批改', '拍照批改', 'pri block')}`,
+  空: () => `${sectTop('', '我的错题')}<p class="muted" style="margin:40px 0 10px">错题本还是空的。拍照批改一份作业，做错的题可以一键加进来。</p>${go('S-03:作业批改', '拍照批改', 'pri block')}`,
 }});
 def('S-14', { role: 's', title: '错题详情', back: true, req: 'MIS-03, MIS-04', states: { 默认: () => `
   <p class="subject">数学 · 勾股定理 · 作业 / 拍照批改 · 错过 2 次</p><div class="big" style="font-size:20px;line-height:1.8">在 Rt△ABC 中，∠C=90°，AC=3，BC=4，求 AB 的长。</div>
@@ -563,12 +601,12 @@ def('S-14', { role: 's', title: '错题详情', back: true, req: 'MIS-03, MIS-04
 def('S-15', { role: 's', title: '添加错题', back: true, req: 'MIS-01', states: { 默认: () => `
   ${seg(['拍照录入', '手动输入'], 0)}${ph('拍照框选题目', 120)}${lab('题目')}${inp('', 1)}${lab('我的答案')}${inp('')}${lab('正确答案')}${inp('')}${lab('学科和知识点')}${chips(['数学', '选择知识点'], 0)}${pri('S-14', '保存错题', 'block')}` }});
 def('S-16', { role: 's', title: '复习', tab: 'rev', req: 'REV', states: {
-  有到期: () => `${sectTop('A LITTLE, WELL REMEMBERED', '让知识，留下来。', '慢一点想起，记得更长久。')}
+  有到期: () => `${sectTop('', '今日复习', '先回忆，再核对答案')}
     <div class="review-strip"><span>今天到期 <b>10</b>　6 道错题 · 4 张卡片</span>${pri('S-17:正面', '开始复习', 'sm')}</div>
     ${stats([['32', '本周复习次数'], ['68%', '选“记得”'], ['12', '已掌握'], ['27', '复习中']])}
     ${h('我的卡片组 <span class="tag">加分</span>')}${li('数学 · 二次根式公式', '8 张', 'S-27')}${li('英语 · 现在完成时', '12 张', 'S-27')}<div class="actions">${ico('S-27', 'AI 生成卡片')}</div>
     <div class="q">由旧“知识卡片”Tab 改造：错题和卡片在同一个复习队列</div>`,
-  无到期: () => `${sectTop('A LITTLE, WELL REMEMBERED', '让知识，留下来。')}<div class="center" style="margin:40px 0 16px"><div class="big">今天没有要复习的</div><p class="muted">明天有 4 道题到期</p></div>${go('S-19', '做一组练习', 'block')}`,
+  无到期: () => `${sectTop('', '今日复习')}<div class="center" style="margin:40px 0 16px"><div class="big">今天没有要复习的</div><p class="muted">明天有 4 道题到期</p></div>${go('S-19', '做一组练习', 'block')}`,
 }});
 const rvTop = n => `<div class="rv-progress"><span>今日复习</span><span><strong>${n}</strong> / 10</span></div><div class="rv-line"><span style="width:${n * 10}%"></span></div>`;
 def('S-17', { role: 's', title: '今日复习', back: true, req: 'REV-02', states: {
@@ -765,7 +803,7 @@ const NAV = {
   tp: [['tw', '工作台', 'T-01', 'temple'], ['hw', '作业', 'T-05', 'checklist'], ['ana', '学情', 'T-18', 'chart'], ['me', '我的', 'C-04', 'user']],
 };
 const ENDS = { sp: '学生 · 手机', sw: '学生 · Web', tw: '教师 · Web', tp: '教师 · 手机' };
-const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's', answerSource: 'practice', uploadPages: 2, handwritten: false, homeworkSubmitted: false, homework: 'main', hwFilter: 0, reviewIndex: 0, publishTarget: 'all', knowledge: 0 };
+const S = { end: 'sp', role: 's', page: 'C-01', state: null, exp: false, stack: [], pendingRole: 's', answerSource: 'practice', uploadPages: 2, handwritten: false, homeworkSubmitted: false, homework: 'main', hwFilter: 0, reviewIndex: 0, publishTarget: 'all', knowledge: 0, hideIndex: innerWidth<760, hideNotes: innerWidth<760, designNotes: [] };
 const isPhone = () => S.end === 'sp' || S.end === 'tp';
 const tabOf = p => S.end === 'sw' && p.webTab ? p.webTab : p.tab;
 
@@ -801,6 +839,10 @@ function render() {
       <button class="side-foot" data-go="C-04"><span class="avatar">${who[0]}</span><span style="text-align:left">${who[1]}<span>${who[2]}</span></span></button></aside>
       <div class="main">${expbar}${topbar}<div class="content">${body(p)}</div>${dk}</div></div>`;
   }
+  S.designNotes=[...stage.querySelectorAll('.q')].map(e=>{const text=e.innerText;e.remove();return text});
+  stage.querySelectorAll('.tag').forEach(e=>{if(e.textContent==='加分')e.remove()});
+  const app=document.getElementById('app');app.classList.toggle('index-hidden',S.hideIndex);app.classList.toggle('notes-hidden',S.hideNotes);
+  document.getElementById('review-toolbar').innerHTML=`<span class="muted">雅典娜 · 交互原型</span><button data-panel="index" aria-pressed="${!S.hideIndex}">${S.hideIndex?'显示':'收起'}目录</button><button data-panel="notes" aria-pressed="${!S.hideNotes}">${S.hideNotes?'显示':'收起'}说明</button><button data-preview="1">${S.hideIndex&&S.hideNotes?'恢复评审':'只看页面'}</button>`;
   renderIndex(); renderNotes();
 }
 function renderIndex() {
@@ -818,7 +860,8 @@ function renderNotes() {
   document.getElementById('notes').innerHTML = `<h2>${p.title}</h2><div class="meta">${p.id} · 对应需求 ${p.req}${p.bonus ? ' · 加分项' : ''}</div>
     <div class="ctl-label">页面状态与异常</div><div class="states">${Object.keys(p.states).map(k => `<button class="${k === S.state ? 'on' : ''}" data-state="${k}">${k}</button>`).join('')}</div>
     <div class="ctl-label">本页可以去</div><p>${outs.map(x => `<button class="ico" data-go="${x}">${x}　${P[x].title}</button>`).join('') || '—'}</p>
-    <div class="ctl-label" style="margin-top:20px">说明</div><p>视觉沿用旧项目的雅典娜设计稿。绿色虚线框是设计备注，Q1～Q7 指 03 文档 0.3 节中对旧设计的调整，均已确认。</p>
+    <div class="ctl-label" style="margin-top:20px">演示范围</div><p>使用浏览器内的示例数据，刷新后重置；未连接模型、摄像头和上传服务。评分发布、作业提交等状态在本次演示中联动。</p>
+    ${p.bonus?'<p>此页为加分项，暂展示设计。</p>':''}${S.designNotes.length?'<div class="ctl-label">设计备注</div>'+S.designNotes.map(x=>'<p>'+escapeHTML(x)+'</p>').join(''):''}
     <p>需求和流程见 docs/02-功能需求.md、docs/03-流程与原型.md。</p>`;
 }
 function nav(target, push = true) {
@@ -839,10 +882,12 @@ function setRole(r) {
   if (r === 't' && !S.end.startsWith('t')) S.end = isPhone() ? 'tp' : 'tw';
 }
 document.addEventListener('click', e => {
-  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch],[data-theme-set],[data-capture],[data-submit-answer],[data-hw-filter],[data-review-student],[data-save-review],[data-publish],[data-confirm-publish],[data-knowledge],[data-zoom-answer]');
+  const t = e.target.closest('[data-go],[data-back],[data-state],[data-end],[data-login],[data-exp],[data-expdone],[data-switch],[data-theme-set],[data-capture],[data-submit-answer],[data-hw-filter],[data-review-student],[data-save-review],[data-publish],[data-confirm-publish],[data-knowledge],[data-zoom-answer],[data-panel],[data-preview]');
   if (!t) return;
   const d = t.dataset;
-  if (d.hwFilter !== undefined) { S.hwFilter=Number(d.hwFilter); render(); }
+  if (d.panel) { if(d.panel==='index')S.hideIndex=!S.hideIndex;else S.hideNotes=!S.hideNotes;render(); }
+  else if (d.preview) { const hide=!(S.hideIndex&&S.hideNotes); S.hideIndex=hide;S.hideNotes=hide;render(); }
+  else if (d.hwFilter !== undefined) { S.hwFilter=Number(d.hwFilter); render(); }
   else if (d.reviewStudent !== undefined) { S.reviewIndex=Number(d.reviewStudent); render(); }
   else if (d.saveReview !== undefined) {
     const i=Number(d.saveReview), field=document.getElementById('review-score-'+i);
