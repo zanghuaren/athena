@@ -300,6 +300,59 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/mistakes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Mistakes */
+        get: operations["list_mistakes_api_v1_mistakes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mistakes/batch": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add From Scan */
+        post: operations["add_from_scan_api_v1_mistakes_batch_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/mistakes/{mistake_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Mistake */
+        get: operations["get_mistake_api_v1_mistakes__mistake_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Mistake */
+        delete: operations["delete_mistake_api_v1_mistakes__mistake_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Mistake */
+        patch: operations["update_mistake_api_v1_mistakes__mistake_id__patch"];
+        trace?: never;
+    };
     "/api/v1/jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -698,6 +751,120 @@ export interface components {
              */
             created_at: string;
         };
+        /** MistakeBatchIn */
+        MistakeBatchIn: {
+            /** Scan Id */
+            scan_id: number;
+            /** Seqs */
+            seqs: number[];
+        };
+        /** MistakeBatchOut */
+        MistakeBatchOut: {
+            /** Items */
+            items: components["schemas"]["MistakeOut"][];
+        };
+        /**
+         * MistakeDetail
+         * @description answer、attempt 来自最近一次做错的作答记录；手动添加的没有记录，用 my_answer。
+         */
+        MistakeDetail: {
+            /** Id */
+            id: number;
+            question: components["schemas"]["QuestionOut"];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "ask" | "scan" | "practice" | "homework" | "manual";
+            /** Wrong Count */
+            wrong_count: number;
+            /** Error Reason */
+            error_reason: ("concept" | "calculation" | "reading" | "method" | "careless" | "other") | null;
+            /** Tip */
+            tip: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "reviewing" | "mastered";
+            /** Review Stage */
+            review_stage: number;
+            /** Review Count */
+            review_count: number;
+            /** Next Review On */
+            next_review_on: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Answer */
+            answer: components["schemas"]["ChoiceInput"] | components["schemas"]["JudgeInput"] | components["schemas"]["BlanksInput"] | components["schemas"]["TextInput"] | components["schemas"]["SubInput"] | null;
+            attempt: components["schemas"]["AttemptResult"] | null;
+            /** My Answer */
+            my_answer: string | null;
+            /** Note */
+            note: string | null;
+        };
+        /**
+         * MistakeOut
+         * @description 列表项：复习状态显示为“待复习 / 复习中 · 第 review_count 次 / 已掌握”。
+         */
+        MistakeOut: {
+            /** Id */
+            id: number;
+            question: components["schemas"]["QuestionOut"];
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "ask" | "scan" | "practice" | "homework" | "manual";
+            /** Wrong Count */
+            wrong_count: number;
+            /** Error Reason */
+            error_reason: ("concept" | "calculation" | "reading" | "method" | "careless" | "other") | null;
+            /** Tip */
+            tip: string | null;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "pending" | "reviewing" | "mastered";
+            /** Review Stage */
+            review_stage: number;
+            /** Review Count */
+            review_count: number;
+            /** Next Review On */
+            next_review_on: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** MistakePage */
+        MistakePage: {
+            /** Items */
+            items: components["schemas"]["MistakeOut"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
+        /**
+         * MistakePatch
+         * @description 只改传了的字段；status 为 pending 是把已掌握的题恢复复习。
+         */
+        MistakePatch: {
+            /** Error Reason */
+            error_reason?: ("concept" | "calculation" | "reading" | "method" | "careless" | "other") | null;
+            /** Note */
+            note?: string | null;
+            /** Status */
+            status?: ("mastered" | "pending") | null;
+        };
         /** Option */
         Option: {
             /** Key */
@@ -834,7 +1001,7 @@ export interface components {
         };
         /**
          * ScanItemOut
-         * @description attempt 为空就是“？”：看不清或置信度低，没有判分。
+         * @description attempt 为空就是“？”：看不清或置信度低，没有判分；mistake_id 是已加入错题本的错题。
          */
         ScanItemOut: {
             /** Seq */
@@ -846,6 +1013,8 @@ export interface components {
             /** Answer */
             answer: components["schemas"]["ChoiceInput"] | components["schemas"]["JudgeInput"] | components["schemas"]["BlanksInput"] | components["schemas"]["TextInput"] | components["schemas"]["SubInput"] | null;
             attempt: components["schemas"]["AttemptResult"] | null;
+            /** Mistake Id */
+            mistake_id: number | null;
         };
         /** ScanOut */
         ScanOut: {
@@ -1692,6 +1861,171 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ScanItemOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_mistakes_api_v1_mistakes_get: {
+        parameters: {
+            query?: {
+                subject?: ("math" | "physics" | "english") | null;
+                knowledge_point_id?: number | null;
+                source?: ("ask" | "scan" | "practice" | "homework" | "manual") | null;
+                status?: ("pending" | "reviewing" | "mastered") | null;
+                sort?: "recent" | "wrong_count";
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MistakePage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_from_scan_api_v1_mistakes_batch_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MistakeBatchIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MistakeBatchOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_mistake_api_v1_mistakes__mistake_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mistake_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MistakeDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_mistake_api_v1_mistakes__mistake_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mistake_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_mistake_api_v1_mistakes__mistake_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                mistake_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MistakePatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MistakeDetail"];
                 };
             };
             /** @description Validation Error */

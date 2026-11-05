@@ -163,6 +163,8 @@ async def test_add_from_scan(client, student, teacher, fake_tip):
     assert (first["error_reason"], third["error_reason"]) == ("calculation", "method")
     assert first["question"]["answer"] == {"blanks": [["7"]]}
     assert len(fake_tip) == 2
+    scan = (await client.get(f"/api/v1/scans/{scan_id}", headers=student)).json()
+    assert [i["mistake_id"] for i in scan["items"]] == [first["id"], None, third["id"], None]
 
     # 再加一次不重复入本，也不重置复习进度和笔记
     resp = await client.patch(

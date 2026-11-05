@@ -12,6 +12,8 @@ import { Pending } from './pages/common/Pending';
 import { Register } from './pages/common/Register';
 import { Settings } from './pages/common/Settings';
 import { Chat } from './pages/student/Chat';
+import { MistakeDetail } from './pages/student/MistakeDetail';
+import { Mistakes } from './pages/student/Mistakes';
 import { Scan } from './pages/student/Scan';
 import { ScanCrop } from './pages/student/ScanCrop';
 import { ScanHistory } from './pages/student/ScanHistory';
@@ -89,7 +91,8 @@ export const router = createBrowserRouter([
       page('scans/:scanId/progress', '批改中', <ScanProgress />, true),
       page('today', '今日'),
       page('homework', '全部作业'),
-      page('mistakes', '错题本'),
+      page('mistakes', '错题本', <Mistakes />),
+      page('mistakes/:mistakeId', '错题详情', <MistakeDetail />, true),
       page('review', '复习'),
       page('profile', '学情画像'),
       page('me', '我的', <Me />),

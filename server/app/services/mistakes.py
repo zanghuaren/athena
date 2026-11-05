@@ -138,6 +138,16 @@ async def _tip(
         return None
 
 
+async def of_questions(db: AsyncSession, user: User, question_ids: list[int]) -> dict[int, int]:
+    """这些题里已经在错题本里的：题目 ID → 错题 ID。"""
+    rows = await db.execute(
+        select(Mistake.question_id, Mistake.id).where(
+            Mistake.student_id == user.id, Mistake.question_id.in_(question_ids)
+        )
+    )
+    return dict(rows.tuples().all())
+
+
 async def list_page(
     db: AsyncSession,
     user: User,

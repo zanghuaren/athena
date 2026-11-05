@@ -55,3 +55,20 @@ export function userSummary(user: User): string {
   const grades = (user.teach_grades ?? []).map((g) => GRADE_LABELS[g]).join('、');
   return `${subjects} · ${grades}`;
 }
+
+type Mistake = components['schemas']['MistakeOut'];
+
+export const MISTAKE_SOURCE_LABELS: Record<Mistake['source'], string> = {
+  homework: '作业',
+  scan: '拍照批改',
+  ask: '答疑',
+  practice: '练习',
+  manual: '手动添加',
+};
+
+/** 错题的复习状态（MIS-02）：待复习 / 复习中 · 第 N 次 / 已掌握。 */
+export function mistakeStatusText(mistake: Pick<Mistake, 'status' | 'review_count'>): string {
+  if (mistake.status === 'mastered') return '已掌握';
+  if (mistake.status === 'reviewing') return `复习中 · 第 ${mistake.review_count} 次`;
+  return '待复习';
+}

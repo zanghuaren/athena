@@ -1,9 +1,10 @@
 // S-06 批改结果（SCAN-03）：汇总、原图标注、逐题结果；修改识别结果重批、“？”题自己确认、讲解这道题
 import { useEffect, useEffectEvent, useState } from 'react';
-import { Navigate, useNavigate, useParams } from 'react-router';
+import { Link, Navigate, useNavigate, useParams } from 'react-router';
 import type { Question } from '../../api/client';
 import { fileUrl } from '../../api/files';
 import { useJob } from '../../api/jobs';
+import { useAddFromScan } from '../../api/mistakes';
 import {
   useConfirm,
   useRefreshScan,
@@ -15,9 +16,9 @@ import {
 import { Button } from '../../components/Button';
 import type { ScannedQuestion } from '../../components/ChatView';
 import { ChoiceChips } from '../../components/ChoiceChips';
-import { Markdown } from '../../components/Markdown';
 import { Notice } from '../../components/Notice';
-import { AnswerText, QuestionView } from '../../components/QuestionView';
+import { AnswerText, QuestionView, StudentAnswerText } from '../../components/QuestionView';
+import { answerText, explainText } from '../../lib/answers';
 import { ERROR_REASON_LABELS } from '../../lib/labels';
 import fieldStyles from '../../components/Field.module.css';
 import styles from './ScanResult.module.css';
@@ -80,7 +81,39 @@ export function ScanResult() {
       {items.map((item) => (
         <ItemCard key={item.seq} scanId={id} item={item} />
       ))}
+      <AddAll scanId={id} items={items} />
     </>
+  );
+}
+
+const isWrong = (item: ScanItem) =>
+  item.attempt?.result === 'wrong' || item.attempt?.result === 'partial';
+
+/** 原型 S-06 底部“把 N 道错题加入错题本”；部分对也算错题。 */
+function AddAll({ scanId, items }: { scanId: number; items: ScanItem[] }) {
+  const add = useAddFromScan(scanId);
+  const wrong = items.filter(isWrong);
+  const left = wrong.filter((i) => i.mistake_id == null);
+  if (wrong.length === 0) return null;
+  if (left.length === 0) {
+    return (
+      <p className={styles.added}>
+        做错的题都已加入错题本 <Link to="/student/mistakes">去错题本</Link>
+      </p>
+    );
+  }
+  return (
+    <div className={styles.addAll}>
+      {add.error && <Notice tone="error">{add.error.message}</Notice>}
+      <Button
+        variant="primary"
+        block
+        disabled={add.isPending}
+        onClick={() => add.mutate(left.map((i) => i.seq))}
+      >
+        {add.isPending ? '正在加入…' : `把 ${left.length} 道错题加入错题本`}
+      </Button>
+    </div>
   );
 }
 
@@ -98,6 +131,7 @@ function markOf(item: ScanItem): Mark {
 function ItemCard({ scanId, item }: { scanId: number; item: ScanItem }) {
   const navigate = useNavigate();
   const confirm = useConfirm(scanId, item.seq);
+  const add = useAddFromScan(scanId);
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
   const [regradeJob, setRegradeJob] = useState<number | null>(null);
@@ -106,7 +140,11 @@ function ItemCard({ scanId, item }: { scanId: number; item: ScanItem }) {
   const unsure = !attempt;
 
   function explain() {
-    const ask: ScannedQuestion = { content: explainText(item), subject: question.subject };
+    const mine = item.answer ? answerText(item.answer) : '（没有识别出来）';
+    const ask: ScannedQuestion = {
+      content: explainText(question, mine),
+      subject: question.subject,
+    };
     navigate('/student', { state: { ask } });
   }
 
@@ -129,7 +167,7 @@ function ItemCard({ scanId, item }: { scanId: number; item: ScanItem }) {
         <p className={styles.line}>
           <span>你的作答</span>
           {item.answer ? (
-            <AnswerOf answer={item.answer} />
+            <StudentAnswerText answer={item.answer} />
           ) : (
             <span className={styles.muted}>没有看清你的作答</span>
           )}
@@ -150,6 +188,7 @@ function ItemCard({ scanId, item }: { scanId: number; item: ScanItem }) {
         )}
         {unsure && <p className={styles.reason}>识别或判断没有把握，请核对后确认对错</p>}
         {confirm.error && <Notice tone="error">{confirm.error.message}</Notice>}
+        {add.error && <Notice tone="error">{add.error.message}</Notice>}
         {regradeJob !== null ? (
           <RegradeProgress
             scanId={scanId}
@@ -172,6 +211,21 @@ function ItemCard({ scanId, item }: { scanId: number; item: ScanItem }) {
               <Button variant="link" onClick={explain}>
                 讲解这道题
               </Button>
+            )}
+            {item.mistake_id != null ? (
+              <Link className={styles.inBook} to={`/student/mistakes/${item.mistake_id}`}>
+                已在错题本
+              </Link>
+            ) : (
+              isWrong(item) && (
+                <Button
+                  variant="link"
+                  disabled={add.isPending}
+                  onClick={() => add.mutate([item.seq])}
+                >
+                  {add.isPending ? '正在加入…' : '加入错题本'}
+                </Button>
+              )
             )}
             <Button variant="link" disabled={confirm.isPending} onClick={() => setEditing(true)}>
               修改识别结果
@@ -439,43 +493,4 @@ function emptyAnswer(question: Question): StudentAnswer {
     return { sub: content.sub_questions.map((s) => ({ seq: s.seq, ...emptyPart(s) })) };
   }
   return emptyPart({ type: question.type, blank_count: content.blank_count }) as StudentAnswer;
-}
-
-function AnswerOf({ answer }: { answer: StudentAnswer }) {
-  const text = answerText(answer);
-  return 'text' in answer ? <Markdown text={text} /> : <Markdown inline text={text} />;
-}
-
-function answerText(answer: StudentAnswer): string {
-  if ('text' in answer) return answer.text || '没有作答';
-  if ('sub' in answer) return answer.sub.map((p) => `${p.seq}. ${partText(p)}`).join('；');
-  return partText(answer);
-}
-
-function partText(part: Part): string {
-  if (part.choice) return part.choice.join('、') || '没有作答';
-  if (part.blanks) {
-    const blanks = part.blanks.map((b) => b || '（空）');
-    return blanks.length > 1 ? blanks.map((b, i) => `(${i + 1}) ${b}`).join('；') : blanks[0];
-  }
-  return part.judge == null ? '没有作答' : part.judge ? '正确' : '错误';
-}
-
-const MAX_ASK_LENGTH = 1000;
-
-/** “讲解这道题”发给答疑的文字：题目和学生的作答，太长时截掉题目的末尾。 */
-function explainText(item: ScanItem): string {
-  const { content } = item.question;
-  const parts = [`帮我讲讲这道题：\n\n${content.stem}`];
-  if (content.material) parts.push(content.material);
-  if (content.options) parts.push(content.options.map((o) => `${o.key}. ${o.text}`).join('\n'));
-  for (const sub of content.sub_questions ?? []) {
-    const options = sub.options?.map((o) => `${o.key}. ${o.text}`).join('　') ?? '';
-    parts.push(`${sub.seq}. ${sub.stem} ${options}`.trim());
-  }
-  const mine = `我的作答：${item.answer ? answerText(item.answer) : '（没有识别出来）'}`;
-  return `${parts.join('\n\n').slice(0, MAX_ASK_LENGTH - mine.length - 2)}\n\n${mine}`.slice(
-    0,
-    MAX_ASK_LENGTH,
-  );
 }

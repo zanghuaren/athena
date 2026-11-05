@@ -20,7 +20,7 @@ from app.schemas.scan import (
     ScanOut,
     ScanPage,
 )
-from app.services import files, scans
+from app.services import files, mistakes, scans
 
 router = APIRouter(tags=["拍照识题与批改"])
 
@@ -53,7 +53,8 @@ async def list_scans(
 async def get_scan(db: DB, user: CurrentStudent, scan_id: int) -> ScanDetail:
     scan = await scans.get_owned(db, user, scan_id)
     items = await scans.items_of(db, scan.id)
-    return ScanDetail(**_scan_out(scan).model_dump(), items=[_item_out(i) for i in items])
+    added = await mistakes.of_questions(db, user, [i.question_id for i in items])
+    return ScanDetail(**_scan_out(scan).model_dump(), items=[_item_out(i, added) for i in items])
 
 
 @router.post("/scans/{scan_id}/items/{seq}/regrade", status_code=status.HTTP_202_ACCEPTED)
@@ -70,7 +71,7 @@ async def confirm_item(
 ) -> ScanItemOut:
     await scans.confirm(db, user, scan_id, seq, body.result)
     item = next(i for i in await scans.items_of(db, scan_id) if i.seq == seq)
-    return _item_out(item)
+    return _item_out(item, await mistakes.of_questions(db, user, [item.question_id]))
 
 
 def _scan_out(scan: Scan) -> ScanOut:
@@ -89,7 +90,7 @@ def _scan_out(scan: Scan) -> ScanOut:
     )
 
 
-def _item_out(item: ScanItem) -> ScanItemOut:
+def _item_out(item: ScanItem, added: dict[int, int]) -> ScanItemOut:
     # 拍照批改的题是学生自己的，批改完就能看答案和解析
     return ScanItemOut(
         seq=item.seq,
@@ -98,4 +99,5 @@ def _item_out(item: ScanItem) -> ScanItemOut:
         question=QuestionOut.model_validate(item.question),
         answer=item.answer,
         attempt=AttemptResult.model_validate(item.attempt) if item.attempt else None,
+        mistake_id=added.get(item.question_id),
     )

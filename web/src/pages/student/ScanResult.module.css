@@ -102,6 +102,22 @@
   margin: 10px 0 0;
 }
 
+.inBook {
+  font-size: 13px;
+  color: var(--olive);
+}
+
+.addAll {
+  margin: 20px 0 8px;
+}
+
+.added {
+  margin: 20px 0 8px;
+  font-size: 13px;
+  text-align: center;
+  color: var(--muted);
+}
+
 .status {
   font-size: 11px;
   text-align: right;

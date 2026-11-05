@@ -1,5 +1,8 @@
+import type { ReactNode } from 'react';
 import type { components } from '../api/schema';
 import type { Question } from '../api/client';
+import type { StudentAnswer } from '../api/scans';
+import { answerText } from '../lib/answers';
 import { QUESTION_TYPE_LABELS } from '../lib/labels';
 import { Markdown } from './Markdown';
 import styles from './QuestionView.module.css';
@@ -10,9 +13,9 @@ type SubAnswerItem = components['schemas']['SubAnswerItem'];
 
 /**
  * 只读展示一道题（KP-03）。答案、解析、评分要点由接口决定是否返回，返回了才显示。
- * 作答控件由练习、作业等页面自己放在下面。
+ * 作答控件由练习、作业等页面自己放在下面；children 放在题目和参考答案之间（如错题的“我的作答”）。
  */
-export function QuestionView({ question }: { question: Question }) {
+export function QuestionView({ question, children }: { question: Question; children?: ReactNode }) {
   const { content } = question;
   return (
     <article className={styles.question}>
@@ -36,6 +39,7 @@ export function QuestionView({ question }: { question: Question }) {
           ))}
         </ol>
       )}
+      {children}
       {question.answer && (
         <section className={styles.section}>
           <h4>参考答案</h4>
@@ -86,6 +90,12 @@ function Options({ options }: { options: Option[] }) {
       ))}
     </ul>
   );
+}
+
+/** 学生的作答；解答题按 Markdown 分段显示，其余显示成一行。 */
+export function StudentAnswerText({ answer }: { answer: StudentAnswer }) {
+  const text = answerText(answer);
+  return 'text' in answer ? <Markdown text={text} /> : <Markdown inline text={text} />;
 }
 
 /** 参考答案；批改结果里“正确答案”也用它。 */

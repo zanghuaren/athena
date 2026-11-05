@@ -188,7 +188,7 @@ class ScanPage(BaseModel):
 
 
 class ScanItemOut(BaseModel):
-    """attempt 为空就是“？”：看不清或置信度低，没有判分。"""
+    """attempt 为空就是“？”：看不清或置信度低，没有判分；mistake_id 是已加入错题本的错题。"""
 
     seq: int
     bbox: BBox
@@ -196,6 +196,7 @@ class ScanItemOut(BaseModel):
     question: QuestionOut
     answer: StudentAnswer | None
     attempt: AttemptResult | None
+    mistake_id: int | None
 
 
 class ScanDetail(ScanOut):
