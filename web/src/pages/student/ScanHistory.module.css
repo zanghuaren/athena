@@ -1,0 +1,29 @@
+.row {
+  display: block;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.row:hover b {
+  color: var(--clay);
+}
+
+.row b {
+  display: block;
+  font-size: 14px;
+  font-weight: 400;
+}
+
+.row span {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.empty p {
+  margin: 60px 0 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}

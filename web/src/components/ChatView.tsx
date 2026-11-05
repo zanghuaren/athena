@@ -38,8 +38,11 @@ const ACTION_LABELS: Record<NonNullable<Message['action']>, string> = {
   example: '举个例子',
 };
 
-/** S-04 确认后带回对话页的题目，进入页面后自动发出（SCAN-02）。 */
-export type ScannedQuestion = { content: string; image: FileOut; subject: NonNullable<Subject> };
+/**
+ * 带回对话页、进入页面后自动发出的题目：S-04 确认的题目带框选的图（SCAN-02），
+ * S-06“讲解这道题”只有文字（SCAN-03）。
+ */
+export type ScannedQuestion = { content: string; image?: FileOut; subject: NonNullable<Subject> };
 
 /** 正在生成或刚停止的消息先放在本地；正常结束后以服务端为准。 */
 type Local = { conversationId: number; messages: Message[] };
@@ -108,7 +111,7 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
     if (conversation && conversation.subject !== q.subject) {
       await patch.mutateAsync({ id: conversation.id, subject: q.subject });
     }
-    await send({ content: q.content, image_file_id: q.image.id }, q);
+    await send({ content: q.content, image_file_id: q.image?.id }, q);
   });
   useEffect(() => {
     if (!scanned || !ready || scannedSent.current) return;

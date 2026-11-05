@@ -95,3 +95,10 @@ span.album {
   outline: 2px solid var(--focus);
   outline-offset: 2px;
 }
+
+.uploading {
+  margin-top: 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}

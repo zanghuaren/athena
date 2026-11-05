@@ -1,4 +1,4 @@
-// C-04 我的（ME）。班级、学情等入口随对应模块开发时补上
+// C-04 我的（ME）。班级、学情、练习记录等入口随对应模块开发时补上
 import { Link } from 'react-router';
 import { useCurrentUser } from '../../components/AppShell';
 import { Icon } from '../../components/Icon';
@@ -18,6 +18,18 @@ export function Me() {
           <span>{userSummary(user)}</span>
         </div>
       </div>
+      {user.role === 'student' && (
+        <>
+          <div className={styles.group}>学习</div>
+          <Link to="/student/scans" className={styles.link}>
+            <span>
+              <span className={styles.title}>批改记录</span>
+              <span className={styles.desc}>拍照批改过的作业</span>
+            </span>
+            <Icon name="right" className={styles.chevron} />
+          </Link>
+        </>
+      )}
       <div className={styles.group}>其他</div>
       <Link to="settings" className={styles.link}>
         <span>

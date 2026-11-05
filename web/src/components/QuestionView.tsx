@@ -88,7 +88,8 @@ function Options({ options }: { options: Option[] }) {
   );
 }
 
-function AnswerText({ answer }: { answer: Answer }) {
+/** 参考答案；批改结果里“正确答案”也用它。 */
+export function AnswerText({ answer }: { answer: Answer }) {
   if ('sub' in answer) {
     return (
       <ol className={styles.answerList}>

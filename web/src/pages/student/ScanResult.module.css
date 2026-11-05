@@ -1,0 +1,149 @@
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 12px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.stats > div {
+  display: flex;
+  flex-direction: column-reverse;
+  padding: 12px 10px;
+  border-left: 1px solid var(--line);
+}
+
+.stats > div:first-child {
+  padding-left: 0;
+  border-left: 0;
+}
+
+.stats dt {
+  font-size: 11px;
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 0;
+  font: 400 24px/1.3 var(--latin);
+  color: var(--ink);
+}
+
+/* 标注按坐标框定位，图片按比例缩放时位置跟着走 */
+.photo {
+  position: relative;
+  max-width: 560px;
+  margin: 12px auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.photo img {
+  display: block;
+  width: 100%;
+}
+
+.pin {
+  position: absolute;
+  min-width: 26px;
+  height: 26px;
+  padding: 0 6px;
+  transform: translate(-100%, 0);
+  border: 0;
+  border-radius: 13px;
+  background: var(--surface);
+  box-shadow: 0 1px 4px #3f2b1733;
+  font: 600 14px/26px var(--latin);
+  cursor: pointer;
+}
+
+.item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 18px;
+  padding: 20px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.subject {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  color: var(--clay);
+}
+
+.line {
+  display: flex;
+  gap: 10px;
+  margin: 6px 0;
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.line > span:first-child {
+  flex: none;
+  font-size: 12px;
+  line-height: 25px;
+  color: var(--muted);
+}
+
+.reason {
+  margin: 6px 0;
+  font-size: 13px;
+  line-height: 1.8;
+  color: var(--muted);
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 10px 0 0;
+}
+
+.status {
+  font-size: 11px;
+  text-align: right;
+}
+
+.status strong {
+  display: block;
+  font: 400 22px/1.3 var(--latin);
+}
+
+.form {
+  margin-top: 10px;
+  padding: 4px 12px 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+}
+
+.area {
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.formBar {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.ok {
+  color: var(--olive);
+}
+
+.bad {
+  color: var(--danger);
+}
+
+.warn {
+  color: var(--ochre);
+}
+
+.muted {
+  color: var(--muted);
+}

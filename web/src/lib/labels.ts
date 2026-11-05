@@ -1,4 +1,5 @@
 import type { Question, User } from '../api/client';
+import type { components } from '../api/schema';
 
 type Subject = NonNullable<User['preferred_subject']>;
 type Grade = NonNullable<User['grade']>;
@@ -24,6 +25,17 @@ export const QUESTION_TYPE_LABELS: Record<Question['type'], string> = {
   cloze: '完形填空',
   reading: '阅读理解',
   essay: '作文',
+};
+
+type ErrorReason = NonNullable<components['schemas']['AttemptResult']['error_reason']>;
+
+export const ERROR_REASON_LABELS: Record<ErrorReason, string> = {
+  concept: '概念不清',
+  calculation: '计算失误',
+  reading: '审题错误',
+  method: '方法不当',
+  careless: '粗心',
+  other: '其他',
 };
 
 export const SUBJECT_OPTIONS = Object.entries(SUBJECT_LABELS).map(([value, label]) => ({

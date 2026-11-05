@@ -1,0 +1,68 @@
+.photo {
+  display: block;
+  width: 100%;
+  height: 250px;
+  margin: 8px 0;
+  object-fit: contain;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface-alt);
+}
+
+.stages {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.stages li {
+  display: flex;
+  gap: 10px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+  color: var(--muted);
+}
+
+.stages span {
+  width: 1em;
+  text-align: center;
+}
+
+.done {
+  color: var(--ink);
+}
+
+.done span {
+  color: var(--olive);
+}
+
+.stages .now {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.now span {
+  color: var(--ochre);
+}
+
+.bar {
+  height: 4px;
+  margin: 16px 0 0;
+  overflow: hidden;
+  border-radius: 2px;
+  background: var(--surface-alt);
+}
+
+.bar i {
+  display: block;
+  height: 100%;
+  background: var(--olive);
+  transition: width 0.4s;
+}
+
+.hint {
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--muted);
+}
