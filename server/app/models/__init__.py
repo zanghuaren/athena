@@ -2,6 +2,7 @@
 from app.models.base import Base
 from app.models.conversation import Conversation, Message
 from app.models.file import File
+from app.models.job import Job
 from app.models.knowledge import Chapter, KnowledgePoint
 from app.models.question import Question, QuestionKnowledgePoint
 from app.models.user import Session, User
@@ -11,6 +12,7 @@ __all__ = [
     "Chapter",
     "Conversation",
     "File",
+    "Job",
     "KnowledgePoint",
     "Message",
     "Question",
