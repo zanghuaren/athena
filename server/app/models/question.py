@@ -18,7 +18,9 @@ class Question(IdMixin, TimestampMixin, Base):
             name="type",
         ),
         CheckConstraint("difficulty BETWEEN 1 AND 5", name="difficulty"),
-        CheckConstraint("source IN ('preset', 'scan', 'ai', 'teacher', 'manual')", name="source"),
+        CheckConstraint(
+            "source IN ('preset', 'scan', 'ask', 'ai', 'teacher', 'manual')", name="source"
+        ),
     )
 
     subject: Mapped[str] = mapped_column(Text)

@@ -116,3 +116,30 @@ export function useAddFromScan(scanId: number) {
       ]),
   });
 }
+
+export type QuestionDraft = components['schemas']['QuestionDraft'];
+type MistakeIn = components['schemas']['AskMistakeIn'] | components['schemas']['ManualMistakeIn'];
+
+/** ASK-05：从这条讲解里提取题目，给学生确认。 */
+export function useExtractQuestion() {
+  return useMutation({
+    mutationFn: (messageId: number) =>
+      unwrap(
+        api.POST('/api/v1/messages/{message_id}/extract-question', {
+          params: { path: { message_id: messageId } },
+        }),
+      ),
+  });
+}
+
+/** 答疑里确认过的题、手动添加的题加入错题本。 */
+export function useAddMistake() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: MistakeIn) => unwrap(api.POST('/api/v1/mistakes', { body })),
+    onSuccess: (data) => {
+      queryClient.setQueryData(detailKey(data.id), data);
+      return queryClient.invalidateQueries({ queryKey: LIST_KEY });
+    },
+  });
+}

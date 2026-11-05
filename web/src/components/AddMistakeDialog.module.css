@@ -1,0 +1,46 @@
+.dialog {
+  width: min(92vw, 520px);
+  max-height: 86vh;
+  padding: 8px 20px 16px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--paper);
+  color: var(--ink);
+}
+
+.dialog::backdrop {
+  background: #0008;
+}
+
+.dialog h3 {
+  margin: 12px 0 4px;
+  font: 500 18px var(--serif);
+}
+
+.area {
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.option {
+  margin: 4px 0;
+  font-size: 14px;
+}
+
+.answer {
+  font-size: 14px;
+  line-height: 1.8;
+}
+
+.muted {
+  margin: 10px 0 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 16px;
+}

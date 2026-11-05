@@ -17,12 +17,16 @@ type SubAnswerItem = components['schemas']['SubAnswerItem'];
  */
 export function QuestionView({ question, children }: { question: Question; children?: ReactNode }) {
   const { content } = question;
+  // 学生手动添加的错题只有自己填的题目和答案，题型、难度、评分要点、解析都是占位，不显示
+  const manual = question.source === 'manual';
   return (
     <article className={styles.question}>
-      <p className={styles.meta}>
-        {QUESTION_TYPE_LABELS[question.type]} · 难度 {question.difficulty}
-        {question.source === 'ai' && ' · AI 生成'}
-      </p>
+      {!manual && (
+        <p className={styles.meta}>
+          {QUESTION_TYPE_LABELS[question.type]} · 难度 {question.difficulty}
+          {question.source === 'ai' && ' · AI 生成'}
+        </p>
+      )}
       <Markdown text={content.stem} className={styles.stem} />
       {content.material && <Markdown text={content.material} className={styles.material} />}
       {content.options && <Options options={content.options} />}
@@ -46,7 +50,7 @@ export function QuestionView({ question, children }: { question: Question; child
           <AnswerText answer={question.answer} />
         </section>
       )}
-      {question.scoring_points && (
+      {question.scoring_points && !manual && (
         <section className={styles.section}>
           <h4>评分要点</h4>
           <ul className={styles.points}>
@@ -59,7 +63,7 @@ export function QuestionView({ question, children }: { question: Question; child
           </ul>
         </section>
       )}
-      {question.analysis && (
+      {question.analysis && !manual && (
         <section className={styles.section}>
           <h4>解析</h4>
           <div className={styles.steps}>

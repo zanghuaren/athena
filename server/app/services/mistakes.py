@@ -4,6 +4,7 @@ import asyncio
 import json
 import logging
 from datetime import date, datetime, timedelta, timezone
+from typing import get_args
 
 from sqlalchemy import exists, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,9 +14,31 @@ from sqlalchemy.sql import Select
 from app.ai import prompts
 from app.ai.client import Model, complete_json
 from app.errors import AppError
-from app.models import Attempt, Mistake, Question, QuestionKnowledgePoint, Scan, ScanItem, User
-from app.schemas.mistake import MistakePatch, MistakeTip
-from app.services import grading
+from app.models import (
+    Attempt,
+    Chapter,
+    Conversation,
+    KnowledgePoint,
+    Message,
+    Mistake,
+    Question,
+    QuestionKnowledgePoint,
+    Scan,
+    ScanItem,
+    User,
+)
+from app.schemas.knowledge import KnowledgePointBrief
+from app.schemas.mistake import (
+    AskMistakeIn,
+    Extracted,
+    ManualMistakeIn,
+    MistakePatch,
+    MistakeTip,
+    QuestionDraft,
+)
+from app.schemas.question import QuestionBody
+from app.schemas.user import Subject
+from app.services import grading, knowledge, questions
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +126,179 @@ async def add_from_scan(
     return sorted(result, key=lambda m: order[m.question_id])
 
 
+# ---- 答疑加入、手动添加 ----
+
+# 提取题目时带上的最近几条消息：引导式讲解里，原题常在几轮之前
+_CONTEXT_MESSAGES = 8
+
+
+async def _owned_reply(
+    db: AsyncSession, user: User, message_id: int
+) -> tuple[Message, Conversation]:
+    row = (
+        await db.execute(
+            select(Message, Conversation)
+            .join(Conversation)
+            .where(
+                Message.id == message_id,
+                Message.role == "assistant",
+                Conversation.user_id == user.id,
+            )
+        )
+    ).first()
+    if row is None:
+        raise AppError(404, "NOT_FOUND", "消息不存在或已被删除")
+    message, conversation = row
+    return message, conversation
+
+
+async def extract_question(
+    db: AsyncSession, user: User, message_id: int
+) -> tuple[QuestionDraft, int | None]:
+    """从这条讲解所在的对话里提取题目（MODEL_FAST），交给学生确认；不入库。
+
+    这条讲解已经提取过（加入过错题本）时直接返回那道题和对应的错题。
+    """
+    message, conversation = await _owned_reply(db, user, message_id)
+    if message.question_id is not None:
+        question = await db.scalar(
+            select(Question)
+            .where(Question.id == message.question_id)
+            .options(selectinload(Question.knowledge_points))
+        )
+        added = await of_questions(db, user, [question.id])
+        draft = QuestionDraft(
+            **grading.question_body(question).model_dump(),
+            subject=question.subject,
+            knowledge_points=question.knowledge_points,
+        )
+        return draft, added.get(question.id)
+
+    history = list(
+        await db.scalars(
+            select(Message)
+            .where(
+                Message.conversation_id == conversation.id,
+                Message.id <= message.id,
+                Message.status != "blocked",
+            )
+            .order_by(Message.id.desc())
+            .limit(_CONTEXT_MESSAGES)
+        )
+    )[::-1]
+    subjects = [conversation.subject] if conversation.subject else list(get_args(Subject))
+    catalogs = {s: await knowledge.catalog(db, s) for s in subjects}
+    dialog = [f"更早的对话摘要：{conversation.summary}"] if conversation.summary else []
+    dialog += [f"{'学生' if m.role == 'user' else 'AI 助教'}：{m.content}" for m in history]
+    points = "\n\n".join(
+        f"{s}：\n" + "\n".join(f"{code} {name}" for code, (_, name) in c.items())
+        for s, c in catalogs.items()
+    )
+    messages = [
+        {
+            "role": "system",
+            "content": f"{prompts.load('mistakes/extract')}\n\n{prompts.load('format')}",
+        },
+        {"role": "user", "content": "\n\n".join(dialog) + f"\n\n知识点目录：\n{points}"},
+    ]
+    extracted = await complete_json(
+        "mistake_extract",
+        Model.FAST,
+        messages,
+        Extracted,
+        context={"codes": {s: set(c) for s, c in catalogs.items()}},
+    )
+    if extracted.status == "none":
+        raise AppError(400, "NO_QUESTION_FOUND", "这段讲解里没有找到具体的题目")
+    found = {
+        p.code: p
+        for p in await db.scalars(
+            select(KnowledgePoint).where(KnowledgePoint.code.in_(extracted.knowledge_points))
+        )
+    }
+    draft = QuestionDraft(
+        **extracted.question.model_dump(),
+        subject=extracted.subject,
+        knowledge_points=[
+            KnowledgePointBrief.model_validate(found[c]) for c in extracted.knowledge_points
+        ],
+    )
+    return draft, None
+
+
+async def add(db: AsyncSession, user: User, body: AskMistakeIn | ManualMistakeIn) -> Mistake:
+    """答疑里确认过的题、手动添加的题加入错题本；同一道题已经在本里时不改动。"""
+    my_answer = None
+    if isinstance(body, AskMistakeIn):
+        message, _ = await _owned_reply(db, user, body.message_id)
+        if message.question_id is None:
+            data = body.question
+            content = QuestionBody.model_validate(
+                data.model_dump(exclude={"subject", "knowledge_point_ids"})
+            )
+            question = await _create_question(
+                db, user, "ask", data.subject, content, data.knowledge_point_ids
+            )
+            message.question_id = question.id
+        else:
+            question = await db.get_one(Question, message.question_id)
+    else:
+        content = QuestionBody(
+            type="solution",
+            content={"stem": body.stem},
+            answer={"text": body.answer},
+            analysis=[{"title": "参考答案", "body": body.answer}],
+            scoring_points=[{"point": "答案正确", "score": 1}],
+            difficulty=3,
+        )
+        question = await _create_question(
+            db, user, "manual", body.subject, content, body.knowledge_point_ids
+        )
+        my_answer = body.my_answer.strip() or None
+
+    mistake = await db.scalar(
+        select(Mistake).where(Mistake.student_id == user.id, Mistake.question_id == question.id)
+    )
+    if mistake is None:
+        made = await _tip(question, None, my_answer)
+        mistake = Mistake(
+            student_id=user.id,
+            question_id=question.id,
+            source=body.source,
+            my_answer=my_answer,
+            error_reason=made and made.error_reason,
+            tip=made and made.tip,
+        )
+        _restart(mistake)
+        db.add(mistake)
+    await db.commit()
+    return await get_owned(db, user, mistake.id)
+
+
+async def _create_question(
+    db: AsyncSession,
+    user: User,
+    source: str,
+    subject: str,
+    body: QuestionBody,
+    point_ids: list[int],
+) -> Question:
+    found = set(
+        await db.scalars(
+            select(KnowledgePoint.id)
+            .join(Chapter)
+            .where(KnowledgePoint.id.in_(point_ids), Chapter.subject == subject)
+        )
+    )
+    if found != set(point_ids):
+        raise AppError(400, "VALIDATION_ERROR", "知识点不存在或不属于这个学科")
+    question = Question(subject=subject, source=source, owner_id=user.id, **questions.columns(body))
+    db.add(question)
+    await db.flush()
+    questions.link_points(db, question.id, point_ids)
+    return question
+
+
 async def _tip(
     question: Question, attempt: Attempt | None, my_answer: str | None = None
 ) -> MistakeTip | None:
@@ -145,7 +341,7 @@ async def of_questions(db: AsyncSession, user: User, question_ids: list[int]) ->
             Mistake.student_id == user.id, Mistake.question_id.in_(question_ids)
         )
     )
-    return dict(rows.tuples().all())
+    return {question_id: mistake_id for question_id, mistake_id in rows}
 
 
 async def list_page(

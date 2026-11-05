@@ -11,6 +11,7 @@ import type { ScannedQuestion } from '../../components/ChatView';
 import { ChoiceChips } from '../../components/ChoiceChips';
 import { Notice } from '../../components/Notice';
 import { PageHeading } from '../../components/PageHeading';
+import type { RecognizedForMistake } from './MistakeNew';
 import { SUBJECT_OPTIONS } from '../../lib/labels';
 import fieldStyles from '../../components/Field.module.css';
 import styles from './ScanCrop.module.css';
@@ -23,10 +24,24 @@ export function ScanCrop() {
   const [params] = useSearchParams();
   // 刷新页面后照片就没有了，回到拍照页重新选
   if (!photo) return <Navigate to={`/student/scan?${params}`} replace />;
-  return <CropAndConfirm photo={photo} conversationId={params.get('c')} />;
+  return (
+    <CropAndConfirm
+      photo={photo}
+      conversationId={params.get('c')}
+      forMistake={params.get('for') === 'mistake'}
+    />
+  );
 }
 
-function CropAndConfirm({ photo, conversationId }: { photo: File; conversationId: string | null }) {
+function CropAndConfirm({
+  photo,
+  conversationId,
+  forMistake,
+}: {
+  photo: File;
+  conversationId: string | null;
+  forMistake: boolean;
+}) {
   const navigate = useNavigate();
   const { search } = useLocation();
   const recognize = useRecognize();
@@ -53,7 +68,12 @@ function CropAndConfirm({ photo, conversationId }: { photo: File; conversationId
   }, [src]);
 
   const retake = () => navigate(`/student/scan${search}`, { replace: true });
-  const chatPath = conversationId ? `/student/c/${conversationId}` : '/student';
+  // 识别完回到对话开始讲解；从“添加错题”来的回到添加错题，手动输入也回那里
+  const backPath = forMistake
+    ? '/student/mistakes/new'
+    : conversationId
+      ? `/student/c/${conversationId}`
+      : '/student';
 
   function submit() {
     const canvas = cropperRef.current!.getCroppedCanvas({
@@ -75,8 +95,13 @@ function CropAndConfirm({ photo, conversationId }: { photo: File; conversationId
   }
 
   function start() {
+    if (forMistake) {
+      const recognized: RecognizedForMistake = { text: text.trim(), subject };
+      navigate(backPath, { replace: true, state: { recognized } });
+      return;
+    }
     const ask: ScannedQuestion = { content: text.trim(), image: recognize.data!.file, subject };
-    navigate(chatPath, { replace: true, state: { ask } });
+    navigate(backPath, { replace: true, state: { ask } });
   }
 
   if (recognize.isSuccess) {
@@ -102,7 +127,7 @@ function CropAndConfirm({ photo, conversationId }: { photo: File; conversationId
           onChange={([s]) => setSubject(s)}
         />
         <Button variant="primary" block disabled={!text.trim()} onClick={start}>
-          开始讲解
+          {forMistake ? '用这道题' : '开始讲解'}
         </Button>
       </>
     );
@@ -127,7 +152,7 @@ function CropAndConfirm({ photo, conversationId }: { photo: File; conversationId
           <Button block onClick={retake}>
             重新拍照
           </Button>
-          <Button block onClick={() => navigate(chatPath, { replace: true })}>
+          <Button block onClick={() => navigate(backPath, { replace: true })}>
             手动输入题目
           </Button>
         </>

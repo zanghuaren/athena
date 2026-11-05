@@ -310,7 +310,8 @@ export interface paths {
         /** List Mistakes */
         get: operations["list_mistakes_api_v1_mistakes_get"];
         put?: never;
-        post?: never;
+        /** Add Mistake */
+        post: operations["add_mistake_api_v1_mistakes_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -351,6 +352,23 @@ export interface paths {
         head?: never;
         /** Update Mistake */
         patch: operations["update_mistake_api_v1_mistakes__mistake_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/messages/{message_id}/extract-question": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Extract Question */
+        post: operations["extract_question_api_v1_messages__message_id__extract_question_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/jobs/{job_id}": {
@@ -397,6 +415,44 @@ export interface components {
             title: string;
             /** Body */
             body: string;
+        };
+        /**
+         * AskMistakeIn
+         * @description 答疑里加入错题本（ASK-05）：题目是 extract-question 返回、学生确认过的。
+         */
+        AskMistakeIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            source: "ask";
+            /** Message Id */
+            message_id: number;
+            question: components["schemas"]["AskQuestionIn"];
+        };
+        /** AskQuestionIn */
+        AskQuestionIn: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "single" | "multiple" | "judge" | "blank" | "solution" | "cloze" | "reading" | "essay";
+            content: components["schemas"]["QuestionContent"];
+            /** Answer */
+            answer: components["schemas"]["ChoiceAnswer"] | components["schemas"]["JudgeAnswer"] | components["schemas"]["BlanksAnswer"] | components["schemas"]["TextAnswer"] | components["schemas"]["SubAnswer"];
+            /** Analysis */
+            analysis: components["schemas"]["AnalysisStep"][];
+            /** Scoring Points */
+            scoring_points?: components["schemas"]["ScoringPoint"][] | null;
+            /** Difficulty */
+            difficulty: number;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /** Knowledge Point Ids */
+            knowledge_point_ids: number[];
         };
         /**
          * AttemptResult
@@ -586,6 +642,15 @@ export interface components {
             explain_mode?: ("guided" | "direct") | null;
         };
         /**
+         * ExtractOut
+         * @description 这条讲解已经加入过错题本时，mistake_id 是那道错题。
+         */
+        ExtractOut: {
+            question: components["schemas"]["QuestionDraft"];
+            /** Mistake Id */
+            mistake_id: number | null;
+        };
+        /**
          * FileOut
          * @description 返回里的文件统一用这个结构，url 带签名，见接口约定 2.3。
          */
@@ -710,6 +775,33 @@ export interface components {
             username: string;
             /** Password */
             password: string;
+        };
+        /**
+         * ManualMistakeIn
+         * @description 手动添加（S-15）：题目、正确答案都是文字，存成解答题。
+         */
+        ManualMistakeIn: {
+            /**
+             * @description discriminator enum property added by openapi-typescript
+             * @enum {string}
+             */
+            source: "manual";
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /** Stem */
+            stem: string;
+            /** Answer */
+            answer: string;
+            /**
+             * My Answer
+             * @default
+             */
+            my_answer: string;
+            /** Knowledge Point Ids */
+            knowledge_point_ids: number[];
         };
         /**
          * MessageIn
@@ -891,6 +983,33 @@ export interface components {
             sub_questions?: components["schemas"]["SubQuestion"][] | null;
         };
         /**
+         * QuestionDraft
+         * @description 从答疑里提取出、等学生确认的题目；确认时原样带回，可以改题干。
+         */
+        QuestionDraft: {
+            /**
+             * Type
+             * @enum {string}
+             */
+            type: "single" | "multiple" | "judge" | "blank" | "solution" | "cloze" | "reading" | "essay";
+            content: components["schemas"]["QuestionContent"];
+            /** Answer */
+            answer: components["schemas"]["ChoiceAnswer"] | components["schemas"]["JudgeAnswer"] | components["schemas"]["BlanksAnswer"] | components["schemas"]["TextAnswer"] | components["schemas"]["SubAnswer"];
+            /** Analysis */
+            analysis: components["schemas"]["AnalysisStep"][];
+            /** Scoring Points */
+            scoring_points?: components["schemas"]["ScoringPoint"][] | null;
+            /** Difficulty */
+            difficulty: number;
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /** Knowledge Points */
+            knowledge_points: components["schemas"]["KnowledgePointBrief"][];
+        };
+        /**
          * QuestionOut
          * @description 答案、解析、评分要点按接口约定第 3 节决定是否返回，不返回时为 null。
          */
@@ -914,7 +1033,7 @@ export interface components {
              * Source
              * @enum {string}
              */
-            source: "preset" | "scan" | "ai" | "teacher" | "manual";
+            source: "preset" | "scan" | "ask" | "ai" | "teacher" | "manual";
             /** Knowledge Points */
             knowledge_points: components["schemas"]["KnowledgePointBrief"][];
             /** Answer */
@@ -1911,6 +2030,39 @@ export interface operations {
             };
         };
     };
+    add_mistake_api_v1_mistakes_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AskMistakeIn"] | components["schemas"]["ManualMistakeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MistakeDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     add_from_scan_api_v1_mistakes_batch_post: {
         parameters: {
             query?: never;
@@ -2026,6 +2178,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MistakeDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_question_api_v1_messages__message_id__extract_question_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                message_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractOut"];
                 };
             };
             /** @description Validation Error */

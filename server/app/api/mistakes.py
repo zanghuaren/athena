@@ -8,9 +8,11 @@ from app.db import DB
 from app.models import Mistake
 from app.schemas.attempt import AttemptResult, StudentAnswer
 from app.schemas.mistake import (
+    ExtractOut,
     MistakeBatchIn,
     MistakeBatchOut,
     MistakeDetail,
+    MistakeIn,
     MistakeOut,
     MistakePage,
     MistakePatch,
@@ -22,6 +24,8 @@ from app.schemas.user import Subject
 from app.services import mistakes
 
 router = APIRouter(prefix="/mistakes", tags=["错题与复习"])
+# 答疑里“加入错题本”先从讲解中提取题目（ASK-05）
+messages_router = APIRouter(prefix="/messages", tags=["答疑"])
 
 _answer = TypeAdapter(StudentAnswer)
 
@@ -52,6 +56,11 @@ async def list_mistakes(
     return MistakePage(items=[_out(m) for m in items], total=total, page=page, page_size=page_size)
 
 
+@router.post("", status_code=status.HTTP_201_CREATED)
+async def add_mistake(db: DB, user: CurrentStudent, body: MistakeIn) -> MistakeDetail:
+    return _detail(await mistakes.add(db, user, body))
+
+
 @router.post("/batch", status_code=status.HTTP_201_CREATED)
 async def add_from_scan(db: DB, user: CurrentStudent, body: MistakeBatchIn) -> MistakeBatchOut:
     added = await mistakes.add_from_scan(db, user, body.scan_id, body.seqs)
@@ -73,6 +82,12 @@ async def update_mistake(
 @router.delete("/{mistake_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_mistake(db: DB, user: CurrentStudent, mistake_id: int) -> None:
     await mistakes.delete(db, user, mistake_id)
+
+
+@messages_router.post("/{message_id}/extract-question")
+async def extract_question(db: DB, user: CurrentStudent, message_id: int) -> ExtractOut:
+    question, mistake_id = await mistakes.extract_question(db, user, message_id)
+    return ExtractOut(question=question, mistake_id=mistake_id)
 
 
 def _out(mistake: Mistake) -> MistakeOut:

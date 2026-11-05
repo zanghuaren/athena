@@ -19,10 +19,8 @@ from app.db import SessionLocal
 from app.errors import AppError
 from app.models import (
     Attempt,
-    Chapter,
     File,
     Job,
-    KnowledgePoint,
     Mistake,
     Question,
     QuestionKnowledgePoint,
@@ -39,7 +37,7 @@ from app.schemas.attempt import (
     TextInput,
     check_answer,
 )
-from app.schemas.question import QuestionBody, QuestionContent
+from app.schemas.question import QuestionContent
 from app.schemas.scan import (
     AnswerRecognized,
     PageQuestion,
@@ -49,7 +47,7 @@ from app.schemas.scan import (
     RegradeIn,
     check_content,
 )
-from app.services import files, grading, jobs
+from app.services import files, grading, jobs, knowledge, questions
 
 logger = logging.getLogger(__name__)
 
@@ -166,7 +164,7 @@ async def grade_page(db: AsyncSession, job: Job) -> None:
 
     await jobs.set_stage(db, job, "grade_questions", 60)
     student = await db.get_one(User, scan.student_id)
-    catalog = await _catalog(db, page.subject)
+    catalog = await knowledge.catalog(db, page.subject)
     done = 0
 
     async def grade_one(seq: int, question: PageQuestion, answer: AnswerRecognized | None):
@@ -277,17 +275,6 @@ def _crop(photo: bytes, bbox: list[int]) -> bytes:
     return out.getvalue()
 
 
-async def _catalog(db: AsyncSession, subject: str) -> dict[str, tuple[int, str]]:
-    """这个学科的知识点：编号 → (ID, 名称)。"""
-    rows = await db.execute(
-        select(KnowledgePoint.code, KnowledgePoint.id, KnowledgePoint.name)
-        .join(Chapter)
-        .where(Chapter.subject == subject)
-        .order_by(KnowledgePoint.code)
-    )
-    return {code: (id_, name) for code, id_, name in rows}
-
-
 async def _grade_item(
     limit: asyncio.Semaphore,
     student: User,
@@ -313,11 +300,11 @@ async def _grade_item(
         confidence = min(confidence, recognized.confidence)
     async with SessionLocal() as db:
         question = Question(
-            subject=subject, source="scan", owner_id=student.id, **_question_fields(body)
+            subject=subject, source="scan", owner_id=student.id, **questions.columns(body)
         )
         db.add(question)
         await db.flush()
-        _link_points(db, question.id, [catalog[c][0] for c in codes])
+        questions.link_points(db, question.id, [catalog[c][0] for c in codes])
         attempt = None
         if answer is not None and confidence >= MIN_CONFIDENCE:
             async with limit:
@@ -336,29 +323,6 @@ async def _grade_item(
             )
         )
         await db.commit()
-
-
-def _question_fields(body: QuestionBody) -> dict:
-    data = body.model_dump(exclude_none=True)
-    content = body.content
-    text = "\n".join(
-        [content.stem, *(o.text for o in content.options or []), content.material or ""]
-    )
-    return {
-        "type": body.type,
-        "content": data["content"],
-        "answer": data["answer"],
-        "analysis": data["analysis"],
-        "scoring_points": data.get("scoring_points"),
-        "difficulty": body.difficulty,
-        "content_text": text.strip(),
-    }
-
-
-def _link_points(db: AsyncSession, question_id: int, point_ids: list[int]) -> None:
-    db.add_all(
-        QuestionKnowledgePoint(question_id=question_id, knowledge_point_id=i) for i in point_ids
-    )
 
 
 async def _summarize(db: AsyncSession, scan: Scan) -> None:
@@ -427,19 +391,19 @@ async def regrade(db: AsyncSession, job: Job) -> None:
     student = await db.get_one(User, scan.student_id)
     await jobs.set_stage(db, job, "regrade", 10)
     if job.payload["content"] is not None:
-        catalog = await _catalog(db, question.subject)
+        catalog = await knowledge.catalog(db, question.subject)
         body, codes = await grading.solve(
             question.subject,
             question.type,
             QuestionContent.model_validate(job.payload["content"]),
             {code: name for code, (_, name) in catalog.items()},
         )
-        for key, value in _question_fields(body).items():
+        for key, value in questions.columns(body).items():
             setattr(question, key, value)
         await db.execute(
             delete(QuestionKnowledgePoint).where(QuestionKnowledgePoint.question_id == question.id)
         )
-        _link_points(db, question.id, [catalog[c][0] for c in codes])
+        questions.link_points(db, question.id, [catalog[c][0] for c in codes])
     old, item.attempt = item.attempt, None
     if old is not None:
         await db.delete(old)

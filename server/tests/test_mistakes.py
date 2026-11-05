@@ -1,16 +1,30 @@
+import json
 from datetime import timedelta
+from pathlib import Path
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import select
 
 from app import worker
 from app.config import settings
 from app.db import SessionLocal
 from app.errors import AppError
-from app.models import Attempt, Chapter, File, KnowledgePoint, Question, Scan, ScanItem
+from app.models import (
+    Attempt,
+    Chapter,
+    Conversation,
+    File,
+    KnowledgePoint,
+    Message,
+    Question,
+    Scan,
+    ScanItem,
+)
 from app.models import QuestionKnowledgePoint as QKP
 from app.schemas.mistake import MistakeTip
-from app.services import jobs, mistakes
+from app.services import jobs, knowledge, mistakes
+from app.services.knowledge import KnowledgeCatalog, import_catalog
 
 needs_key = pytest.mark.skipif(not settings.deepseek_api_key, reason="没有配置 DeepSeek Key")
 
@@ -296,3 +310,206 @@ async def test_real_tip(client, student):
     scan_id = await _scan(client, student)
     item = (await _add(client, student, scan_id, [3])).json()["items"][0]
     assert item["tip"] and len(item["tip"]) <= 60
+
+
+# ---- 答疑加入、手动添加 ----
+
+SEED_DIR = Path(__file__).parents[1] / "seed" / "knowledge"
+
+_EXTRACTED = {
+    "status": "ok",
+    "subject": "math",
+    "question": {
+        "type": "single",
+        "content": {
+            "stem": "直角三角形两直角边为 6 和 8，斜边长为（　）",
+            "options": [{"key": "A", "text": "9"}, {"key": "B", "text": "10"}],
+        },
+        "answer": {"choice": ["B"]},
+        "analysis": [{"title": "用勾股定理", "body": "$\\sqrt{6^2+8^2}=10$"}],
+        "difficulty": 1,
+    },
+    "knowledge_points": [],
+}
+
+
+@pytest.fixture
+async def catalog():
+    async with SessionLocal() as db:
+        for path in sorted(SEED_DIR.glob("*.json")):
+            await import_catalog(db, KnowledgeCatalog.model_validate_json(path.read_text()))
+        return await knowledge.catalog(db, "math")
+
+
+@pytest.fixture
+def fake_extract(monkeypatch):
+    """模型按给定的输出走真实的校验；calls 记录调用次数。"""
+    outputs: list[dict] = []
+    calls = []
+
+    async def fake(scene, model, messages, schema, context=None):
+        calls.append(messages[-1]["content"])
+        # 和 complete_json 一样，不合格就换下一个输出
+        while True:
+            try:
+                return schema.model_validate_json(json.dumps(outputs.pop(0)), context=context)
+            except ValidationError:
+                continue
+
+    monkeypatch.setattr(mistakes, "complete_json", fake)
+    return outputs, calls
+
+
+async def _reply(client, headers, subject=None) -> int:
+    """直接建一段对话：学生问一道题，AI 引导式讲了一步。返回 AI 那条消息的 ID。"""
+    user_id = await _me(client, headers)
+    async with SessionLocal() as db:
+        conversation = Conversation(user_id=user_id, title="勾股定理", subject=subject)
+        db.add(conversation)
+        await db.flush()
+        db.add(
+            Message(
+                conversation_id=conversation.id,
+                role="user",
+                content="直角三角形两直角边为 6 和 8，斜边长为多少？A. 9 B. 10",
+            )
+        )
+        reply = Message(
+            conversation_id=conversation.id, role="assistant", content="先想想勾股定理怎么写？"
+        )
+        db.add(reply)
+        await db.commit()
+        return reply.id
+
+
+async def test_extract_and_add_from_ask(client, student, teacher, catalog, fake_tip, fake_extract):
+    outputs, calls = fake_extract
+    message_id = await _reply(client, student, subject="math")
+    url = f"/api/v1/messages/{message_id}/extract-question"
+    assert (await client.post(url, headers=teacher)).status_code == 403
+    assert (
+        await client.post(f"/api/v1/messages/{message_id - 1}/extract-question", headers=student)
+    ).status_code == 404
+
+    # 知识点不在目录里的输出不合格，重新生成
+    code = next(iter(catalog))
+    outputs += [
+        {**_EXTRACTED, "knowledge_points": ["P8-01-01"]},
+        {**_EXTRACTED, "knowledge_points": [code]},
+    ]
+    resp = await client.post(url, headers=student)
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["mistake_id"] is None
+    draft = body["question"]
+    assert (draft["subject"], draft["type"], draft["answer"]) == (
+        "math",
+        "single",
+        {"choice": ["B"]},
+    )
+    assert [k["code"] for k in draft["knowledge_points"]] == [code]
+    # 指定了学科的会话只给这个学科的目录，带上了学生的原题
+    assert len(calls) == 1
+    assert "斜边长为多少" in calls[0] and "P8-" not in calls[0]
+
+    question = {k: v for k, v in draft.items() if k != "knowledge_points"}
+    question["content"]["stem"] = "直角边 6 和 8，斜边是（　）"
+    question["knowledge_point_ids"] = [catalog[code][0]]
+    payload = {"source": "ask", "message_id": message_id, "question": question}
+    resp = await client.post("/api/v1/mistakes", json=payload, headers=student)
+    assert resp.status_code == 201, resp.text
+    mistake = resp.json()
+    assert (mistake["source"], mistake["question"]["source"]) == ("ask", "ask")
+    assert mistake["question"]["content"]["stem"] == "直角边 6 和 8，斜边是（　）"
+    assert (mistake["answer"], mistake["attempt"], mistake["tip"]) == (
+        None,
+        None,
+        "先确定斜边再列式",
+    )
+
+    # 提取过的讲解直接返回那道题，不再调模型；再加一次也不重复
+    resp = await client.post(url, headers=student)
+    assert resp.json()["mistake_id"] == mistake["id"]
+    assert resp.json()["question"]["content"]["stem"] == "直角边 6 和 8，斜边是（　）"
+    assert len(calls) == 1
+    resp = await client.post("/api/v1/mistakes", json=payload, headers=student)
+    assert resp.json()["id"] == mistake["id"]
+    assert len(fake_tip) == 1
+
+
+async def test_extract_without_question(client, student, catalog, fake_extract):
+    outputs, calls = fake_extract
+    message_id = await _reply(client, student)
+    outputs.append({"status": "none"})
+    resp = await client.post(f"/api/v1/messages/{message_id}/extract-question", headers=student)
+    assert resp.json()["error"]["code"] == "NO_QUESTION_FOUND"
+    # 没指定学科时三个学科的目录都给
+    assert "M8-" in calls[0] and "P8-" in calls[0]
+
+
+async def test_add_manual(client, student, catalog, fake_tip):
+    math_id = next(iter(catalog.values()))[0]
+    payload = {
+        "source": "manual",
+        "subject": "math",
+        "stem": "$\\sqrt{8}$ 化简",
+        "answer": "$2\\sqrt{2}$",
+        "my_answer": "4",
+        "knowledge_point_ids": [math_id],
+    }
+    resp = await client.post("/api/v1/mistakes", json=payload, headers=student)
+    assert resp.status_code == 201, resp.text
+    mistake = resp.json()
+    assert (mistake["source"], mistake["my_answer"], mistake["answer"]) == ("manual", "4", None)
+    question = mistake["question"]
+    assert (question["type"], question["source"], question["answer"]) == (
+        "solution",
+        "manual",
+        {"text": "$2\\sqrt{2}$", "final": None},
+    )
+    assert [k["id"] for k in question["knowledge_points"]] == [math_id]
+
+    async with SessionLocal() as db:
+        other = await knowledge.catalog(db, "physics")
+    resp = await client.post(
+        "/api/v1/mistakes",
+        json={**payload, "knowledge_point_ids": [next(iter(other.values()))[0]]},
+        headers=student,
+    )
+    assert resp.json()["error"]["code"] == "VALIDATION_ERROR"
+    resp = await client.post("/api/v1/mistakes", json={**payload, "stem": ""}, headers=student)
+    assert resp.status_code == 400
+
+
+@needs_key
+async def test_real_extract(client, student, catalog):
+    user_id = await _me(client, student)
+    async with SessionLocal() as db:
+        conversation = Conversation(user_id=user_id, title="方程")
+        db.add(conversation)
+        await db.flush()
+        db.add_all(
+            [
+                Message(conversation_id=conversation.id, role="user", content="解方程 3x + 5 = 20"),
+                Message(
+                    conversation_id=conversation.id,
+                    role="assistant",
+                    content="我们先把 5 移到右边。你觉得移过去以后右边是多少？",
+                ),
+                Message(conversation_id=conversation.id, role="user", content="15"),
+            ]
+        )
+        reply = Message(
+            conversation_id=conversation.id,
+            role="assistant",
+            content="对！$3x=15$，接下来两边同时除以几？",
+        )
+        db.add(reply)
+        await db.commit()
+    resp = await client.post(f"/api/v1/messages/{reply.id}/extract-question", headers=student)
+    assert resp.status_code == 200, resp.text
+    draft = resp.json()["question"]
+    assert draft["subject"] == "math"
+    assert "3x" in draft["content"]["stem"].replace(" ", "")
+    assert "5" in json.dumps(draft["answer"])
+    assert draft["knowledge_points"]

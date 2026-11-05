@@ -23,6 +23,7 @@ import {
 } from '../api/conversations';
 import { fileUrl, type FileOut } from '../api/files';
 import { SUBJECT_OPTIONS } from '../lib/labels';
+import { AddMistakeDialog } from './AddMistakeDialog';
 import { Button } from './Button';
 import { Icon } from './Icon';
 import { Markdown } from './Markdown';
@@ -70,6 +71,9 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [draft, setDraft] = useState('');
   const [copied, setCopied] = useState<number | null>(null);
+  // 加入错题本：正在确认的讲解、刚加入的错题
+  const [adding, setAdding] = useState<number | null>(null);
+  const [added, setAdded] = useState<{ conversationId: number | null; id: number } | null>(null);
   // 新会话还没建，先记下选择，发第一条消息时一起建
   const [newSettings, setNewSettings] = useState<{ subject: Subject; explain_mode: ExplainMode }>({
     subject: user.preferred_subject,
@@ -121,6 +125,7 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
 
   async function send(body: MessageBody, scan?: ScannedQuestion) {
     setError(null);
+    setAdded(null);
     stickRef.current = true;
     const controller = new AbortController();
     abortRef.current = controller;
@@ -313,6 +318,11 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
                           </Button>
                         </>
                       )}
+                      {isStudent && (
+                        <Button variant="link" onClick={() => setAdding(lastReply.id)}>
+                          加入错题本
+                        </Button>
+                      )}
                       <Button
                         variant="link"
                         onClick={() => send({ content: '', action: 'example' })}
@@ -331,6 +341,21 @@ export function ChatView({ user, base, conversationId, Empty }: Props) {
                     </>
                   ) : null}
                 </div>
+              )}
+              {added?.conversationId === conversationId && (
+                <Notice>
+                  已加入错题本，明天开始复习。{' '}
+                  <Link to={`/student/mistakes/${added.id}`}>查看</Link>
+                </Notice>
+              )}
+              {adding !== null && (
+                <AddMistakeDialog
+                  messageId={adding}
+                  onClose={(id) => {
+                    setAdding(null);
+                    if (id !== null) setAdded({ conversationId, id });
+                  }}
+                />
               )}
               {tooLong && (
                 <Notice>

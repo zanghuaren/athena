@@ -120,7 +120,7 @@ class QuestionBody(_Strict):
         return self
 
 
-QuestionSource = Literal["preset", "scan", "ai", "teacher", "manual"]
+QuestionSource = Literal["preset", "scan", "ask", "ai", "teacher", "manual"]
 
 
 class QuestionOut(BaseModel):

@@ -13,6 +13,7 @@ import { Register } from './pages/common/Register';
 import { Settings } from './pages/common/Settings';
 import { Chat } from './pages/student/Chat';
 import { MistakeDetail } from './pages/student/MistakeDetail';
+import { MistakeNew } from './pages/student/MistakeNew';
 import { Mistakes } from './pages/student/Mistakes';
 import { Scan } from './pages/student/Scan';
 import { ScanCrop } from './pages/student/ScanCrop';
@@ -91,7 +92,10 @@ export const router = createBrowserRouter([
       page('scans/:scanId/progress', '批改中', <ScanProgress />, true),
       page('today', '今日'),
       page('homework', '全部作业'),
-      page('mistakes', '错题本', <Mistakes />),
+      page('mistakes', '错题本', <Mistakes />, false, {
+        links: [{ to: '/student/mistakes/new', label: '添加' }],
+      }),
+      page('mistakes/new', '添加错题', <MistakeNew />, true),
       page('mistakes/:mistakeId', '错题详情', <MistakeDetail />, true),
       page('review', '复习'),
       page('profile', '学情画像'),

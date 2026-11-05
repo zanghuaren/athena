@@ -16,6 +16,8 @@ export function Scan() {
   const { search } = useLocation();
   const navigate = useNavigate();
   const grading = params.get('mode') === 'grade';
+  // 从“添加错题”进来：只识别一道题，识别完回到添加错题
+  const forMistake = params.get('for') === 'mistake';
   const createScan = useCreateScan();
 
   function pick(e: ChangeEvent<HTMLInputElement>) {
@@ -24,7 +26,7 @@ export function Scan() {
     e.target.value = '';
     if (!photo) return;
     if (!grading) {
-      navigate(`/student/scan/crop${search}`, { state: { photo } });
+      navigate(`/student/scan/crop${search}`, { state: { photo }, replace: forMistake });
       return;
     }
     // 换成进度页，批改完从结果页返回时直接回到进入拍照前的页面
@@ -35,21 +37,23 @@ export function Scan() {
 
   return (
     <>
-      <div className={styles.seg}>
-        {MODES.map((m) => (
-          <button
-            key={m.value}
-            type="button"
-            aria-pressed={(m.value === 'grade') === grading}
-            onClick={() => {
-              params.set('mode', m.value);
-              setParams(params, { replace: true });
-            }}
-          >
-            {m.label}
-          </button>
-        ))}
-      </div>
+      {!forMistake && (
+        <div className={styles.seg}>
+          {MODES.map((m) => (
+            <button
+              key={m.value}
+              type="button"
+              aria-pressed={(m.value === 'grade') === grading}
+              onClick={() => {
+                params.set('mode', m.value);
+                setParams(params, { replace: true });
+              }}
+            >
+              {m.label}
+            </button>
+          ))}
+        </div>
+      )}
       <div className={styles.view}>{grading ? '把整页作业放平，对齐四角' : '对准一道题'}</div>
       {grading && createScan.error && <Notice tone="error">{createScan.error.message}</Notice>}
       {createScan.isPending ? (

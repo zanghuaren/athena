@@ -1,0 +1,11 @@
+.area {
+  resize: vertical;
+  line-height: 1.7;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--muted);
+}

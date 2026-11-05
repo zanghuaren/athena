@@ -52,5 +52,9 @@ class Message(IdMixin, CreatedAtMixin, Base):
     image_file_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("files.id", ondelete="SET NULL")
     )
+    # 从这条讲解提取出的题目（加入错题本、练一道类似的）
+    question_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("questions.id", ondelete="SET NULL")
+    )
     # 返回消息时要带图片地址，查消息时一起查出来
     image_file: Mapped[File | None] = relationship(lazy="selectin")

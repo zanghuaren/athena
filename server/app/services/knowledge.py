@@ -123,3 +123,14 @@ async def get_point(db: AsyncSession, point_id: int) -> KnowledgePoint:
     if point is None:
         raise AppError(404, "NOT_FOUND", "知识点不存在")
     return point
+
+
+async def catalog(db: AsyncSession, subject: str) -> dict[str, tuple[int, str]]:
+    """这个学科的知识点：编号 → (ID, 名称)，交给模型选知识点时用。"""
+    rows = await db.execute(
+        select(KnowledgePoint.code, KnowledgePoint.id, KnowledgePoint.name)
+        .join(Chapter)
+        .where(Chapter.subject == subject)
+        .order_by(KnowledgePoint.code)
+    )
+    return {code: (id_, name) for code, id_, name in rows}
