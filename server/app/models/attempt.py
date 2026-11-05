@@ -28,7 +28,7 @@ class Attempt(IdMixin, TimestampMixin, Base):
         ),
         CheckConstraint("grading_status IN ('pending', 'graded', 'manual')", name="grading_status"),
         CheckConstraint("result IN ('correct', 'partial', 'wrong')", name="result"),
-        CheckConstraint("graded_by IN ('rule', 'ai', 'teacher')", name="graded_by"),
+        CheckConstraint("graded_by IN ('rule', 'ai', 'teacher', 'student')", name="graded_by"),
         CheckConstraint(
             "error_reason IN ('concept', 'calculation', 'reading', 'method', 'careless', 'other')",
             name="error_reason",

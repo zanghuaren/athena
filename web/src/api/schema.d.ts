@@ -231,6 +231,75 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/scans": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Scans */
+        get: operations["list_scans_api_v1_scans_get"];
+        put?: never;
+        /** Create Scan */
+        post: operations["create_scan_api_v1_scans_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scans/{scan_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Scan */
+        get: operations["get_scan_api_v1_scans__scan_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scans/{scan_id}/items/{seq}/regrade": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Regrade Item */
+        post: operations["regrade_item_api_v1_scans__scan_id__items__seq__regrade_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/scans/{scan_id}/items/{seq}/confirm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Confirm Item */
+        post: operations["confirm_item_api_v1_scans__scan_id__items__seq__confirm_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/jobs/{job_id}": {
         parameters: {
             query?: never;
@@ -276,11 +345,49 @@ export interface components {
             /** Body */
             body: string;
         };
+        /**
+         * AttemptResult
+         * @description 作答结果，见接口约定第 3 节；待判分时 result、score 为空。
+         */
+        AttemptResult: {
+            /** Id */
+            id: number;
+            /**
+             * Grading Status
+             * @enum {string}
+             */
+            grading_status: "pending" | "graded" | "manual";
+            /** Result */
+            result: ("correct" | "partial" | "wrong") | null;
+            /** Score */
+            score: number | null;
+            /** Max Score */
+            max_score: number;
+            grading_detail: components["schemas"]["GradingDetail"] | null;
+            /** Graded By */
+            graded_by: ("rule" | "ai" | "teacher" | "student") | null;
+            /** Error Reason */
+            error_reason: ("concept" | "calculation" | "reading" | "method" | "careless" | "other") | null;
+        };
         /** AuthOut */
         AuthOut: {
             /** Token */
             token: string;
             user: components["schemas"]["UserOut"];
+        };
+        /**
+         * BBox
+         * @description 归一化坐标，0～1。
+         */
+        BBox: {
+            /** X */
+            x: number;
+            /** Y */
+            y: number;
+            /** W */
+            w: number;
+            /** H */
+            h: number;
         };
         /**
          * BlanksAnswer
@@ -289,6 +396,11 @@ export interface components {
         BlanksAnswer: {
             /** Blanks */
             blanks: string[][];
+        };
+        /** BlanksInput */
+        BlanksInput: {
+            /** Blanks */
+            blanks: string[];
         };
         /** Body_upload_file_api_v1_files_post */
         Body_upload_file_api_v1_files_post: {
@@ -328,6 +440,19 @@ export interface components {
         ChoiceAnswer: {
             /** Choice */
             choice: string[];
+        };
+        /** ChoiceInput */
+        ChoiceInput: {
+            /** Choice */
+            choice: string[];
+        };
+        /** ConfirmIn */
+        ConfirmIn: {
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "correct" | "wrong";
         };
         /** ConversationDetail */
         ConversationDetail: {
@@ -421,6 +546,34 @@ export interface components {
             /** Height */
             height: number | null;
         };
+        /** GradingDetail */
+        GradingDetail: {
+            /** Confidence */
+            confidence: number;
+            /** Items */
+            items: components["schemas"]["GradingItem"][];
+            /** Summary */
+            summary?: string | null;
+        };
+        /**
+         * GradingItem
+         * @description 每空、每小题或每个评分要点的结果；key 形如 blank_1、sub_3、point_2。
+         */
+        GradingItem: {
+            /** Key */
+            key: string;
+            /**
+             * Result
+             * @enum {string}
+             */
+            result: "correct" | "partial" | "wrong";
+            /** Score */
+            score: number;
+            /** Max Score */
+            max_score: number;
+            /** Comment */
+            comment?: string | null;
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -457,6 +610,11 @@ export interface components {
         JudgeAnswer: {
             /** Judge */
             judge: boolean;
+        };
+        /** JudgeInput */
+        JudgeInput: {
+            /** Judge */
+            judge: boolean | null;
         };
         /** KnowledgePointBrief */
         KnowledgePointBrief: {
@@ -617,6 +775,119 @@ export interface components {
             /** Text */
             text: string;
         };
+        /**
+         * RegradeIn
+         * @description 改了题目时带 content，题型不变。
+         */
+        RegradeIn: {
+            /** Answer */
+            answer: components["schemas"]["ChoiceInput"] | components["schemas"]["JudgeInput"] | components["schemas"]["BlanksInput"] | components["schemas"]["TextInput"] | components["schemas"]["SubInput"];
+            content?: components["schemas"]["QuestionContent"] | null;
+        };
+        /** RegradeOut */
+        RegradeOut: {
+            /** Job Id */
+            job_id: number;
+        };
+        /** ScanCreated */
+        ScanCreated: {
+            scan: components["schemas"]["ScanOut"];
+            /** Job Id */
+            job_id: number;
+        };
+        /** ScanDetail */
+        ScanDetail: {
+            /** Id */
+            id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "processing" | "done" | "failed";
+            /** Fail Reason */
+            fail_reason: ("unclear" | "no_question" | "error") | null;
+            /** Subject */
+            subject: ("math" | "physics" | "english") | null;
+            image: components["schemas"]["FileOut"];
+            /** Job Id */
+            job_id: number | null;
+            /** Truncated */
+            truncated: boolean;
+            /** Total */
+            total: number;
+            /** Correct */
+            correct: number;
+            /** Unknown */
+            unknown: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Items */
+            items: components["schemas"]["ScanItemOut"][];
+        };
+        /** ScanIn */
+        ScanIn: {
+            /** Image File Id */
+            image_file_id: number;
+        };
+        /**
+         * ScanItemOut
+         * @description attempt 为空就是“？”：看不清或置信度低，没有判分。
+         */
+        ScanItemOut: {
+            /** Seq */
+            seq: number;
+            bbox: components["schemas"]["BBox"];
+            /** Confidence */
+            confidence: number;
+            question: components["schemas"]["QuestionOut"];
+            /** Answer */
+            answer: components["schemas"]["ChoiceInput"] | components["schemas"]["JudgeInput"] | components["schemas"]["BlanksInput"] | components["schemas"]["TextInput"] | components["schemas"]["SubInput"] | null;
+            attempt: components["schemas"]["AttemptResult"] | null;
+        };
+        /** ScanOut */
+        ScanOut: {
+            /** Id */
+            id: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "processing" | "done" | "failed";
+            /** Fail Reason */
+            fail_reason: ("unclear" | "no_question" | "error") | null;
+            /** Subject */
+            subject: ("math" | "physics" | "english") | null;
+            image: components["schemas"]["FileOut"];
+            /** Job Id */
+            job_id: number | null;
+            /** Truncated */
+            truncated: boolean;
+            /** Total */
+            total: number;
+            /** Correct */
+            correct: number;
+            /** Unknown */
+            unknown: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** ScanPage */
+        ScanPage: {
+            /** Items */
+            items: components["schemas"]["ScanOut"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Page Size */
+            page_size: number;
+        };
         /** ScoringPoint */
         ScoringPoint: {
             /** Point */
@@ -658,6 +929,22 @@ export interface components {
             judge?: boolean | null;
             /** Blanks */
             blanks?: string[][] | null;
+        };
+        /** SubInput */
+        SubInput: {
+            /** Sub */
+            sub: components["schemas"]["SubInputItem"][];
+        };
+        /** SubInputItem */
+        SubInputItem: {
+            /** Seq */
+            seq: number;
+            /** Choice */
+            choice?: string[] | null;
+            /** Judge */
+            judge?: boolean | null;
+            /** Blanks */
+            blanks?: string[] | null;
         };
         /** SubQuestion */
         SubQuestion: {
@@ -704,6 +991,11 @@ export interface components {
             text: string;
             /** Final */
             final?: string | null;
+        };
+        /** TextInput */
+        TextInput: {
+            /** Text */
+            text: string;
         };
         /** UserOut */
         UserOut: {
@@ -1232,6 +1524,174 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["RecognizeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scans_api_v1_scans_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_scan_api_v1_scans_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ScanIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_scan_api_v1_scans__scan_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scan_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    regrade_item_api_v1_scans__scan_id__items__seq__regrade_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scan_id: number;
+                seq: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RegradeIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            202: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RegradeOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    confirm_item_api_v1_scans__scan_id__items__seq__confirm_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scan_id: number;
+                seq: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ConfirmIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScanItemOut"];
                 };
             };
             /** @description Validation Error */

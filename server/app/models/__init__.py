@@ -6,6 +6,7 @@ from app.models.file import File
 from app.models.job import Job
 from app.models.knowledge import Chapter, KnowledgePoint
 from app.models.question import Question, QuestionKnowledgePoint
+from app.models.scan import Scan, ScanItem
 from app.models.user import Session, User
 
 __all__ = [
@@ -19,6 +20,8 @@ __all__ = [
     "Message",
     "Question",
     "QuestionKnowledgePoint",
+    "Scan",
+    "ScanItem",
     "Session",
     "User",
 ]

@@ -104,7 +104,14 @@ def _sign(file_id: int, exp: int) -> str:
     return hmac.new(settings.file_secret.encode(), message, hashlib.sha256).hexdigest()
 
 
+async def read(file: File) -> bytes:
+    return await anyio.Path(settings.files_dir / file.path).read_bytes()
+
+
 async def data_url(file: File) -> str:
     """交给模型看图用的 data URL。"""
-    data = await anyio.Path(settings.files_dir / file.path).read_bytes()
-    return f"data:{file.mime};base64,{base64.b64encode(data).decode()}"
+    return to_data_url(await read(file), file.mime)
+
+
+def to_data_url(data: bytes, mime: str = "image/jpeg") -> str:
+    return f"data:{mime};base64,{base64.b64encode(data).decode()}"

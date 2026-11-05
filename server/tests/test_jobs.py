@@ -6,7 +6,7 @@ from sqlalchemy import func, select, update
 from app import worker
 from app.db import SessionLocal
 from app.errors import AppError
-from app.jobs import HANDLERS, Handler
+from app.jobs import HANDLERS
 from app.models import Job, User
 from app.services import jobs
 
@@ -59,7 +59,7 @@ def failed_jobs(monkeypatch) -> list[int]:
     async def on_failed(db, job):
         failed.append(job.id)
 
-    monkeypatch.setitem(HANDLERS, "scan_grading", Handler(run=run, on_failed=on_failed))
+    monkeypatch.setitem(HANDLERS, "scan_grading", jobs.Handler(run=run, on_failed=on_failed))
     return failed
 
 

@@ -248,10 +248,18 @@ async def test_solve_question_without_answer():
             {"key": "D", "text": "$1$"},
         ],
     )
-    body = await grading.solve("math", "single", content)
+    catalog = {
+        "M7-01-01": "正数和负数",
+        "M7-01-04": "有理数的大小比较",
+        "M8-03-01": "勾股定理",
+        "M8-03-02": "勾股定理的逆定理",
+    }
+    body, points = await grading.solve("math", "single", content, catalog)
     assert body.answer.choice == ["A"]
     assert body.analysis
+    assert "M7-01-04" in points
 
-    solution = await grading.solve("math", "solution", SOLUTION.content)
+    solution, points = await grading.solve("math", "solution", SOLUTION.content, catalog)
     assert solution.answer.text
     assert solution.scoring_points
+    assert points[0] == "M8-03-01"

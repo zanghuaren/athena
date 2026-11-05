@@ -1,6 +1,7 @@
 """Worker 入口：python -m app.worker。循环从 jobs 表取任务执行，技术方案第 6 节。"""
 
 import asyncio
+import contextlib
 import logging
 import time
 
@@ -74,4 +75,6 @@ async def fail_stale() -> None:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-    asyncio.run(main())
+    # 开发时 watchfiles 改代码就发 SIGINT 重启，不用打印堆栈
+    with contextlib.suppress(KeyboardInterrupt):
+        asyncio.run(main())

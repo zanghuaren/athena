@@ -21,12 +21,10 @@ from app.ai.client import Model, complete_json
 from app.errors import AppError
 from app.models import Attempt, Question, User
 from app.schemas.attempt import (
-    BlanksInput,
+    INPUT_TYPES,
     BlankVerdicts,
-    ChoiceInput,
     GradingDetail,
     GradingItem,
-    JudgeInput,
     Result,
     SolutionGrading,
     Solved,
@@ -162,13 +160,7 @@ async def _grade_objective(subject: str, body: QuestionBody, answer: StudentAnsw
                 given.get(sub.seq, SubInputItem(seq=sub.seq)),
             )
     else:
-        expected = {
-            "single": ChoiceInput,
-            "multiple": ChoiceInput,
-            "judge": JudgeInput,
-            "blank": BlanksInput,
-        }[body.type]
-        given = _expect(answer, expected)
+        given = _expect(answer, INPUT_TYPES[body.type])
         parts += _parts(subject, "answer", body.type, natural_score(body), body.answer, given)
 
     pending = [p for p in parts if isinstance(p, _Blank) and p.correct is None]
@@ -413,25 +405,31 @@ def _scaled(grading: Grading, max_score: float) -> Grading:
     return grading
 
 
-async def solve(subject: str, type: str, content: QuestionContent) -> QuestionBody:
-    """拍照识别出来的题没有答案：先由模型解出答案、解析（解答题还有评分要点），再拿来判分。"""
+async def solve(
+    subject: str, type: str, content: QuestionContent, catalog: dict[str, str]
+) -> tuple[QuestionBody, list[str]]:
+    """拍照识别出来的题没有答案：先由模型解出答案、解析（解答题还有评分要点），再拿来判分。
+
+    同时从 catalog（知识点编号 → 名称）里选 1～3 个知识点，返回题目和选中的编号。
+    """
     data = content.model_dump(exclude_none=True)
+    question = json.dumps({"学科": subject, "题型": type, "题目": data}, ensure_ascii=False)
+    points = "\n".join(f"{code} {name}" for code, name in catalog.items())
     messages = [
         {
             "role": "system",
             "content": f"{prompts.load('grading/solve')}\n\n{prompts.load('format')}",
         },
-        {
-            "role": "user",
-            "content": json.dumps(
-                {"学科": subject, "题型": type, "题目": data}, ensure_ascii=False
-            ),
-        },
+        {"role": "user", "content": f"{question}\n\n知识点目录：\n{points}"},
     ]
     solved = await complete_json(
-        "grading_solve", Model.REASONING, messages, Solved, context={"type": type, "content": data}
+        "grading_solve",
+        Model.REASONING,
+        messages,
+        Solved,
+        context={"type": type, "content": data, "codes": set(catalog)},
     )
-    return solved.to_body(type, data)
+    return solved.to_body(type, data), solved.knowledge_points
 
 
 def _question_json(subject: str, body: QuestionBody) -> str:
