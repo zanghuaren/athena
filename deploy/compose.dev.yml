@@ -1,15 +1,10 @@
 # 开发环境：只给本机用，端口绑定 127.0.0.1，密码是固定的开发密码
 name: athena-dev
 
-# api 和 worker 是同一份代码的两个入口（技术方案第 2 节），镜像、环境、挂载都一样
+# api 和 worker 是同一份代码的两个入口（技术方案第 2 节），镜像、环境、挂载都一样；
+# 镜像只由 api 构建，worker 直接用（两个一起构建时 uv 并发下载会失败）
 x-server: &server
-  build:
-    context: ../server
-    # 本机访问 PyPI 要走宿主机代理；没有设置代理时这两项为空，不影响构建
-    network: host
-    args:
-      HTTP_PROXY: ${HTTP_PROXY:-}
-      HTTPS_PROXY: ${HTTPS_PROXY:-}
+  image: athena-dev-server
   # 模型 API Key 等密钥放在 deploy/.env（不进 git）；没有这个文件也能启动
   env_file:
     - path: .env
@@ -40,6 +35,13 @@ services:
 
   api:
     <<: *server
+    build:
+      context: ../server
+      # 本机访问 PyPI 要走宿主机代理；没有设置代理时这两项为空，不影响构建
+      network: host
+      args:
+        HTTP_PROXY: ${HTTP_PROXY:-}
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
     command: sh -c "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload"
     ports:
       - "127.0.0.1:8000:8000"
@@ -51,6 +53,7 @@ services:
 
   worker:
     <<: *server
+    pull_policy: never
     # 改了代码自动重启
     command: watchfiles "python -m app.worker" app
     depends_on:

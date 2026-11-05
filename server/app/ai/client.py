@@ -113,13 +113,16 @@ async def complete_text(
 
 
 async def complete_json[T: BaseModel](
-    scene: str, model: Model, messages: list[dict], schema: type[T]
+    scene: str, model: Model, messages: list[dict], schema: type[T], context: dict | None = None
 ) -> T:
-    """输出按 schema 校验，不合格时重新生成，最多重试 2 次。"""
+    """输出按 schema 校验，不合格时重新生成，最多重试 2 次。
+
+    context 交给 schema 的校验器，用来检查和这次输入有关的条件（如输出的条数）。
+    """
     for _ in range(3):
         text = await complete_text(scene, model, messages, json_output=True)
         try:
-            return schema.model_validate_json(text)
+            return schema.model_validate_json(text, context=context)
         except ValidationError as exc:
             logger.warning("ai scene=%s invalid output: %s", scene, exc.errors()[:3])
     raise AppError(502, "AI_UNAVAILABLE", "AI 服务暂时不可用，请稍后再试")
