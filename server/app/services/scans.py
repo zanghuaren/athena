@@ -9,7 +9,7 @@ import re
 import anyio
 from PIL import Image
 from pydantic import TypeAdapter
-from sqlalchemy import delete, func, select
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -23,6 +23,7 @@ from app.models import (
     File,
     Job,
     KnowledgePoint,
+    Mistake,
     Question,
     QuestionKnowledgePoint,
     Scan,
@@ -444,6 +445,13 @@ async def regrade(db: AsyncSession, job: Job) -> None:
         await db.delete(old)
     answer = TypeAdapter(StudentAnswer).validate_python(job.payload["answer"])
     item.attempt = await grading.record(db, student, question, answer, "scan", scan.id)
+    await db.flush()
+    # 这道题已经在错题本里时，“我的作答”换成重批后的
+    await db.execute(
+        update(Mistake)
+        .where(Mistake.question_id == question.id)
+        .values(last_attempt_id=item.attempt.id)
+    )
     item.answer = answer.model_dump()
     # 学生自己核对过，不再是“？”
     item.confidence = 1

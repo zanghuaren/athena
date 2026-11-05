@@ -5,6 +5,7 @@ from app.models.conversation import Conversation, Message
 from app.models.file import File
 from app.models.job import Job
 from app.models.knowledge import Chapter, KnowledgePoint
+from app.models.mistake import Mistake
 from app.models.question import Question, QuestionKnowledgePoint
 from app.models.scan import Scan, ScanItem
 from app.models.user import Session, User
@@ -18,6 +19,7 @@ __all__ = [
     "Job",
     "KnowledgePoint",
     "Message",
+    "Mistake",
     "Question",
     "QuestionKnowledgePoint",
     "Scan",
