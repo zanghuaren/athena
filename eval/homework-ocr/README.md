@@ -64,11 +64,13 @@ python3.12 -m venv /tmp/tzb-ocr-materials-venv
 | [prompt.md](prompt.md) | 整页识别的提示词 |
 | [run.py](run.py) | 用线上的 `MODEL_VISION` 和图片转码识别 30 张，输出到 `runs/<时间>/`；参考转写未冻结时要加 `--draft` |
 | [score.py](score.py) | 计分，印刷体、手写分开，写出 `report.md` |
+| [grade.py](grade.py) | 整页批改回归：经开发环境的 api + worker 批改每张照片，输出到 `runs/grade-<时间>/`，写出 `report.md`（题数、对错分布、手写准确率、红笔和划掉的字是否混进作答、耗时）和逐题的 `details.md`，见[开发文档 3.11](../../docs/06-开发.md) |
 
 ```bash
 docker compose -f deploy/compose.dev.yml run --rm -v "$PWD/eval:/eval" -e PYTHONPATH=/app \
     api python /eval/homework-ocr/run.py --draft
 python3 eval/homework-ocr/score.py eval/homework-ocr/runs/<时间>
+python3 eval/homework-ocr/grade.py          # 整页批改回归，只用标准库，在宿主机上运行
 ```
 
 ## 正式评测时
