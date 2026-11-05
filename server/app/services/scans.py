@@ -174,9 +174,13 @@ async def grade_page(db: AsyncSession, job: Job) -> None:
         done += 1
         await jobs.report_progress(job.id, 60 + 35 * done // len(questions))
 
-    async with asyncio.TaskGroup() as group:
-        for seq, (question, answer) in enumerate(zip(questions, answers, strict=True), 1):
-            group.create_task(grade_one(seq, question, answer))
+    try:
+        async with asyncio.TaskGroup() as group:
+            for seq, (question, answer) in enumerate(zip(questions, answers, strict=True), 1):
+                group.create_task(grade_one(seq, question, answer))
+    except* AppError as failed:
+        # 任务组会把错误包成 ExceptionGroup；抛出原来的错误，Worker 才能按错误码决定提示和重试
+        raise failed.exceptions[0] from None
     await _summarize(db, scan)
     scan.status = "done"
     await db.commit()

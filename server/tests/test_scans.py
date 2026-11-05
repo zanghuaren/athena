@@ -11,7 +11,7 @@ from app.ai.client import Model, complete_json
 from app.config import settings
 from app.db import SessionLocal
 from app.errors import AppError
-from app.models import Attempt, Question, Scan, ScanItem
+from app.models import Attempt, Job, Question, Scan, ScanItem
 from app.schemas.scan import PageRecognized, Recognized
 from app.services import jobs, scans
 from app.services.knowledge import KnowledgeCatalog, import_catalog
@@ -279,6 +279,44 @@ async def test_grade_page_end_to_end(client, student):
         assert 0 <= item["bbox"]["y"] < 1
     # 识别的坐标框从上到下排列
     assert scan["items"][0]["bbox"]["y"] < scan["items"][2]["bbox"]["y"]
+
+
+async def test_model_error_while_grading_keeps_its_code(client, student, monkeypatch):
+    page = PageRecognized.model_validate(
+        {
+            "status": "ok",
+            "subject": "math",
+            "questions": [
+                {
+                    "seq": 1,
+                    "type": "blank",
+                    "content": {"stem": "3 + 4 = ____", "blank_count": 1},
+                    "bbox": [50, 50, 950, 200],
+                    "confidence": 0.9,
+                }
+            ],
+        }
+    )
+
+    async def recognized_page(image):
+        return page
+
+    async def no_answer(limit, photo, question):
+        return None
+
+    async def unavailable(*args):
+        raise AppError(502, "AI_UNAVAILABLE", "AI 服务暂时不可用，请稍后再试")
+
+    monkeypatch.setattr(scans, "_recognize_page", recognized_page)
+    monkeypatch.setattr(scans, "_recognize_answer", no_answer)
+    monkeypatch.setattr(scans, "_grade_item", unavailable)
+    created = await _start(client, student, await _page(client, student))
+    async with SessionLocal() as db:
+        job = await db.get_one(Job, created["job_id"])
+        # 抛出的是原来的错误，Worker 才会按模型服务出错重试、提示，而不是“处理失败”
+        with pytest.raises(AppError) as exc:
+            await scans.grade_page(db, job)
+    assert exc.value.code == "AI_UNAVAILABLE"
 
 
 def test_page_keeps_valid_questions_when_one_is_broken():
