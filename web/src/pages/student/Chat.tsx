@@ -9,7 +9,7 @@ import hero from './hero.webp';
 import styles from './Chat.module.css';
 
 // AI 出题失败时显示的语文问题
-const FALLBACK = '《春望》里“感时花溅泪”，为什么说花会流泪？';
+const FALLBACK = '如何理解“钱塘江上潮信来，今日方知我是我”？';
 
 export function Chat() {
   const { conversationId } = useParams();
@@ -24,7 +24,7 @@ export function Chat() {
 }
 
 function Empty({ ask }: { ask: (text: string) => void }) {
-  // 由 AI 按学生年级的语文知识点现编一个问题，每分钟换一个，也可以点刷新
+  // 由 AI 现编一个能引人思考的语文问题，每分钟换一个，也可以点刷新
   const suggestion = useSuggestion();
   const question = suggestion.data?.text ?? (suggestion.isError ? FALLBACK : null);
   return (

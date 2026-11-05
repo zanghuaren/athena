@@ -2,6 +2,7 @@
 
 import asyncio
 import logging
+import random
 from collections.abc import AsyncIterator
 from contextlib import aclosing
 from dataclasses import dataclass
@@ -14,7 +15,7 @@ from app.ai import prompts, safety
 from app.ai.client import Model, complete_json, complete_text, stream_text
 from app.db import SessionLocal
 from app.errors import AppError
-from app.models import Chapter, Conversation, KnowledgePoint, Message, User
+from app.models import Conversation, Message, User
 from app.schemas.conversation import (
     ConversationIn,
     ConversationPatch,
@@ -311,25 +312,36 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
 
 # ---------- 空状态的示例问题 ----------
 
-# 示例问题出语文题（2026-11-05 用户要求）
+# 示例问题出语文题（2026-11-05 用户要求）：不按知识点，要能激发兴趣、有哲理。
+# 每次随机给一个题材和主题，避免模型总想到同几句
 SUGGEST_SUBJECT = "chinese"
+SUGGEST_GENRES = (
+    "古典名著（《水浒传》《红楼梦》《西游记》《三国演义》等）里的人物结局或名句",
+    "现代小说（如《边城》《骆驼祥子》《呐喊》《活着》）的结尾或关键情节",
+    "唐诗宋词里的名句",
+    "先秦诸子和古文（《论语》《庄子》《孟子》《史记》等）里的名言",
+    "现代散文（如朱自清、史铁生、汪曾祺、鲁迅）里的句子或细节",
+    "外国名著（如《小王子》《老人与海》《简·爱》）里的名句或情节",
+    "初中语文课文里耐人寻味的句子",
+)
+SUGGEST_THEMES = (
+    "认识自我",
+    "成长",
+    "离别与等待",
+    "时间与生命",
+    "命运与选择",
+    "坚守与放下",
+    "故乡",
+    "孤独",
+    "亲情",
+    "理想与现实",
+    "得与失",
+    "自然与人",
+)
 
 
-async def suggestion(db: AsyncSession, user: User) -> Suggestion:
-    """随机取一个学生所在年级的语文知识点，让 MODEL_FAST 用学生的口吻问一个问题。"""
-    query = (
-        select(KnowledgePoint, Chapter)
-        .join(Chapter)
-        .where(Chapter.subject == SUGGEST_SUBJECT)
-        .order_by(func.random())
-        .limit(1)
-    )
-    if user.grade is not None:
-        query = query.where(KnowledgePoint.grades.contains([user.grade]))
-    row = (await db.execute(query)).first()
-    if row is None:
-        raise AppError(404, "NOT_FOUND", "还没有语文知识点")
-    point, chapter = row
+async def suggestion(user: User) -> Suggestion:
+    """随机一个题材和主题，让 MODEL_FAST 用学生的口吻问一个能引人思考的语文问题。"""
     grade = _GRADE_NAMES.get(user.grade or 0, "初中")
     messages = [
         {
@@ -338,8 +350,8 @@ async def suggestion(db: AsyncSession, user: User) -> Suggestion:
         },
         {
             "role": "user",
-            "content": f"年级：{grade}\n章节：{chapter.title}\n"
-            f"知识点：{point.name}\n说明：{point.description}",
+            "content": f"年级：{grade}\n题材：{random.choice(SUGGEST_GENRES)}\n"
+            f"主题：{random.choice(SUGGEST_THEMES)}",
         },
     ]
     suggested = await complete_json("ask_suggest", Model.FAST, messages, Suggested)

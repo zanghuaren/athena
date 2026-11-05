@@ -41,9 +41,9 @@ async def list_conversations(
 
 
 @router.get("/suggestion")
-async def get_suggestion(db: DB, user: CurrentStudent) -> Suggestion:
+async def get_suggestion(user: CurrentStudent) -> Suggestion:
     # 要写在 /{conversation_id} 前面，否则 suggestion 会被当成会话 ID
-    return await conversations.suggestion(db, user)
+    return await conversations.suggestion(user)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

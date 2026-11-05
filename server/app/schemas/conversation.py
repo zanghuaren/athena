@@ -85,7 +85,7 @@ class MessageIn(BaseModel):
 
 
 class Suggestion(BaseModel):
-    """对话页空状态的示例问题（S-01），每次由 AI 按语文知识点现编一个。"""
+    """对话页空状态的示例问题（S-01），每次由 AI 现编一个能引人思考的语文问题。"""
 
     subject: Subject
     text: Annotated[str, Field(min_length=4, max_length=80)]

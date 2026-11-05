@@ -1,19 +1,17 @@
 import io
 import json
-from pathlib import Path
 
 import pytest
 from PIL import Image, ImageDraw, ImageFont
-from sqlalchemy import select, update
+from sqlalchemy import update
 
 from app.ai import safety
 from app.ai.client import Model
 from app.config import settings
 from app.db import SessionLocal
-from app.models import Conversation, KnowledgePoint, Message, User
+from app.models import Conversation, Message, User
 from app.schemas.conversation import MessageIn
 from app.services import conversations
-from app.services.knowledge import KnowledgeCatalog, import_catalog
 
 needs_key = pytest.mark.skipif(not settings.deepseek_api_key, reason="没有配置 DeepSeek Key")
 
@@ -298,36 +296,27 @@ async def test_interrupted_reply_is_saved_and_can_continue(client, student):
 # ---- 空状态的示例问题 ----
 
 
-@pytest.fixture
-async def catalog():
-    async with SessionLocal() as db:
-        for path in sorted((Path(__file__).parents[1] / "seed" / "knowledge").glob("*.json")):
-            await import_catalog(db, KnowledgeCatalog.model_validate_json(path.read_text()))
-
-
-async def test_suggestion(client, student, teacher, catalog, monkeypatch):
+async def test_suggestion(client, student, teacher, monkeypatch):
     prompts_seen = []
 
     async def fake(scene, model, messages, schema, context=None):
         prompts_seen.append(messages[-1]["content"])
-        return schema.model_validate({"text": "《春望》里为什么说花会流泪？"})
+        return schema.model_validate({"text": "如何理解“今日方知我是我”？"})
 
     monkeypatch.setattr(conversations, "complete_json", fake)
     url = "/api/v1/conversations/suggestion"
     assert (await client.get(url, headers=teacher)).status_code == 403
     resp = await client.get(url, headers=student)
     assert resp.status_code == 200, resp.text
-    assert resp.json() == {"subject": "chinese", "text": "《春望》里为什么说花会流泪？"}
-    # 只取学生所在年级（八年级）的语文知识点
-    name = prompts_seen[0].split("知识点：")[1].splitlines()[0]
-    async with SessionLocal() as db:
-        point = await db.scalar(select(KnowledgePoint).where(KnowledgePoint.name == name))
-        assert point.code.startswith("C-") and 8 in point.grades
+    assert resp.json() == {"subject": "chinese", "text": "如何理解“今日方知我是我”？"}
+    # 每次随机给一个题材和主题
     assert "八年级" in prompts_seen[0]
+    assert any(g in prompts_seen[0] for g in conversations.SUGGEST_GENRES)
+    assert any(t in prompts_seen[0] for t in conversations.SUGGEST_THEMES)
 
 
 @needs_key
-async def test_real_suggestion(client, student, catalog):
+async def test_real_suggestion(client, student):
     resp = await client.get("/api/v1/conversations/suggestion", headers=student)
     assert resp.status_code == 200, resp.text
     assert 4 <= len(resp.json()["text"]) <= 80
