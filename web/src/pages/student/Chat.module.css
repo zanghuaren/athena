@@ -97,6 +97,12 @@
   color: var(--clay);
 }
 
+.loading,
+.loading:hover {
+  margin: 0;
+  color: var(--soft);
+}
+
 @media (max-width: 760px) {
   .hero {
     min-height: 200px;

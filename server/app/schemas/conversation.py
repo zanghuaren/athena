@@ -82,3 +82,31 @@ class MessageIn(BaseModel):
         if self.action and self.image_file_id is not None:
             raise ValueError("这个操作不能附图")
         return self
+
+
+class Suggestion(BaseModel):
+    subject: Subject
+    text: str
+
+
+class Suggestions(BaseModel):
+    """对话页空状态的示例问题（S-01），每次由 AI 按知识点现编。"""
+
+    questions: list[Suggestion]
+
+
+class _SuggestedItem(BaseModel):
+    code: str
+    text: Annotated[str, Field(min_length=4, max_length=80)]
+
+
+class Suggested(BaseModel):
+    """生成示例问题时模型的输出，见 prompts/ask/suggest.md；context 的 codes 是给出的知识点编号。"""
+
+    questions: list[_SuggestedItem]
+
+    @model_validator(mode="after")
+    def _one_each(self, info):
+        if [q.code for q in self.questions] != info.context["codes"]:
+            raise ValueError("每个知识点按顺序写一个问题")
+        return self

@@ -1,12 +1,14 @@
 // S-01 对话（ASK-01～04）
 import { useParams } from 'react-router';
+import { useSuggestions } from '../../api/conversations';
 import { useCurrentUser } from '../../components/AppShell';
 import { ChatView } from '../../components/ChatView';
+import { Markdown } from '../../components/Markdown';
 import hero from './hero.webp';
 import styles from './Chat.module.css';
 
-// 原型空状态里的三道示例题
-const EXAMPLES = [
+// 原型空状态里的三道示例题：AI 出题失败时用
+const FALLBACK = [
   '解方程 x² − 5x + 6 = 0。',
   '一个木块漂浮在水面上，浮力和重力有什么关系？',
   'I have lived here ___ three years. 应填 for 还是 since？',
@@ -25,6 +27,10 @@ export function Chat() {
 }
 
 function Empty({ ask }: { ask: (text: string) => void }) {
+  // 每次由 AI 按学生年级的知识点现编三个问题（每科一个）
+  const suggestions = useSuggestions();
+  const generated = suggestions.data?.questions.map((q) => q.text) ?? [];
+  const questions = generated.length > 0 ? generated : FALLBACK;
   return (
     <>
       <div className={styles.hero}>
@@ -52,11 +58,17 @@ function Empty({ ask }: { ask: (text: string) => void }) {
         <rect width="784" height="10" fill="url(#greek-key)" />
       </svg>
       <div className={styles.divider}>从一个问题开始</div>
-      {EXAMPLES.map((q) => (
-        <button key={q} type="button" className={styles.example} onClick={() => ask(q)}>
-          {q}
-        </button>
-      ))}
+      {suggestions.isPending
+        ? FALLBACK.map((q) => (
+            <p key={q} className={`${styles.example} ${styles.loading}`} aria-hidden="true">
+              正在想一个问题…
+            </p>
+          ))
+        : questions.map((q) => (
+            <button key={q} type="button" className={styles.example} onClick={() => ask(q)}>
+              <Markdown inline text={q} />
+            </button>
+          ))}
     </>
   );
 }

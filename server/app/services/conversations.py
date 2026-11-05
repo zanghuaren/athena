@@ -11,11 +11,17 @@ from sqlalchemy import exists, func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.ai import prompts, safety
-from app.ai.client import Model, complete_text, stream_text
+from app.ai.client import Model, complete_json, complete_text, stream_text
 from app.db import SessionLocal
 from app.errors import AppError
-from app.models import Conversation, Message, User
-from app.schemas.conversation import ConversationIn, ConversationPatch, MessageIn
+from app.models import Chapter, Conversation, KnowledgePoint, Message, User
+from app.schemas.conversation import (
+    ConversationIn,
+    ConversationPatch,
+    MessageIn,
+    Suggested,
+    Suggestion,
+)
 from app.services import files
 
 logger = logging.getLogger(__name__)
@@ -301,6 +307,48 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
                         .values(title=title)
                     )
                 await db.commit()
+
+
+# ---------- 空状态的示例问题 ----------
+
+SUBJECT_ORDER = ("math", "physics", "english")
+
+
+async def suggestions(db: AsyncSession, user: User) -> list[Suggestion]:
+    """每科随机取一个学生所在年级的知识点，让 MODEL_FAST 用学生的口吻各问一个问题。"""
+    points = []
+    for subject in SUBJECT_ORDER:
+        query = (
+            select(KnowledgePoint, Chapter)
+            .join(Chapter)
+            .where(Chapter.subject == subject)
+            .order_by(func.random())
+            .limit(1)
+        )
+        if user.grade is not None:
+            query = query.where(KnowledgePoint.grades.contains([user.grade]))
+        row = (await db.execute(query)).first()
+        if row is not None:
+            points.append(row)
+    if not points:
+        return []
+    lines = [f"{p.code}｜{c.subject}｜{c.title}｜{p.name}｜{p.description}" for p, c in points]
+    grade = _GRADE_NAMES.get(user.grade or 0, "初中")
+    messages = [
+        {"role": "system", "content": f"{prompts.load('ask/suggest')}\n\n{prompts.load('safety')}"},
+        {"role": "user", "content": f"年级：{grade}\n\n" + "\n".join(lines)},
+    ]
+    suggested = await complete_json(
+        "ask_suggest",
+        Model.FAST,
+        messages,
+        Suggested,
+        context={"codes": [p.code for p, _ in points]},
+    )
+    return [
+        Suggestion(subject=c.subject, text=q.text.strip())
+        for (_, c), q in zip(points, suggested.questions, strict=True)
+    ]
 
 
 # ---------- 标题和摘要：失败了不影响对话 ----------

@@ -141,6 +141,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/conversations/suggestions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Suggestions */
+        get: operations["get_suggestions_api_v1_conversations_suggestions_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/conversations/{conversation_id}": {
         parameters: {
             query?: never;
@@ -1255,6 +1272,24 @@ export interface components {
             /** Score */
             score: number;
         };
+        /** Suggestion */
+        Suggestion: {
+            /**
+             * Subject
+             * @enum {string}
+             */
+            subject: "math" | "physics" | "english";
+            /** Text */
+            text: string;
+        };
+        /**
+         * Suggestions
+         * @description 对话页空状态的示例问题（S-01），每次由 AI 按知识点现编。
+         */
+        Suggestions: {
+            /** Questions */
+            questions: components["schemas"]["Suggestion"][];
+        };
         /** TeacherRegister */
         TeacherRegister: {
             /**
@@ -1593,6 +1628,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_suggestions_api_v1_conversations_suggestions_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Suggestions"];
                 };
             };
         };

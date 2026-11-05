@@ -5,7 +5,7 @@ from fastapi import APIRouter, Query, status
 from fastapi.responses import StreamingResponse
 from starlette.background import BackgroundTask
 
-from app.api.deps import CurrentUser
+from app.api.deps import CurrentStudent, CurrentUser
 from app.db import DB
 from app.models import Message
 from app.schemas.conversation import (
@@ -16,6 +16,7 @@ from app.schemas.conversation import (
     ConversationPatch,
     MessageIn,
     MessageOut,
+    Suggestions,
 )
 from app.services import conversations, files
 
@@ -37,6 +38,12 @@ async def list_conversations(
         page=page,
         page_size=page_size,
     )
+
+
+@router.get("/suggestions")
+async def get_suggestions(db: DB, user: CurrentStudent) -> Suggestions:
+    # 要写在 /{conversation_id} 前面，否则 suggestions 会被当成会话 ID
+    return Suggestions(questions=await conversations.suggestions(db, user))
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

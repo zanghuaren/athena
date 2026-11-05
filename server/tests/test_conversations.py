@@ -1,17 +1,19 @@
 import io
 import json
+from pathlib import Path
 
 import pytest
 from PIL import Image, ImageDraw, ImageFont
-from sqlalchemy import update
+from sqlalchemy import select, update
 
 from app.ai import safety
 from app.ai.client import Model
 from app.config import settings
 from app.db import SessionLocal
-from app.models import Conversation, Message, User
+from app.models import Conversation, KnowledgePoint, Message, User
 from app.schemas.conversation import MessageIn
 from app.services import conversations
+from app.services.knowledge import KnowledgeCatalog, import_catalog
 
 needs_key = pytest.mark.skipif(not settings.deepseek_api_key, reason="没有配置 DeepSeek Key")
 
@@ -291,3 +293,50 @@ async def test_interrupted_reply_is_saved_and_can_continue(client, student):
     continued = (await _detail(client, student, conv["id"]))["messages"][1]
     added = "".join(d["text"] for e, d in events if e == "delta")
     assert continued["content"] == message["content"] + added
+
+
+# ---- 空状态的示例问题 ----
+
+
+@pytest.fixture
+async def catalog():
+    async with SessionLocal() as db:
+        for path in sorted((Path(__file__).parents[1] / "seed" / "knowledge").glob("*.json")):
+            await import_catalog(db, KnowledgeCatalog.model_validate_json(path.read_text()))
+
+
+async def test_suggestions(client, student, teacher, catalog, monkeypatch):
+    prompts_seen = []
+
+    async def fake(scene, model, messages, schema, context=None):
+        prompts_seen.append(messages[-1]["content"])
+        # 先给一个条数不对的输出，校验不过
+        with pytest.raises(ValueError):
+            schema.model_validate({"questions": []}, context=context)
+        items = [{"code": c, "text": f"关于 {c} 的一个问题？"} for c in context["codes"]]
+        return schema.model_validate({"questions": items}, context=context)
+
+    monkeypatch.setattr(conversations, "complete_json", fake)
+    assert (
+        await client.get("/api/v1/conversations/suggestions", headers=teacher)
+    ).status_code == 403
+    resp = await client.get("/api/v1/conversations/suggestions", headers=student)
+    assert resp.status_code == 200, resp.text
+    questions = resp.json()["questions"]
+    assert [q["subject"] for q in questions] == ["math", "physics", "english"]
+    # 只取学生所在年级（八年级）的知识点
+    async with SessionLocal() as db:
+        codes = [line.split("｜")[0] for line in prompts_seen[0].splitlines()[2:]]
+        for code in codes:
+            point = await db.scalar(select(KnowledgePoint).where(KnowledgePoint.code == code))
+            assert 8 in point.grades
+    assert "八年级" in prompts_seen[0]
+
+
+@needs_key
+async def test_real_suggestions(client, student, catalog):
+    resp = await client.get("/api/v1/conversations/suggestions", headers=student)
+    assert resp.status_code == 200, resp.text
+    questions = resp.json()["questions"]
+    assert len(questions) == 3
+    assert all(4 <= len(q["text"]) <= 80 for q in questions)

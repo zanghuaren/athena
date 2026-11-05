@@ -152,3 +152,14 @@ function parseEvent(block: string): StreamEvent {
   const data = JSON.parse(lines.find((l) => l.startsWith('data: '))!.slice(6));
   return { event, data } as StreamEvent;
 }
+
+/** S-01 空状态的示例问题：每次进入都由 AI 按知识点重新出，离开后不缓存。 */
+export function useSuggestions() {
+  return useQuery({
+    queryKey: ['conversation-suggestions'],
+    queryFn: () => unwrap(api.GET('/api/v1/conversations/suggestions')),
+    gcTime: 0,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+}
