@@ -118,6 +118,14 @@ async def test_blanks_match_by_rule():
     ]
 
 
+def test_chinese_and_english_blanks_skip_sympy():
+    # 语文、英语的“3”和“三”字面不同，不能当算式比，交给模型判断
+    assert grading._match_blank("math", ["3"], "3.0") is True
+    for subject in ("chinese", "english"):
+        assert grading._match_blank(subject, ["三"], "3") is None
+        assert grading._match_blank(subject, ["春风"], " 春风 ") is True
+
+
 def test_expression_parser_only_accepts_plain_math():
     assert grading._expr("√2") is not None
     assert grading._expr("x²") is not None

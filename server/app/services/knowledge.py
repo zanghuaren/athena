@@ -10,8 +10,13 @@ from app.errors import AppError
 from app.models import Chapter, KnowledgePoint
 from app.schemas.user import Grade, Subject
 
-SUBJECT_PREFIX = {"math": "M", "physics": "P", "english": "E"}
-SUBJECT_GRADES = {"math": {7, 8, 9}, "physics": {8, 9}, "english": {7, 8, 9}}
+SUBJECT_PREFIX = {"chinese": "C", "math": "M", "physics": "P", "english": "E"}
+SUBJECT_GRADES = {
+    "chinese": {7, 8, 9},
+    "math": {7, 8, 9},
+    "physics": {8, 9},
+    "english": {7, 8, 9},
+}
 
 
 class SeedPoint(BaseModel):
@@ -20,7 +25,7 @@ class SeedPoint(BaseModel):
     code: str
     name: str
     description: str
-    # 不写就用章节的年级；英语章节不分年级，每个知识点必须写
+    # 不写就用章节的年级；英语、语文章节不分年级，每个知识点必须写
     grades: Annotated[list[Grade], Field(min_length=1)] | None = None
 
 

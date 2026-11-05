@@ -5,6 +5,7 @@ type Subject = NonNullable<User['preferred_subject']>;
 type Grade = NonNullable<User['grade']>;
 
 export const SUBJECT_LABELS: Record<Subject, string> = {
+  chinese: '语文',
   math: '数学',
   physics: '物理',
   english: '英语',

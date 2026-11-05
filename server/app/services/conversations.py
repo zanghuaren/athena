@@ -311,44 +311,39 @@ async def stream_reply(reply: Reply) -> AsyncIterator[tuple[str, dict]]:
 
 # ---------- 空状态的示例问题 ----------
 
-SUBJECT_ORDER = ("math", "physics", "english")
+# 示例问题出语文题（2026-11-05 用户要求）
+SUGGEST_SUBJECT = "chinese"
 
 
-async def suggestions(db: AsyncSession, user: User) -> list[Suggestion]:
-    """每科随机取一个学生所在年级的知识点，让 MODEL_FAST 用学生的口吻各问一个问题。"""
-    points = []
-    for subject in SUBJECT_ORDER:
-        query = (
-            select(KnowledgePoint, Chapter)
-            .join(Chapter)
-            .where(Chapter.subject == subject)
-            .order_by(func.random())
-            .limit(1)
-        )
-        if user.grade is not None:
-            query = query.where(KnowledgePoint.grades.contains([user.grade]))
-        row = (await db.execute(query)).first()
-        if row is not None:
-            points.append(row)
-    if not points:
-        return []
-    lines = [f"{p.code}｜{c.subject}｜{c.title}｜{p.name}｜{p.description}" for p, c in points]
+async def suggestion(db: AsyncSession, user: User) -> Suggestion:
+    """随机取一个学生所在年级的语文知识点，让 MODEL_FAST 用学生的口吻问一个问题。"""
+    query = (
+        select(KnowledgePoint, Chapter)
+        .join(Chapter)
+        .where(Chapter.subject == SUGGEST_SUBJECT)
+        .order_by(func.random())
+        .limit(1)
+    )
+    if user.grade is not None:
+        query = query.where(KnowledgePoint.grades.contains([user.grade]))
+    row = (await db.execute(query)).first()
+    if row is None:
+        raise AppError(404, "NOT_FOUND", "还没有语文知识点")
+    point, chapter = row
     grade = _GRADE_NAMES.get(user.grade or 0, "初中")
     messages = [
-        {"role": "system", "content": f"{prompts.load('ask/suggest')}\n\n{prompts.load('safety')}"},
-        {"role": "user", "content": f"年级：{grade}\n\n" + "\n".join(lines)},
+        {
+            "role": "system",
+            "content": f"{prompts.load('ask/suggest')}\n\n{prompts.load('safety')}",
+        },
+        {
+            "role": "user",
+            "content": f"年级：{grade}\n章节：{chapter.title}\n"
+            f"知识点：{point.name}\n说明：{point.description}",
+        },
     ]
-    suggested = await complete_json(
-        "ask_suggest",
-        Model.FAST,
-        messages,
-        Suggested,
-        context={"codes": [p.code for p, _ in points]},
-    )
-    return [
-        Suggestion(subject=c.subject, text=q.text.strip())
-        for (_, c), q in zip(points, suggested.questions, strict=True)
-    ]
+    suggested = await complete_json("ask_suggest", Model.FAST, messages, Suggested)
+    return Suggestion(subject=SUGGEST_SUBJECT, text=suggested.text.strip())
 
 
 # ---------- 标题和摘要：失败了不影响对话 ----------

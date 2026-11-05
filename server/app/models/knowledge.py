@@ -4,7 +4,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.models.base import Base, IdMixin, TimestampMixin
 
-SUBJECT_CHECK = "subject IN ('math', 'physics', 'english')"
+SUBJECT_CHECK = "subject IN ('chinese', 'math', 'physics', 'english')"
 
 
 class Chapter(IdMixin, TimestampMixin, Base):

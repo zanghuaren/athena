@@ -230,7 +230,8 @@ def _match_blank(subject: str, answers: list[str], given: str) -> bool | None:
         return False
     if any(_normalize(a) == text for a in answers):
         return True
-    if subject == "english":
+    # 语文、英语不是算式，字符串对不上就交给模型
+    if subject in ("chinese", "english"):
         return None
     expr = _expr(text)
     if expr is None:

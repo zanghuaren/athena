@@ -141,15 +141,15 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/api/v1/conversations/suggestions": {
+    "/api/v1/conversations/suggestion": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get Suggestions */
-        get: operations["get_suggestions_api_v1_conversations_suggestions_get"];
+        /** Get Suggestion */
+        get: operations["get_suggestion_api_v1_conversations_suggestion_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -467,7 +467,7 @@ export interface components {
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /** Knowledge Point Ids */
             knowledge_point_ids: number[];
         };
@@ -543,7 +543,7 @@ export interface components {
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /** Title */
             title: string;
             /** Grade */
@@ -587,7 +587,7 @@ export interface components {
             /** Title */
             title: string;
             /** Subject */
-            subject: ("math" | "physics" | "english") | null;
+            subject: ("chinese" | "math" | "physics" | "english") | null;
             /** Explain Mode */
             explain_mode: ("guided" | "direct") | null;
             /** Turn Count */
@@ -608,7 +608,7 @@ export interface components {
         /** ConversationIn */
         ConversationIn: {
             /** Subject */
-            subject?: ("math" | "physics" | "english") | null;
+            subject?: ("chinese" | "math" | "physics" | "english") | null;
             /** Explain Mode */
             explain_mode?: ("guided" | "direct") | null;
         };
@@ -619,7 +619,7 @@ export interface components {
             /** Title */
             title: string;
             /** Subject */
-            subject: ("math" | "physics" | "english") | null;
+            subject: ("chinese" | "math" | "physics" | "english") | null;
             /** Explain Mode */
             explain_mode: ("guided" | "direct") | null;
             /** Turn Count */
@@ -654,7 +654,7 @@ export interface components {
             /** Title */
             title?: string | null;
             /** Subject */
-            subject?: ("math" | "physics" | "english") | null;
+            subject?: ("chinese" | "math" | "physics" | "english") | null;
             /** Explain Mode */
             explain_mode?: ("guided" | "direct") | null;
         };
@@ -782,7 +782,7 @@ export interface components {
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /** Chapters */
             chapters: components["schemas"]["ChapterNode"][];
         };
@@ -807,7 +807,7 @@ export interface components {
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /** Stem */
             stem: string;
             /** Answer */
@@ -1022,7 +1022,7 @@ export interface components {
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /** Knowledge Points */
             knowledge_points: components["schemas"]["KnowledgePointBrief"][];
         };
@@ -1037,7 +1037,7 @@ export interface components {
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /**
              * Type
              * @enum {string}
@@ -1074,7 +1074,7 @@ export interface components {
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /** Text */
             text: string;
         };
@@ -1110,7 +1110,7 @@ export interface components {
             /** Fail Reason */
             fail_reason: ("unclear" | "no_question" | "error") | null;
             /** Subject */
-            subject: ("math" | "physics" | "english") | null;
+            subject: ("chinese" | "math" | "physics" | "english") | null;
             image: components["schemas"]["FileOut"];
             /** Job Id */
             job_id: number | null;
@@ -1164,7 +1164,7 @@ export interface components {
             /** Fail Reason */
             fail_reason: ("unclear" | "no_question" | "error") | null;
             /** Subject */
-            subject: ("math" | "physics" | "english") | null;
+            subject: ("chinese" | "math" | "physics" | "english") | null;
             image: components["schemas"]["FileOut"];
             /** Job Id */
             job_id: number | null;
@@ -1272,23 +1272,18 @@ export interface components {
             /** Score */
             score: number;
         };
-        /** Suggestion */
+        /**
+         * Suggestion
+         * @description 对话页空状态的示例问题（S-01），每次由 AI 按语文知识点现编一个。
+         */
         Suggestion: {
             /**
              * Subject
              * @enum {string}
              */
-            subject: "math" | "physics" | "english";
+            subject: "chinese" | "math" | "physics" | "english";
             /** Text */
             text: string;
-        };
-        /**
-         * Suggestions
-         * @description 对话页空状态的示例问题（S-01），每次由 AI 按知识点现编。
-         */
-        Suggestions: {
-            /** Questions */
-            questions: components["schemas"]["Suggestion"][];
         };
         /** TeacherRegister */
         TeacherRegister: {
@@ -1304,7 +1299,7 @@ export interface components {
             /** Display Name */
             display_name: string;
             /** Teach Subjects */
-            teach_subjects: ("math" | "physics" | "english")[];
+            teach_subjects: ("chinese" | "math" | "physics" | "english")[];
             /** Teach Grades */
             teach_grades: (7 | 8 | 9)[];
         };
@@ -1338,13 +1333,13 @@ export interface components {
             /** Grade */
             grade: (7 | 8 | 9) | null;
             /** Teach Subjects */
-            teach_subjects: ("math" | "physics" | "english")[] | null;
+            teach_subjects: ("chinese" | "math" | "physics" | "english")[] | null;
             /** Teach Grades */
             teach_grades: (7 | 8 | 9)[] | null;
             /** Explain Mode */
             explain_mode: ("guided" | "direct") | null;
             /** Preferred Subject */
-            preferred_subject: ("math" | "physics" | "english") | null;
+            preferred_subject: ("chinese" | "math" | "physics" | "english") | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -1475,7 +1470,7 @@ export interface operations {
     get_knowledge_tree_api_v1_knowledge_tree_get: {
         parameters: {
             query: {
-                subject: "math" | "physics" | "english";
+                subject: "chinese" | "math" | "physics" | "english";
                 grade?: number | null;
             };
             header?: never;
@@ -1632,7 +1627,7 @@ export interface operations {
             };
         };
     };
-    get_suggestions_api_v1_conversations_suggestions_get: {
+    get_suggestion_api_v1_conversations_suggestion_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1647,7 +1642,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["Suggestions"];
+                    "application/json": components["schemas"]["Suggestion"];
                 };
             };
         };
@@ -2051,7 +2046,7 @@ export interface operations {
     list_mistakes_api_v1_mistakes_get: {
         parameters: {
             query?: {
-                subject?: ("math" | "physics" | "english") | null;
+                subject?: ("chinese" | "math" | "physics" | "english") | null;
                 knowledge_point_id?: number | null;
                 source?: ("ask" | "scan" | "practice" | "homework" | "manual") | null;
                 status?: ("pending" | "reviewing" | "mastered") | null;

@@ -16,7 +16,7 @@ from app.schemas.conversation import (
     ConversationPatch,
     MessageIn,
     MessageOut,
-    Suggestions,
+    Suggestion,
 )
 from app.services import conversations, files
 
@@ -40,10 +40,10 @@ async def list_conversations(
     )
 
 
-@router.get("/suggestions")
-async def get_suggestions(db: DB, user: CurrentStudent) -> Suggestions:
-    # 要写在 /{conversation_id} 前面，否则 suggestions 会被当成会话 ID
-    return Suggestions(questions=await conversations.suggestions(db, user))
+@router.get("/suggestion")
+async def get_suggestion(db: DB, user: CurrentStudent) -> Suggestion:
+    # 要写在 /{conversation_id} 前面，否则 suggestion 会被当成会话 ID
+    return await conversations.suggestion(db, user)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

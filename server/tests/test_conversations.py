@@ -305,38 +305,29 @@ async def catalog():
             await import_catalog(db, KnowledgeCatalog.model_validate_json(path.read_text()))
 
 
-async def test_suggestions(client, student, teacher, catalog, monkeypatch):
+async def test_suggestion(client, student, teacher, catalog, monkeypatch):
     prompts_seen = []
 
     async def fake(scene, model, messages, schema, context=None):
         prompts_seen.append(messages[-1]["content"])
-        # 先给一个条数不对的输出，校验不过
-        with pytest.raises(ValueError):
-            schema.model_validate({"questions": []}, context=context)
-        items = [{"code": c, "text": f"关于 {c} 的一个问题？"} for c in context["codes"]]
-        return schema.model_validate({"questions": items}, context=context)
+        return schema.model_validate({"text": "《春望》里为什么说花会流泪？"})
 
     monkeypatch.setattr(conversations, "complete_json", fake)
-    assert (
-        await client.get("/api/v1/conversations/suggestions", headers=teacher)
-    ).status_code == 403
-    resp = await client.get("/api/v1/conversations/suggestions", headers=student)
+    url = "/api/v1/conversations/suggestion"
+    assert (await client.get(url, headers=teacher)).status_code == 403
+    resp = await client.get(url, headers=student)
     assert resp.status_code == 200, resp.text
-    questions = resp.json()["questions"]
-    assert [q["subject"] for q in questions] == ["math", "physics", "english"]
-    # 只取学生所在年级（八年级）的知识点
+    assert resp.json() == {"subject": "chinese", "text": "《春望》里为什么说花会流泪？"}
+    # 只取学生所在年级（八年级）的语文知识点
+    name = prompts_seen[0].split("知识点：")[1].splitlines()[0]
     async with SessionLocal() as db:
-        codes = [line.split("｜")[0] for line in prompts_seen[0].splitlines()[2:]]
-        for code in codes:
-            point = await db.scalar(select(KnowledgePoint).where(KnowledgePoint.code == code))
-            assert 8 in point.grades
+        point = await db.scalar(select(KnowledgePoint).where(KnowledgePoint.name == name))
+        assert point.code.startswith("C-") and 8 in point.grades
     assert "八年级" in prompts_seen[0]
 
 
 @needs_key
-async def test_real_suggestions(client, student, catalog):
-    resp = await client.get("/api/v1/conversations/suggestions", headers=student)
+async def test_real_suggestion(client, student, catalog):
+    resp = await client.get("/api/v1/conversations/suggestion", headers=student)
     assert resp.status_code == 200, resp.text
-    questions = resp.json()["questions"]
-    assert len(questions) == 3
-    assert all(4 <= len(q["text"]) <= 80 for q in questions)
+    assert 4 <= len(resp.json()["text"]) <= 80

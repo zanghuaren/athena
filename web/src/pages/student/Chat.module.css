@@ -97,6 +97,48 @@
   color: var(--clay);
 }
 
+.suggestion {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+}
+
+.suggestion .example {
+  flex: 1;
+  border-bottom: 0;
+}
+
+.refresh {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--muted);
+}
+
+.refresh:not(:disabled):hover {
+  color: var(--clay);
+}
+
+.refresh svg {
+  width: 18px;
+  height: 18px;
+}
+
+.spinning {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .loading,
 .loading:hover {
   margin: 0;

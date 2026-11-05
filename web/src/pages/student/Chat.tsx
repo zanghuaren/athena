@@ -1,18 +1,15 @@
 // S-01 对话（ASK-01～04）
 import { useParams } from 'react-router';
-import { useSuggestions } from '../../api/conversations';
+import { useSuggestion } from '../../api/conversations';
 import { useCurrentUser } from '../../components/AppShell';
 import { ChatView } from '../../components/ChatView';
+import { Icon } from '../../components/Icon';
 import { Markdown } from '../../components/Markdown';
 import hero from './hero.webp';
 import styles from './Chat.module.css';
 
-// 原型空状态里的三道示例题：AI 出题失败时用
-const FALLBACK = [
-  '解方程 x² − 5x + 6 = 0。',
-  '一个木块漂浮在水面上，浮力和重力有什么关系？',
-  'I have lived here ___ three years. 应填 for 还是 since？',
-];
+// AI 出题失败时显示的语文问题
+const FALLBACK = '《春望》里“感时花溅泪”，为什么说花会流泪？';
 
 export function Chat() {
   const { conversationId } = useParams();
@@ -27,10 +24,9 @@ export function Chat() {
 }
 
 function Empty({ ask }: { ask: (text: string) => void }) {
-  // 每次由 AI 按学生年级的知识点现编三个问题（每科一个）
-  const suggestions = useSuggestions();
-  const generated = suggestions.data?.questions.map((q) => q.text) ?? [];
-  const questions = generated.length > 0 ? generated : FALLBACK;
+  // 由 AI 按学生年级的语文知识点现编一个问题，每分钟换一个，也可以点刷新
+  const suggestion = useSuggestion();
+  const question = suggestion.data?.text ?? (suggestion.isError ? FALLBACK : null);
   return (
     <>
       <div className={styles.hero}>
@@ -58,17 +54,24 @@ function Empty({ ask }: { ask: (text: string) => void }) {
         <rect width="784" height="10" fill="url(#greek-key)" />
       </svg>
       <div className={styles.divider}>从一个问题开始</div>
-      {suggestions.isPending
-        ? FALLBACK.map((q) => (
-            <p key={q} className={`${styles.example} ${styles.loading}`} aria-hidden="true">
-              正在想一个问题…
-            </p>
-          ))
-        : questions.map((q) => (
-            <button key={q} type="button" className={styles.example} onClick={() => ask(q)}>
-              <Markdown inline text={q} />
-            </button>
-          ))}
+      <div className={styles.suggestion}>
+        {question ? (
+          <button type="button" className={styles.example} onClick={() => ask(question)}>
+            <Markdown inline text={question} />
+          </button>
+        ) : (
+          <p className={`${styles.example} ${styles.loading}`}>正在想一个问题…</p>
+        )}
+        <button
+          type="button"
+          className={styles.refresh}
+          aria-label="换一个问题"
+          disabled={suggestion.isFetching}
+          onClick={() => void suggestion.refetch()}
+        >
+          <Icon name="refresh" className={suggestion.isFetching ? styles.spinning : undefined} />
+        </button>
+      </div>
     </>
   );
 }

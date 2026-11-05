@@ -153,13 +153,15 @@ function parseEvent(block: string): StreamEvent {
   return { event, data } as StreamEvent;
 }
 
-/** S-01 空状态的示例问题：每次进入都由 AI 按知识点重新出，离开后不缓存。 */
-export function useSuggestions() {
+/** S-01 空状态的示例问题：AI 按语文知识点现编一个，每分钟换一个；换的时候先留着旧的。 */
+export function useSuggestion() {
   return useQuery({
-    queryKey: ['conversation-suggestions'],
-    queryFn: () => unwrap(api.GET('/api/v1/conversations/suggestions')),
+    queryKey: ['conversation-suggestion'],
+    queryFn: () => unwrap(api.GET('/api/v1/conversations/suggestion')),
     gcTime: 0,
     retry: false,
     refetchOnWindowFocus: false,
+    refetchInterval: 60_000,
+    placeholderData: keepPreviousData,
   });
 }

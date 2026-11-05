@@ -17,6 +17,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.attempt import Attempt
 from app.models.base import Base, CreatedAtMixin, IdMixin, TimestampMixin
 from app.models.file import File
+from app.models.knowledge import SUBJECT_CHECK
 from app.models.question import Question
 
 
@@ -27,7 +28,7 @@ class Scan(IdMixin, TimestampMixin, Base):
     __table_args__ = (
         CheckConstraint("status IN ('processing', 'done', 'failed')", name="status"),
         CheckConstraint("fail_reason IN ('unclear', 'no_question', 'error')", name="fail_reason"),
-        CheckConstraint("subject IN ('math', 'physics', 'english')", name="subject"),
+        CheckConstraint(SUBJECT_CHECK, name="subject"),
         Index("ix_scans_student_id_created_at", "student_id", "created_at"),
     )
 

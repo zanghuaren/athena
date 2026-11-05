@@ -72,6 +72,7 @@ const ICONS = {
       <circle cx="12" cy="12.5" r="4" />
     </>,
   ],
+  refresh: ['0 0 24 24', <path d="M20 12a8 8 0 1 1-2.6-5.9M20 4v5h-5" />],
   send: ['0 0 24 24', <path d="m3 3 19 9-19 9 3-9-3-9ZM6 12h16" />],
   // 原型里没有“停止生成”，用实心方块，和常见播放器的停止键一致
   stop: ['0 0 24 24', <rect x="7" y="7" width="10" height="10" rx="1.5" fill="currentColor" />],
