@@ -13,8 +13,8 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 app = FastAPI(
     title="雅典娜 API",
     version="0.1.0",
-    docs_url="/api/docs",
-    openapi_url="/api/openapi.json",
+    docs_url="/api/docs" if settings.expose_api_docs else None,
+    openapi_url="/api/openapi.json" if settings.expose_api_docs else None,
     redoc_url=None,
 )
 register_error_handlers(app)
